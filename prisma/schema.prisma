@@ -1,0 +1,57 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String      @id @default(cuid())
+  name       String?
+  email      String      @unique
+  image      String?
+  rooms      Room[]      @relation("RoomHost")
+  memberships RoomMember[]
+  queueItems QueueItem[] @relation("QueueItemAddedBy")
+  createdAt  DateTime    @default(now())
+}
+
+model Room {
+  id         String        @id @default(cuid())
+  name       String?
+  host       User          @relation("RoomHost", fields: [hostId], references: [id])
+  hostId     String
+  currentQueueIndex Int?   @default(0)
+  createdAt  DateTime      @default(now())
+  members    RoomMember[]
+  queueItems QueueItem[]
+}
+
+model RoomMember {
+  id        String   @id @default(cuid())
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  @@unique([roomId, userId]) // ✅ This makes the combo unique
+}
+
+model QueueItem {
+  id         String   @id @default(cuid())
+  room       Room     @relation(fields: [roomId], references: [id])
+  roomId     String
+  videoId    String
+  title      String
+  thumbnail  String?
+  addedBy    User     @relation("QueueItemAddedBy", fields: [addedById], references: [id])
+  addedById  String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
