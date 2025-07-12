@@ -33,6 +33,7 @@ app.prepare().then(() => {
     socket.on('join-room', (roomId) => {
       console.log(`👥 ${socket.id} joined room ${roomId}`)
       socket.join(roomId)
+      console.log(`📊 Room ${roomId} now has ${io.sockets.adapter.rooms.get(roomId)?.size || 0} clients`)
     })
 
     socket.on('sync-ping', (t0) => {
@@ -45,9 +46,11 @@ app.prepare().then(() => {
     })
 
     // ─── NEW: relay change-video to all clients in room ───
-    socket.on('change-video', ({ roomId, videoId }) => {
-      console.log(`🎬 change-video → room:${roomId} videoId:${videoId}`)
-      socket.to(roomId).emit('change-video', { roomId, videoId })
+    socket.on('change-video', ({ roomId, newVideoId }) => {
+      console.log(`🎬 change-video → room:${roomId} videoId:${newVideoId}`)
+      console.log(`📊 Broadcasting video-changed to ${io.sockets.adapter.rooms.get(roomId)?.size || 0} clients in room ${roomId}`)
+      io.to(roomId).emit('video-changed', newVideoId)
+      console.log(`✅ video-changed event emitted to room ${roomId}`)
     })
 
     socket.on('disconnect', () => {

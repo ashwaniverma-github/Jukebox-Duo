@@ -6,7 +6,7 @@ const Footer = () => (
     style={{
       background: 'rgba(10,31,68,0.98)', color: '#fff', padding: '2rem 1rem 1.5rem 1rem', textAlign: 'center',
       fontSize: '1rem', marginTop: '3rem', borderTop: '1.5px solid #fff', opacity: 0.98,
-      fontFamily: 'var(--font-headline, sans-serif)'
+      fontFamily: 'var(--font-inter)'
     }}
     initial={{ opacity: 0, y: 40 }}
     whileInView={{ opacity: 1, y: 0 }}

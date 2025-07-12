@@ -1,7 +1,7 @@
 // components/SyncAudio.tsx
 'use client';
-
-import { useRef, useEffect } from 'react';
+import { CirclePlay, CirclePause, SkipForward, SkipBack } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useSyncPlayer } from '../hooks/useSyncPlayer';
 import { getSocket } from '../lib/socket';
@@ -23,6 +23,8 @@ declare namespace YT {
     mute(): void;
     unMute(): void;
     getCurrentTime(): number;
+    getPlayerState(): number;
+    destroy(): void;
   }
   enum PlayerState {
     UNSTARTED = -1,
@@ -39,19 +41,27 @@ interface Props {
   videoId: string;  // initial video
   isHost: boolean;
   onPlayNext?: () => void;
+  onPlayPrev?: () => void;
 }
 
 const BUFFER = 1000; // ms buffer for scheduling
 
-export default function SyncAudio({ roomId, videoId, isHost, onPlayNext }: Props) {
+export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev }: Props) {
   const playerRef = useRef<YT.Player | null>(null);
   const socket = getSocket();
   const { offset, sendCommand } = useSyncPlayer(roomId);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // 1) Initialize YouTube IFrame API once
+  const playerInitialized = useRef(false);
   useEffect(() => {
+    let destroyed = false;
+    if (playerInitialized.current) return;
+    playerInitialized.current = true;
     console.log('🔧 Registering onYouTubeIframeAPIReady');
     window.onYouTubeIframeAPIReady = () => {
+      if (destroyed) return;
+      if (playerRef.current) return; // Only create one player
       console.log('▶️ onYouTubeIframeAPIReady fired');
       playerRef.current = new window.YT.Player('audio-player', {
         videoId,
@@ -59,44 +69,57 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext }: Props
         events: {
           onReady: (e) => {
             console.log('🛠️ YouTube Player Ready');
-            if (!isHost) {
-              // unlock autoplay
-              e.target.mute();
-              e.target.playVideo();
-              e.target.pauseVideo();
-              e.target.unMute();
-              console.log('🔓 Autoplay unlocked for listener');
-            }
+            // Remove autoplay unlock for listeners; do not play or pause automatically
           },
           onStateChange: (e) => {
             console.log('📺 StateChange:', e.data);
-            // 0 === ENDED
-            if (isHost && typeof window.YT !== 'undefined' && e.data === window.YT.PlayerState.ENDED) {
-              if (onPlayNext) onPlayNext();
-            }
+            if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
+            else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
           },
         },
       });
       console.log('✅ Player instance created');
     };
-  }, []); // run only once
+    return () => {
+      destroyed = true;
+      playerInitialized.current = false;
+      if (playerRef.current && playerRef.current.destroy) playerRef.current.destroy();
+      playerRef.current = null;
+    };
+  }, []);
 
   // 2) React to local videoId prop changes (host only)
   useEffect(() => {
     if (!playerRef.current || typeof playerRef.current.loadVideoById !== 'function') return;
     console.log('🔄 videoId prop changed:', videoId);
+    console.log('[SyncAudio] Loading video by ID:', videoId);
     playerRef.current.loadVideoById(videoId);
+    // If the player is playing after loading, pause it to prevent double playback
+    setTimeout(() => {
+      if (playerRef.current && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        setIsPlaying(false);
+      }
+    }, 200);
   }, [videoId]);
 
   // 3) Listen for remote video changes and load accordingly
   useEffect(() => {
-    const onChange = ({ roomId: rid, videoId: newId }: { roomId: string; videoId: string }) => {
-      if (rid !== roomId) return;
-      console.log('🔄 Received change-video →', newId);
-      playerRef.current?.loadVideoById(newId);
+    console.log('[SyncAudio] Setting up video-changed listener for room:', roomId);
+    const onChange = (newVideoId: string) => {
+      console.log('🔄 Received video-changed →', newVideoId);
+      console.log('[SyncAudio] Current videoId prop:', videoId);
+      console.log('[SyncAudio] Loading new video:', newVideoId);
+      playerRef.current?.loadVideoById(newVideoId);
     };
-    socket.on('change-video', onChange);
-    return () => void socket.off('change-video', onChange);
+    socket.on('video-changed', onChange);
+    console.log('[SyncAudio] video-changed listener added');
+    return () => {
+      console.log('[SyncAudio] Removing video-changed listener');
+      socket.off('video-changed', onChange);
+    };
   }, [socket, roomId]);
 
   // 4) Sync play/pause commands
@@ -127,56 +150,56 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext }: Props
       {/* Hidden YouTube iframe */}
       <div id="audio-player" className="w-0 h-0 overflow-hidden" />
 
-      {/* Test play for everyone */}
-      <div className="mt-4">
-        <button
-          className="px-4 py-2 bg-green-500 text-white rounded"
-          onClick={() => {
-            if (!playerRef.current) return console.error('Player not ready');
-            console.log('🧪 Test Play clicked');
-            playerRef.current.playVideo();
-          }}
-        >
-          Test Play
-        </button>
-      </div>
-
       {/* Host controls */}
       {isHost && (
-        <div className="mt-4 space-x-4">
+        <div className="mt-4 flex justify-center items-center gap-6">
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={() => {
-              const p = playerRef.current;
-              if (!p) return console.error('Player not ready');
-              const seek = p.getCurrentTime();
-              const ts = Date.now() + BUFFER;
-              console.log('▶️ Host scheduling PLAY');
-              setTimeout(() => {
-                p.seekTo(seek, true);
-                p.playVideo();
-              }, BUFFER);
-              sendCommand('play', seek, ts);
-            }}
+            className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 text-blue-600 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+            onClick={onPlayPrev}
+            aria-label="Previous"
+            type="button"
           >
-            Play
+            <SkipBack size={36} />
           </button>
-          <button
-            className="px-4 py-2 bg-red-600 text-white rounded"
-            onClick={() => {
-              const p = playerRef.current;
-              if (!p) return console.error('Player not ready');
-              const seek = p.getCurrentTime();
-              const ts = Date.now() + BUFFER;
-              console.log('⏸️ Host scheduling PAUSE');
-              setTimeout(() => {
-                p.seekTo(seek, true);
+          {!isPlaying && (
+            <button
+              className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+              onClick={() => {
+                const p = playerRef.current;
+                if (!p) return console.error('Player not ready');
+                p.playVideo();
+                sendCommand('play', p.getCurrentTime(), Date.now() + BUFFER);
+                setIsPlaying(true);
+              }}
+              aria-label="Play"
+              type="button"
+            >
+              <CirclePlay size={60} />
+            </button>
+          )}
+          {isPlaying && (
+            <button
+              className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+              onClick={() => {
+                const p = playerRef.current;
+                if (!p) return console.error('Player not ready');
                 p.pauseVideo();
-              }, BUFFER);
-              sendCommand('pause', seek, ts);
-            }}
+                sendCommand('pause', p.getCurrentTime(), Date.now() + BUFFER);
+                setIsPlaying(false);
+              }}
+              aria-label="Pause"
+              type="button"
+            >
+              <CirclePause size={60} />
+            </button>
+          )}
+          <button
+            className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 text-blue-600 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+            onClick={onPlayNext}
+            aria-label="Next"
+            type="button"
           >
-            Pause
+            <SkipForward size={36} />
           </button>
         </div>
       )}

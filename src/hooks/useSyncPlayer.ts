@@ -11,8 +11,6 @@ export function useSyncPlayer(roomId: string) {
 
   // join the room & clock sync
   useEffect(() => {
-    socket.emit('join-room', roomId);
-
     const t0 = Date.now();
     socket.emit('sync-ping', t0);
     socket.on('sync-pong', (serverTs: number) => {
@@ -24,7 +22,7 @@ export function useSyncPlayer(roomId: string) {
       socket.off('sync-pong');
       socket.off('sync-command');
     };
-  }, [roomId, socket]);
+  }, [roomId]);
 
   // send a play/pause to the room
   function sendCommand(

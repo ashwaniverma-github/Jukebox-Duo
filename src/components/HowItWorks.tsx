@@ -40,7 +40,7 @@ const item = {
 };
 
 const HowItWorks = () => (
-  <motion.section id="how-it-works" style={{ padding: '4rem 1rem 3rem 1rem', background: 'none', fontFamily: 'var(--font-headline, sans-serif)' }}
+  <motion.section id="how-it-works" style={{ padding: '4rem 1rem 3rem 1rem', background: 'none', fontFamily: 'var(--font-inter)' }}
     initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} variants={container}
   >
     <motion.h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, marginBottom: '2.5rem' }}
@@ -55,7 +55,7 @@ const HowItWorks = () => (
         <motion.div key={i} variants={item} whileHover={{ scale: 1.04, boxShadow: '0 4px 24px #FF5A5F33' }} style={{
           flex: '1 1 220px', minWidth: 220, maxWidth: 320, background: 'rgba(255,255,255,0.04)',
           borderRadius: 18, padding: '2rem 1.5rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(10,31,68,0.08)',
-          fontFamily: 'var(--font-headline, sans-serif)'
+          fontFamily: 'var(--font-inter)'
         }}>
           <div style={{ marginBottom: 18 }}>{step.icon}</div>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>{step.title}</h3>

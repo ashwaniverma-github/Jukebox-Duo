@@ -10,6 +10,19 @@ export function getSocket(): Socket {
       path: '/api/socket',
       transports: ['websocket'],
     });
+   
+    // Add connection event listeners for debugging
+    socket.on('connect', () => {
+      console.log('[Socket] Connected successfully, ID:', socket.id);
+    });
+   
+    socket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error);
+    });
+   
+    socket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason);
+    });
   }
   return socket;
 }

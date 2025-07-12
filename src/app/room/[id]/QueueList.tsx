@@ -36,9 +36,11 @@ export default function QueueList({ roomId, onSelect, currentVideoId }: Props) {
   }, [roomId])
 
   const handlePlay = async (item: QueueItem) => {
+    console.log('[QueueList] handlePlay called for item:', item);
     const itemIndex = queue.findIndex(q => q.id === item.id)
     if (itemIndex !== -1) {
       setCurrentIndex(itemIndex)
+      console.log('[QueueList] Calling onSelect with videoId:', item.videoId);
       onSelect(item.videoId)
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
@@ -81,13 +83,6 @@ export default function QueueList({ roomId, onSelect, currentVideoId }: Props) {
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold tracking-tight">Queue</h3>
-        <button
-          className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-sm shadow hover:scale-105 transition-transform"
-          onClick={handlePlayNext}
-          disabled={queue.length === 0}
-        >
-          <ForwardIcon className="w-4 h-4" /> Play Next
-        </button>
       </div>
       {queue.length === 0 ? (
         <p className="text-gray-500 text-center py-4">Queue is empty</p>

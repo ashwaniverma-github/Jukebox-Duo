@@ -18,7 +18,7 @@ const Testimonials = () => {
   const prev = () => setIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <motion.section style={{ padding: '4rem 1rem 3rem 1rem', background: 'none', fontFamily: 'var(--font-headline, sans-serif)' }}
+    <motion.section style={{ padding: '4rem 1rem 3rem 1rem', background: 'none', fontFamily: 'var(--font-inter)' }}
       initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.7 }}
     >
       <motion.h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, marginBottom: '2.5rem' }}
@@ -35,11 +35,11 @@ const Testimonials = () => {
           style={{
             background: 'rgba(255,255,255,0.04)', borderRadius: 18, padding: '2.5rem 2rem', maxWidth: 500,
             boxShadow: '0 2px 12px rgba(10,31,68,0.08)', textAlign: 'center', minHeight: 140,
-            fontFamily: 'var(--font-headline, sans-serif)'
+            fontFamily: 'var(--font-inter)'
           }}
         >
           <p style={{ fontSize: '1.15rem', fontWeight: 500, color: '#fff', opacity: 0.95, marginBottom: 12 }}>
-            “{testimonials[index].quote}”
+            "{testimonials[index].quote}"
           </p>
           <span style={{ color: '#FF5A5F', fontWeight: 700, fontSize: '1rem' }}>— {testimonials[index].author}</span>
         </motion.div>

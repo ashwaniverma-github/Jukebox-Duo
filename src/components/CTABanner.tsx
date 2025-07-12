@@ -5,7 +5,7 @@ const CTABanner = () => (
   <motion.section
     style={{
       width: '100%', background: '#FF5A5F', color: '#fff', padding: '2.5rem 1rem', textAlign: 'center',
-      boxShadow: '0 2px 12px rgba(255,90,95,0.10)', margin: '3rem 0 0 0', fontFamily: 'var(--font-headline, sans-serif)'
+      boxShadow: '0 2px 12px rgba(255,90,95,0.10)', margin: '3rem 0 0 0', fontFamily: 'var(--font-inter)'
     }}
     initial={{ opacity: 0, y: 40 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -25,12 +25,12 @@ const CTABanner = () => (
       style={{
         background: '#fff', color: '#FF5A5F', fontWeight: 700, fontSize: '1.1rem',
         padding: '0.9rem 2.2rem', borderRadius: '2rem', textDecoration: 'none', boxShadow: '0 2px 12px rgba(10,31,68,0.10)',
-        fontFamily: 'var(--font-headline, sans-serif)'
+        fontFamily: 'var(--font-inter)'
       }}
       whileHover={{ scale: 1.06, boxShadow: '0 4px 24px #fff8' }}
       transition={{ type: 'spring', stiffness: 80, damping: 14 }}
     >
-      Create Your First Room — It’s Free
+      Create Your First Room — It's Free
     </motion.a>
   </motion.section>
 );
