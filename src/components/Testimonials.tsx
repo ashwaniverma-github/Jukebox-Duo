@@ -39,7 +39,7 @@ const Testimonials = () => {
           }}
         >
           <p style={{ fontSize: '1.15rem', fontWeight: 500, color: '#fff', opacity: 0.95, marginBottom: 12 }}>
-            "{testimonials[index].quote}"
+            &quot;{testimonials[index].quote}&quot;
           </p>
           <span style={{ color: '#FF5A5F', fontWeight: 700, fontSize: '1rem' }}>— {testimonials[index].author}</span>
         </motion.div>

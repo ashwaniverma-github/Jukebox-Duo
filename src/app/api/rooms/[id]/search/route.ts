@@ -1,10 +1,7 @@
 // app/api/rooms/[id]/search/route.ts
 import { NextResponse } from 'next/server'
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request) {
   const q = req.url ? new URL(req.url, 'http://localhost').searchParams.get('q') || '' : ''
   if (!q) return NextResponse.json([], { status: 200 })
 
@@ -16,7 +13,7 @@ export async function GET(
 
   const res = await fetch(url)
   const json = await res.json()
-  const items = (json.items || []).map((i: any) => ({
+  const items = (json.items || []).map((i: { id: { videoId: string }; snippet: { title: string; thumbnails: { default: { url: string } } } }) => ({
     videoId: i.id.videoId,
     title: i.snippet.title,
     thumbnail: i.snippet.thumbnails.default.url

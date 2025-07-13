@@ -13,9 +13,10 @@ declare global {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace YT {
   class Player {
-    constructor(elementId: string, options: any);
+    constructor(elementId: string, options: { videoId?: string; playerVars?: Record<string, unknown>; events?: Record<string, unknown> });
     loadVideoById(videoId: string): void;
     seekTo(seconds: number, allowSeekAhead: boolean): void;
     playVideo(): void;
@@ -23,6 +24,7 @@ declare namespace YT {
     mute(): void;
     unMute(): void;
     getCurrentTime(): number;
+    getDuration(): number;
     getPlayerState(): number;
     destroy(): void;
   }
@@ -46,11 +48,21 @@ interface Props {
 
 const BUFFER = 1000; // ms buffer for scheduling
 
+// Helper function to format time
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev }: Props) {
   const playerRef = useRef<YT.Player | null>(null);
   const socket = getSocket();
   const { offset, sendCommand } = useSyncPlayer(roomId);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
 
   // 1) Initialize YouTube IFrame API once
   const playerInitialized = useRef(false);
@@ -67,11 +79,15 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
         videoId,
         playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0 },
         events: {
-          onReady: (e) => {
+          onReady: () => {
             console.log('🛠️ YouTube Player Ready');
-            // Remove autoplay unlock for listeners; do not play or pause automatically
+            // Get initial duration
+            const player = playerRef.current;
+            if (player) {
+              setDuration(player.getDuration());
+            }
           },
-          onStateChange: (e) => {
+          onStateChange: (e: { data: number }) => {
             console.log('📺 StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
@@ -94,6 +110,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     console.log('🔄 videoId prop changed:', videoId);
     console.log('[SyncAudio] Loading video by ID:', videoId);
     playerRef.current.loadVideoById(videoId);
+    // Reset time states
+    setCurrentTime(0);
+    setDuration(0);
     // If the player is playing after loading, pause it to prevent double playback
     setTimeout(() => {
       if (playerRef.current && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
@@ -113,6 +132,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       console.log('[SyncAudio] Current videoId prop:', videoId);
       console.log('[SyncAudio] Loading new video:', newVideoId);
       playerRef.current?.loadVideoById(newVideoId);
+      // Reset time states
+      setCurrentTime(0);
+      setDuration(0);
     };
     socket.on('video-changed', onChange);
     console.log('[SyncAudio] video-changed listener added');
@@ -124,7 +146,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
   // 4) Sync play/pause commands
   useEffect(() => {
-    const onSync = ({ cmd, timestamp, seekTime }: any) => {
+    const onSync = ({ cmd, timestamp, seekTime }: { cmd: string; timestamp: number; seekTime: number }) => {
       const execAt = timestamp + offset;
       const delay = Math.max(execAt - Date.now(), 0);
       console.log(`🔄 Scheduling ${cmd} in ${delay}ms`);
@@ -132,12 +154,51 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
         const p = playerRef.current;
         if (!p) return;
         p.seekTo(seekTime, true);
-        cmd === 'play' ? p.playVideo() : p.pauseVideo();
+        if (cmd === 'play') p.playVideo(); else p.pauseVideo();
       }, delay);
     };
     socket.on('sync-command', onSync);
     return () => void socket.off('sync-command', onSync);
   }, [socket, offset]);
+
+  // 5) Update current time and duration
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const player = playerRef.current;
+      if (player && !isSeeking) {
+        const time = player.getCurrentTime();
+        const dur = player.getDuration();
+        if (time > 0) setCurrentTime(time);
+        if (dur > 0) setDuration(dur);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSeeking]);
+
+  // Handle seek bar change
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const player = playerRef.current;
+    if (!player || !isHost) return;
+    
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    setIsSeeking(true);
+  };
+
+  // Handle seek bar mouse up (when user finishes seeking)
+  const handleSeekEnd = () => {
+    const player = playerRef.current;
+    if (!player || !isHost) return;
+    
+    setIsSeeking(false);
+    player.seekTo(currentTime, true);
+    
+    // If currently playing, send sync command
+    if (isPlaying) {
+      sendCommand('play', currentTime, Date.now() + BUFFER);
+    }
+  };
 
   return (
     <>
@@ -152,57 +213,141 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
       {/* Host controls */}
       {isHost && (
-        <div className="mt-4 flex justify-center items-center gap-6">
-          <button
-            className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 text-blue-600 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-            onClick={onPlayPrev}
-            aria-label="Previous"
-            type="button"
-          >
-            <SkipBack size={36} />
-          </button>
-          {!isPlaying && (
+        <div className="mt-4 space-y-4">
+          {/* Play controls */}
+          <div className="flex justify-center items-center gap-6">
             <button
-              className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-              onClick={() => {
-                const p = playerRef.current;
-                if (!p) return console.error('Player not ready');
-                p.playVideo();
-                sendCommand('play', p.getCurrentTime(), Date.now() + BUFFER);
-                setIsPlaying(true);
-              }}
-              aria-label="Play"
+              className="flex items-center cursor-pointer justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+              onClick={onPlayPrev}
+              aria-label="Previous"
               type="button"
             >
-              <CirclePlay size={60} />
+              <SkipBack size={36} />
             </button>
-          )}
-          {isPlaying && (
+            {!isPlaying && (
+              <button
+                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg"
+                onClick={() => {
+                  const p = playerRef.current;
+                  if (!p) return console.error('Player not ready');
+                  p.playVideo();
+                  sendCommand('play', p.getCurrentTime(), Date.now() + BUFFER);
+                  setIsPlaying(true);
+                }}
+                aria-label="Play"
+                type="button"
+              >
+                <CirclePlay size={60} />
+              </button>
+            )}
+            {isPlaying && (
+              <button
+                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg"
+                onClick={() => {
+                  const p = playerRef.current;
+                  if (!p) return console.error('Player not ready');
+                  p.pauseVideo();
+                  sendCommand('pause', p.getCurrentTime(), Date.now() + BUFFER);
+                  setIsPlaying(false);
+                }}
+                aria-label="Pause"
+                type="button"
+              >
+                <CirclePause size={60} />
+              </button>
+            )}
             <button
-              className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-              onClick={() => {
-                const p = playerRef.current;
-                if (!p) return console.error('Player not ready');
-                p.pauseVideo();
-                sendCommand('pause', p.getCurrentTime(), Date.now() + BUFFER);
-                setIsPlaying(false);
-              }}
-              aria-label="Pause"
+              className="flex items-center cursor-pointer justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+              onClick={onPlayNext}
+              aria-label="Next"
               type="button"
             >
-              <CirclePause size={60} />
+              <SkipForward size={36} />
             </button>
-          )}
-          <button
-            className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 text-blue-600 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-            onClick={onPlayNext}
-            aria-label="Next"
-            type="button"
-          >
-            <SkipForward size={36} />
-          </button>
+          </div>
+
+          {/* Timer and Seek Bar */}
+          <div className="w-full">
+            <div className="flex items-center gap-1 mb-2">
+              <span className="text-xs font-mono text-red-500 min-w-[30px]">
+                {formatTime(currentTime)}
+              </span>
+              <div className="flex-1 relative min-w-0">
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  onMouseUp={handleSeekEnd}
+                  onTouchEnd={handleSeekEnd}
+                  className="w-full h-3 bg-red-100/40 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #f87171 0%, #f87171 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
+                  }}
+                />
+              </div>
+              <span className="text-xs font-mono text-red-500 min-w-[30px]">
+                {formatTime(duration)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Non-host view (read-only timer) */}
+      {!isHost && (
+        <div className="mt-4 w-full">
+          <div className="flex items-center gap-1 mb-2">
+            <span className="text-xs font-mono text-red-500 min-w-[30px]">
+              {formatTime(currentTime)}
+            </span>
+            <div className="flex-1 relative min-w-0">
+              <div 
+                className="w-full h-3 bg-red-100/40 rounded-lg relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(to right, #f87171 0%, #f87171 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
+                }}
+              />
+            </div>
+            <span className="text-xs font-mono text-red-500 min-w-[30px]">
+              {formatTime(duration)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Custom slider styles */}
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #f87171;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #f87171;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider:focus {
+          outline: none;
+        }
+        
+        .slider:focus::-webkit-slider-thumb {
+          box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.3);
+        }
+      `}</style>
     </>
   );
 }

@@ -30,7 +30,7 @@ const CTABanner = () => (
       whileHover={{ scale: 1.06, boxShadow: '0 4px 24px #fff8' }}
       transition={{ type: 'spring', stiffness: 80, damping: 14 }}
     >
-      Create Your First Room — It's Free
+      Create Your First Room — It&apos;s Free
     </motion.a>
   </motion.section>
 );

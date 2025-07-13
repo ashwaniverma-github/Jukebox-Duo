@@ -22,7 +22,7 @@ export function useSyncPlayer(roomId: string) {
       socket.off('sync-pong');
       socket.off('sync-command');
     };
-  }, [roomId]);
+  }, [roomId, socket]);
 
   // send a play/pause to the room
   function sendCommand(

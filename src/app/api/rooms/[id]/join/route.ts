@@ -6,7 +6,7 @@ import { authOptions } from '../../../auth/[...nextauth]/options'
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Await params before using
   const { id: roomId } = await params

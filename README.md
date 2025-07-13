@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Music Duo - Frontend
 
-## Getting Started
+A Next.js frontend for Music Duo, a real-time synchronized music listening application.
 
-First, run the development server:
+## 🎵 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Real-time synchronization** - Listen to music in perfect sync with friends
+- **Room-based listening** - Create and join music rooms
+- **Queue management** - Add, remove, and reorder songs
+- **YouTube integration** - Search and play YouTube videos
+- **Responsive design** - Works on desktop and mobile
+
+## 🏗️ Architecture
+
+This repository contains the **frontend only**. The WebSocket server is in a separate repository for better scalability and deployment flexibility.
+
+- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and Socket.IO client
+- **WebSocket Server**: Separate repository with TypeScript and Socket.IO server
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- PostgreSQL database
+- YouTube API key
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/music-duo.git
+   cd music-duo
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Configure the following variables:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://..."
+   
+   # Authentication
+   NEXTAUTH_SECRET="your-secret"
+   NEXTAUTH_URL="http://localhost:3000"
+   
+   # YouTube API
+   YOUTUBE_API_KEY="your-youtube-api-key"
+   
+   # WebSocket Server (for production)
+   NEXT_PUBLIC_SOCKET_URL="https://your-websocket-server.com"
+   ```
+
+4. **Set up the database:**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open [http://localhost:3000](http://localhost:3000)** in your browser.
+
+## 🔧 Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### WebSocket Server
+
+For local development, you'll need to run the WebSocket server separately:
+
+1. **Clone the WebSocket server repository**
+2. **Follow its setup instructions**
+3. **Set `NEXT_PUBLIC_SOCKET_URL=http://localhost:3001` in your `.env.local`**
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
+
+1. **Deploy to Vercel:**
+   ```bash
+   npx vercel
+   ```
+
+2. **Set environment variables** in Vercel dashboard:
+   - `DATABASE_URL`
+   - `NEXTAUTH_SECRET`
+   - `NEXTAUTH_URL`
+   - `YOUTUBE_API_KEY`
+   - `NEXT_PUBLIC_SOCKET_URL` (your deployed WebSocket server URL)
+
+### WebSocket Server
+
+Deploy the WebSocket server to Railway, Render, or DigitalOcean following its repository instructions.
+
+## 📁 Project Structure
+
+```
+src/
+├── app/                 # Next.js App Router pages
+│   ├── api/            # API routes
+│   ├── dashboard/      # Dashboard page
+│   └── room/           # Room pages
+├── components/         # React components
+├── hooks/             # Custom React hooks
+├── lib/               # Utility libraries
+└── types/             # TypeScript type definitions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🤝 Contributing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📄 License
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License

@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 
 const Navbar = () => (
   <motion.nav
@@ -12,9 +13,9 @@ const Navbar = () => (
       padding: '0.5rem 2rem 1.2rem 1rem', position: 'relative', zIndex: 10, fontFamily: 'var(--font-inter)'
     }}
   >
-    <a href="/" style={{ fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', color: '#fff', textDecoration: 'none' }}>
+    <Link href="/" style={{ fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', color: '#fff', textDecoration: 'none' }}>
       <span style={{ color: '#FF5A5F' }}>●</span> Music Duo
-    </a>
+    </Link>
     <div style={{ display: 'flex', alignItems: 'center', gap: '2.2rem' }}>
       <a href="#about" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>About</a>
       <a href="#features" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>Features</a>
@@ -55,11 +56,11 @@ const Hero = () => (
         Create rooms, queue your favorite YouTube tunes <br /> and play/pause in perfect sync with friends.
       </p>
       <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-        <a href="/dashboard" style={{
+        <Link href="/dashboard" style={{
           background: '#FF5A5F', color: '#fff', fontWeight: 700, fontSize: '1.1rem',
           padding: '0.9rem 2.2rem', borderRadius: '2rem', textDecoration: 'none', boxShadow: '0 2px 12px rgba(255,90,95,0.15)',
           fontFamily: 'var(--font-inter)'
-        }}>Try Now</a>
+        }}>Try Now</Link>
         <a href="#features" style={{
           background: 'rgba(255,255,255,0.08)', color: '#fff', fontWeight: 600, fontSize: '1.1rem',
           padding: '0.9rem 2.2rem', borderRadius: '2rem', textDecoration: 'none', border: '1.5px solid #fff', opacity: 0.85,
