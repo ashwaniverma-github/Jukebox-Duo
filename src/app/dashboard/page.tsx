@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Music, Plus, Users, Copy, ExternalLink, Play, Sparkles, Radio, Zap, Heart } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -22,6 +23,7 @@ interface Room {
 }
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -31,8 +33,16 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    loadRooms();
-  }, []);
+    if (status === "unauthenticated") {
+      router.replace("/api/auth/signin");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      loadRooms();
+    }
+  }, [status]);
 
   async function loadRooms() {
     try {
@@ -42,6 +52,10 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Failed to load rooms:", error);
     }
+  }
+
+  if (status === "loading" || status === "unauthenticated") {
+    return null;
   }
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -98,17 +112,7 @@ export default function Dashboard() {
         {/* Navigation */}
         <nav className="relative z-10 flex justify-between items-center p-6 lg:p-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Music className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-                <Sparkles className="w-2 h-2 text-yellow-800" />
-              </div>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-              Music Duo
-            </span>
+            
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />

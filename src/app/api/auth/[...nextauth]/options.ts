@@ -50,6 +50,11 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.sub = dbUser.id; // Set JWT sub to database ID
           token.email = dbUser.email ?? undefined;
+          token.image = dbUser.image ?? user.image ?? undefined; // <-- propagate image
+        }
+        // Fallback for first sign-in if dbUser is not found
+        if (user.image && !token.image) {
+          token.image = user.image;
         }
       }
       return token;
@@ -60,6 +65,7 @@ export const authOptions: NextAuthOptions = {
         // Add database ID to session
         session.user.id = token.sub!;
         session.user.email = token.email!;
+        session.user.image = token.image as string; // <-- propagate image
       }
       return session;
     },

@@ -17,7 +17,12 @@ export async function POST(req: Request) {
   return NextResponse.json(room)
 }
 
-export async function GET() {
-  const rooms = await prisma.room.findMany({ orderBy: { createdAt: 'desc' } })
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return NextResponse.json([], { status: 401 })
+  const rooms = await prisma.room.findMany({
+    where: { hostId: session.user.id },
+    orderBy: { createdAt: 'desc' }
+  })
   return NextResponse.json(rooms)
 }

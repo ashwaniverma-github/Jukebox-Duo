@@ -2,7 +2,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import SyncAudio from '../../../components/SyncAudio'
 import { getSocket } from '../../../lib/socket'
 import QueueList from './QueueList'
@@ -12,9 +13,14 @@ import { Dialog, DialogTrigger, DialogContent } from '../../../components/ui/dia
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, Menu, X } from 'lucide-react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 export default function RoomPage() {
   const { id: roomId } = useParams() as { id: string };
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // All hooks must be called unconditionally
   const [videoId, setVideoId] = useState('');
   const [currentSong, setCurrentSong] = useState<{ videoId: string; title: string; thumbnail?: string } | null>(null);
   const [queue, setQueue] = useState<{ id: string; videoId: string; title: string; thumbnail?: string; order: number }[]>([]);
@@ -27,9 +33,18 @@ export default function RoomPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
   const [pendingAdds, setPendingAdds] = useState<Set<string>>(new Set());
+  const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { name?: string; email?: string } } | null>(null);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      const callbackUrl = typeof window !== 'undefined' ? window.location.pathname : '/dashboard';
+      router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    }
+  }, [status, router]);
 
   // Fetch queue and set current song
   useEffect(() => {
+    if (status !== "authenticated") return;
     fetch(`/api/rooms/${roomId}/queue`)
       .then(r => r.json())
       .then((queueData) => {
@@ -41,27 +56,30 @@ export default function RoomPage() {
       });
     // Log joining room
     const socket = getSocket();
-    console.log('[Socket] Socket connected:', socket.connected);
-    console.log('[Socket] Socket ID:', socket.id);
-   
-    // Check if socket connects after a delay
-    const checkConnection = () => {
-      console.log('[Socket] Connection status after delay:', socket.connected);
-      console.log('[Socket] Socket ID after delay:', socket.id);
-    };
-    setTimeout(checkConnection, 2000);
-    
+    setTimeout(() => {
+      // Check connection after a delay
+      // (optional debug)
+    }, 2000);
     socket.emit('join-room', roomId);
-    console.log('[Socket] join-room', roomId);
-  }, [roomId]);
+  }, [roomId, status]);
+
+  // Fetch room details
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch(`/api/rooms/${roomId}`)
+      .then(r => r.json())
+      .then((data) => {
+        setRoomDetails(data);
+      });
+  }, [roomId, status]);
 
   // When videoId changes, update currentSong
   useEffect(() => {
+    if (status !== "authenticated") return;
     if (!videoId) return;
     const song = queue.find((item) => item.videoId === videoId);
     if (song) setCurrentSong(song);
-    console.log('[RoomPage] videoId changed:', videoId);
-  }, [videoId, queue]);
+  }, [videoId, queue, status]);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -76,7 +94,6 @@ export default function RoomPage() {
             setSearchError('');
             return;
           }
-          
           setSearchLoading(true);
           setSearchError('');
           try {
@@ -98,11 +115,12 @@ export default function RoomPage() {
 
   // Effect to trigger search when search term changes
   useEffect(() => {
+    if (status !== "authenticated") return;
     if (search.trim()) {
       setSearchLoading(true);
     }
     debouncedSearch(search);
-  }, [search, debouncedSearch]);
+  }, [search, debouncedSearch, status]);
 
   // Add to queue handler (optimistic update + toast)
   const handleAddToQueue = async (item: { videoId: string; title: string; thumbnail?: string }) => {
@@ -250,6 +268,10 @@ export default function RoomPage() {
     setRemovingQueueItemId(null);
   };
 
+  if (status === "loading" || status === "unauthenticated") {
+    return null;
+  }
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black relative overflow-hidden">
       {/* Animated background elements */}
@@ -266,38 +288,83 @@ export default function RoomPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full px-4 sm:px-6 py-4 sm:py-6"
       >
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 sm:gap-3"
-              >
-                <div className="relative">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <Music className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">Midnight Vibes</h1>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-red-200">
-                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span>Hosted by Alex • 6 online</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-            
-            {/* Mobile menu button */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Left: Room Info (dynamic) */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 sm:gap-3"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+              <div className="relative">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Music className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">{roomDetails?.name || 'Room'}</h1>
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-red-200">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>Hosted by {roomDetails?.host?.name || 'Unknown'}</span>
+                </div>
+              </div>
+            </motion.div>
           </div>
+          {/* Right: Profile Avatar + Dropdown */}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || 'Profile'}
+                  className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                </div>
+              )}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                sideOffset={8}
+                align="end"
+                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
+              >
+                <div className="flex flex-col items-center gap-2 px-2 py-3">
+                  {session?.user?.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || 'Profile'}
+                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                  </div>
+                </div>
+                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                <DropdownMenu.Item
+                  onSelect={() => { window.location.href = '/dashboard'; }}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                >
+                  My Dashboard
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onSelect={() => signOut({ callbackUrl: '/' })}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
+                >
+                  Logout
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
       </motion.header>
 

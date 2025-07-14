@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 const testimonials = [
   {
-    quote: "Best virtual listening party app I’ve used!",
+    quote: "Best virtual listening party app I've used!",
     author: "Jane D."
   },
   {
@@ -18,10 +18,10 @@ const Testimonials = () => {
   const prev = () => setIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <motion.section style={{ padding: '4rem 1rem 3rem 1rem', background: 'none', fontFamily: 'var(--font-inter)' }}
+    <motion.section style={{ padding: '4rem 1rem 3rem 1rem', fontFamily: 'var(--font-inter)' }}
       initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.7 }}
     >
-      <motion.h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, marginBottom: '2.5rem' }}
+      <motion.h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, marginBottom: '2.5rem', color: '#fff' }}
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
       >
         Testimonials
@@ -41,12 +41,12 @@ const Testimonials = () => {
           <p style={{ fontSize: '1.15rem', fontWeight: 500, color: '#fff', opacity: 0.95, marginBottom: 12 }}>
             &quot;{testimonials[index].quote}&quot;
           </p>
-          <span style={{ color: '#FF5A5F', fontWeight: 700, fontSize: '1rem' }}>— {testimonials[index].author}</span>
+          <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '1rem' }}>— {testimonials[index].author}</span>
         </motion.div>
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-          <button aria-label="Previous" onClick={prev} style={{ background: 'none', border: 'none', color: '#FF5A5F', fontSize: 28, cursor: 'pointer' }}>&#8592;</button>
+          <button aria-label="Previous" onClick={prev} className="bg-transparent border-none text-red-500 text-2xl cursor-pointer" style={{ fontFamily: 'var(--font-inter)' }}>&#8592;</button>
           <span style={{ color: '#fff', opacity: 0.7 }}>{index + 1} / {testimonials.length}</span>
-          <button aria-label="Next" onClick={next} style={{ background: 'none', border: 'none', color: '#FF5A5F', fontSize: 28, cursor: 'pointer' }}>&#8594;</button>
+          <button aria-label="Next" onClick={next} className="bg-transparent border-none text-red-500 text-2xl cursor-pointer" style={{ fontFamily: 'var(--font-inter)' }}>&#8594;</button>
         </div>
       </div>
     </motion.section>

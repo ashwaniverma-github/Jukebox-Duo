@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 const Footer = () => (
   <motion.footer
     style={{
-      background: 'rgba(10,31,68,0.98)', color: '#fff', padding: '2rem 1rem 1.5rem 1rem', textAlign: 'center',
-      fontSize: '1rem', marginTop: '3rem', borderTop: '1.5px solid #fff', opacity: 0.98,
+      background: 'rgba(0,0,0,0.8)', color: '#fff', padding: '2rem 1rem 1.5rem 1rem', textAlign: 'center',
+      fontSize: '1rem', marginTop: '3rem', borderTop: '1.5px solid rgba(255,255,255,0.1)', opacity: 0.98,
       fontFamily: 'var(--font-inter)'
     }}
     initial={{ opacity: 0, y: 40 }}
