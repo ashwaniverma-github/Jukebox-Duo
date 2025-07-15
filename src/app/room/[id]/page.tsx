@@ -355,59 +355,59 @@ export default function RoomPage() {
               </DialogContent>
             </Dialog>
             {/* Profile Avatar + Dropdown */}
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                {session?.user?.image ? (
-                  <img
-                    src={session.user.image}
-                    alt={session.user.name || 'Profile'}
-                    className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
-                  />
-                ) : (
-                  <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
-                    {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                  </div>
-                )}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  sideOffset={8}
-                  align="end"
-                  className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-                >
-                  <div className="flex flex-col items-center gap-2 px-2 py-3">
-                    {session?.user?.image ? (
-                      <img
-                        src={session.user.image}
-                        alt={session.user.name || 'Profile'}
-                        className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
-                        {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                      </div>
-                    )}
-                    <div className="text-center">
-                      <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                      <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || 'Profile'}
+                  className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                </div>
+              )}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                sideOffset={8}
+                align="end"
+                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
+              >
+                <div className="flex flex-col items-center gap-2 px-2 py-3">
+                  {session?.user?.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || 'Profile'}
+                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
                     </div>
+                  )}
+                  <div className="text-center">
+                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
                   </div>
-                  <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
-                  <DropdownMenu.Item
-                    onSelect={() => { window.location.href = '/dashboard'; }}
-                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
-                  >
-                    My Dashboard
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onSelect={() => signOut({ callbackUrl: '/' })}
-                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
-                  >
-                    Logout
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+                </div>
+                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                <DropdownMenu.Item
+                  onSelect={() => { window.location.href = '/dashboard'; }}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                >
+                  My Dashboard
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onSelect={() => signOut({ callbackUrl: '/' })}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
+                >
+                  Logout
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
           </div>
         </div>
       </motion.header>

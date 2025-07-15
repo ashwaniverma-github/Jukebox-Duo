@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share, Share2 } from "lucide-react";
+import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -114,7 +114,7 @@ export default function Dashboard() {
         alert(data.error || 'Failed to delete room');
       }
     } catch (error) {
-      alert('Failed to delete room');
+      console.error(`Failed to delete room ${error}`)
     } finally {
       setIsDeleting(false);
     }
