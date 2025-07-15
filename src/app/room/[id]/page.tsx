@@ -12,7 +12,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogTrigger, DialogContent } from '../../../components/ui/dialog';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Search, Users, Music, Menu, X } from 'lucide-react'
+import { Search, Users, Music, X, Share2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 export default function RoomPage() {
@@ -34,6 +34,9 @@ export default function RoomPage() {
   const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
   const [pendingAdds, setPendingAdds] = useState<Set<string>>(new Set());
   const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { name?: string; email?: string } } | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : '';
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -311,60 +314,101 @@ export default function RoomPage() {
               </div>
             </motion.div>
           </div>
-          {/* Right: Profile Avatar + Dropdown */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              {session?.user?.image ? (
-                <img
-                  src={session.user.image}
-                  alt={session.user.name || 'Profile'}
-                  className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
-                />
-              ) : (
-                <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
-                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
+          {/* Right: Invite Button + Profile Avatar */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Invite Button */}
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="p-2 rounded-full bg-white/10 hover:bg-red-700/30 text-white"
+                  onClick={() => setInviteOpen(true)}
+                  aria-label="Invite"
+                >
+                  <Share2 className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <Share2 className="w-6 h-6 text-red-400" />
+                  <h2 className="text-lg font-bold">Invite to Room</h2>
                 </div>
-              )}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                sideOffset={8}
-                align="end"
-                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-              >
-                <div className="flex flex-col items-center gap-2 px-2 py-3">
-                  {session?.user?.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || 'Profile'}
-                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
-                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                <div className="flex items-center gap-3 mt-6">
+                  <input
+                    type="text"
+                    value={shareLink}
+                    readOnly
+                    className="flex-1 h-12 bg-white/10 border-white/20 text-white text-sm px-4 rounded-xl backdrop-blur-sm"
+                  />
+                  <Button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(shareLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="h-12 px-4 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    {copied ? 'Copied!' : 'Copy'}
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">Share this link to invite others to your music room.</div>
+              </DialogContent>
+            </Dialog>
+            {/* Profile Avatar + Dropdown */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name || 'Profile'}
+                    className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                    {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
-                </div>
-                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
-                <DropdownMenu.Item
-                  onSelect={() => { window.location.href = '/dashboard'; }}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                )}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  sideOffset={8}
+                  align="end"
+                  className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
                 >
-                  My Dashboard
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onSelect={() => signOut({ callbackUrl: '/' })}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
-                >
-                  Logout
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+                  <div className="flex flex-col items-center gap-2 px-2 py-3">
+                    {session?.user?.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || 'Profile'}
+                        className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                        {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                      <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                    </div>
+                  </div>
+                  <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                  <DropdownMenu.Item
+                    onSelect={() => { window.location.href = '/dashboard'; }}
+                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                  >
+                    My Dashboard
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onSelect={() => signOut({ callbackUrl: '/' })}
+                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
+                  >
+                    Logout
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </div>
         </div>
       </motion.header>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart } from "lucide-react";
+import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share, Share2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -23,13 +23,15 @@ interface Room {
 }
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -95,6 +97,27 @@ export default function Dashboard() {
 
   const joinRoom = (roomId: string) => {
     router.push(`/room/${roomId}`);
+  };
+
+  // Add this handler inside the Dashboard component
+  const handleDeleteRoom = async (roomId: string) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/rooms/${roomId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setRooms((prev) => prev.filter((room) => room.id !== roomId));
+        setRoomToDelete(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete room');
+      }
+    } catch (error) {
+      alert('Failed to delete room');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -232,8 +255,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </div>
-                      
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mt-2">
                         <Button
                           onClick={() => joinRoom(room.id)}
                           className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
@@ -249,7 +271,15 @@ export default function Dashboard() {
                           }}
                           className="px-4 h-10 bg-white/10 hover:bg-red-900/40 text-white border border-white/20 rounded-lg transition-all duration-200"
                         >
-                          <Copy className="w-4 h-4" />
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                        {/* Delete button for host */}
+                        <Button
+                          onClick={() => setRoomToDelete(room)}
+                          className="px-4 h-10 bg-red-700 hover:bg-red-900 text-white border border-red-800 rounded-lg transition-all duration-200"
+                          variant="destructive"
+                        >
+                          Delete
                         </Button>
                       </div>
                     </div>
@@ -319,6 +349,38 @@ export default function Dashboard() {
             >
               <Play className="w-4 h-4 mr-2" />
               Join Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!roomToDelete} onOpenChange={(open) => { if (!open) setRoomToDelete(null); }}>
+        <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
+          <DialogHeaderUI>
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
+              Delete Room
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to delete the room <span className="font-semibold text-white">{roomToDelete?.name}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeaderUI>
+          <DialogFooter className="flex gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setRoomToDelete(null)}
+              className="flex-1 h-11 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => roomToDelete && handleDeleteRoom(roomToDelete.id)}
+              className="flex-1 h-11 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
+              variant="destructive"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

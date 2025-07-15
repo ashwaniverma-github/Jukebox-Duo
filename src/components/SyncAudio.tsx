@@ -88,13 +88,13 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             }
           },
           onStateChange: (e: { data: number }) => {
-            console.log('📺 StateChange:', e.data);
+            console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
           },
         },
       });
-      console.log('✅ Player instance created');
+      console.log('Player instance created');
     };
     return () => {
       destroyed = true;
