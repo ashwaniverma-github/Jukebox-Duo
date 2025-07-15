@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/api/auth/signin");
+      router.replace("/signin");
     }
   }, [status, router]);
 

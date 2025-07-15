@@ -24,7 +24,7 @@ const Navbar = () => {
         <a href="#contact" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>Contact</a>
         <button
           onClick={() => router.push('/signin')}
-          className="ml-6 bg-white text-red-500 font-bold text-[1.05rem] px-6 py-2 rounded-full shadow-md transition-colors duration-150 hover:bg-red-100"
+          className="ml-6 cursor-pointer bg-white text-red-500 font-bold text-[1.05rem] px-6 py-2 rounded-full shadow-md transition-colors duration-150 hover:bg-red-100"
           style={{ fontFamily: 'var(--font-inter)' }}
         >
           Sign Up
@@ -59,7 +59,7 @@ const Hero = () => {
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => router.push('/signin')}
-            className="bg-gradient-to-r from-red-700 to-red-500 text-white font-bold text-[1.1rem] px-9 py-3 rounded-full shadow-md hover:from-red-800 hover:to-red-600 transition-all duration-200"
+            className="cursor-pointer bg-gradient-to-r from-red-700 to-red-500 text-white font-bold text-[1.1rem] px-9 py-3 rounded-full shadow-md hover:from-red-800 hover:to-red-600 transition-all duration-200"
             style={{ fontFamily: 'var(--font-inter)' }}
           >
             Try Now
