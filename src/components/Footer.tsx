@@ -20,7 +20,7 @@ const Footer = () => (
       <a href="#contact" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Contact</a>
     </nav>
     <div style={{ color: '#fff', opacity: 0.7, fontSize: '0.95rem' }}>
-      © 2025 Music Duo. Built with Next.js, Socket.IO, and YouTube IFrame API.
+      © 2025 MusicDuo. 
     </div>
   </motion.footer>
 );

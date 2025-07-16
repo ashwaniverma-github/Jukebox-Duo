@@ -1,33 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.1 }}
-      style={{
-        width: '100%', maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.5rem 2rem 1.2rem 1rem', position: 'relative', zIndex: 10, fontFamily: 'var(--font-inter)'
-      }}
+      className="fixed top-0 left-0 w-full  flex items-center justify-between px-4 py-3 md:py-5 font-sans bg backdrop-blur-lg  z-1"
     >
-      <Link href="/" style={{ fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', color: '#fff', textDecoration: 'none' }}>
-        <span style={{ color: '#ef4444' }}>●</span> Music Duo
-      </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2.2rem' }}>
-        <a href="#about" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>About</a>
-        <a href="#features" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>Features</a>
-        <a href="#contact" style={{ color: '#fff', opacity: 0.85, fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}>Contact</a>
+      {/* Left: Hamburger + Logo (mobile), Logo only (desktop) */}
+      <div className="flex items-center flex-1 md:flex-none">
+        {/* Hamburger (mobile only) */}
+        <button
+          aria-label="Open menu"
+          className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 md:hidden"
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-white">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <Link href="/" className="font-extrabold text-xl tracking-tight text-white flex items-center gap-2 md:ml-0 ml-2">
+          <h1 className="text-red-500 text-md flex items-center justify-center">Music Duo</h1>
+        </Link>
+        {/* Dropdown menu (mobile only) */}
+        {menuOpen && (
+          <div className="absolute top-14 left-2 bg-gray-900 border border-white/10 rounded-xl shadow-lg py-2 w-44 flex flex-col items-stretch z-50 animate-fade-in">
+            <a href="#about" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>About</a>
+            <a href="#features" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Features</a>
+            <a href="#contact" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Contact</a>
+          </div>
+        )}
+      </div>
+
+      {/* Center: Links (desktop only) */}
+      <div className="hidden md:flex flex-1 items-center justify-center gap-8">
+        <a href="#about" className="text-white opacity-85 font-semibold text-base hover:underline">About</a>
+        <a href="#features" className="text-white opacity-85 font-semibold text-base hover:underline">Features</a>
+        <a href="#contact" className="text-white opacity-85 font-semibold text-base hover:underline">Contact</a>
+      </div>
+
+      {/* Right: Sign In/Up (always right) */}
+      <div className="flex-1 flex items-center justify-end">
         <button
           onClick={() => router.push('/signin')}
-          className="ml-6 cursor-pointer bg-white text-red-500 font-bold text-[1.05rem] px-6 py-2 rounded-full shadow-md transition-colors duration-150 hover:bg-red-100"
+          className="ml-2 md:ml-0 cursor-pointer bg-white text-red-500 font-bold text-base px-5 py-2 rounded-full shadow-md transition-colors duration-150 hover:bg-red-100"
           style={{ fontFamily: 'var(--font-inter)' }}
         >
-          Sign Up
+          Sign In
         </button>
       </div>
     </motion.nav>
@@ -37,22 +63,23 @@ const Navbar = () => {
 const Hero = () => {
   const router = useRouter();
   return (
-    <section style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      minHeight: '80vh', padding: '0 1rem 2rem 1rem', textAlign: 'center', position: 'relative',
-      fontFamily: 'var(--font-inter)',
-      paddingTop: 0
-    }}>
+    <section
+      className="flex flex-col items-center justify-center min-h-[80vh] pt-30 md:pt-40 px-4 pb-8 text-center relative font-sans"
+      style={{ fontFamily: 'var(--font-inter)' }}
+    >
       <Navbar />
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
-        style={{ paddingTop: 20 }}
       >
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px', marginBottom: '1rem', color: '#fff' }}>
-          Listen Together, No Matter Where You Are
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 text-white">
+          Listen Together
         </h1>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-white">
+          No Matter Where You Are
+        </h2>
+        
         <p style={{ fontSize: '1.25rem', maxWidth: 600, margin: '5px auto 2rem auto', color: '#fff', opacity: 0.9 , gap: '10px' }}>
           Create rooms, queue your favorite YouTube tunes <br /> and play/pause in perfect sync with friends.
         </p>

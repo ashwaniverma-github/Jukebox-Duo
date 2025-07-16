@@ -6,6 +6,7 @@ let socket: Socket;
 
 export function getSocket(): Socket {
   if (!socket) {
+    
     // Use environment variable for production, fallback to localhost for development
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
     
