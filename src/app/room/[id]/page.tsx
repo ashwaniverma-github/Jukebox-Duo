@@ -468,19 +468,19 @@ export default function RoomPage() {
       </AnimatePresence>
 
       {/* Main content */}
-      <main className="relative z-10 px-4 sm:px-6 pb-8">
+      <main className="relative z-10 px-2 sm:px-4 pb-6">
         <div className="max-w-7xl mx-auto">
           {/* Search Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mb-6 sm:mb-8"
+            className="mb-4 sm:mb-8"
           >
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
               <DialogTrigger asChild>
                 <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group">
-                  <CardContent className="p-4 sm:p-6">
+                  <CardContent className="p-3 sm:p-6">
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-700 to-red-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
@@ -503,15 +503,15 @@ export default function RoomPage() {
                   </CardContent>
                 </Card>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl w-full mx-4 bg-[#1a0d2e] border-white/20 text-white">
+              <DialogContent className="w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 bg-[#1a0d2e] border-white/20 text-white p-2 sm:p-6 rounded-xl">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center">
                       <Search className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold">Search Music Library</h2>
-                      <p className="text-sm text-red-200">Find and add songs to your queue</p>
+                      <h2 className="text-lg sm:text-xl font-bold">Search Music Library</h2>
+                      <p className="text-xs sm:text-sm text-red-200">Find and add songs to your queue</p>
                     </div>
                   </div>
                   
@@ -519,15 +519,15 @@ export default function RoomPage() {
                     <div className="relative">
                       <input
                         type="text"
-                        className="w-full rounded-xl px-4 py-3 pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-red-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                        className="w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-red-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-sm sm:text-base"
                         placeholder="Search for songs, artists, or albums..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         autoFocus
                       />
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-300" />
+                      <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-300" />
                       {searchLoading && (
-                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
                           <div className="w-5 h-5 border-2 border-red-300/30 border-t-red-300 rounded-full animate-spin"></div>
                         </div>
                       )}
@@ -535,44 +535,44 @@ export default function RoomPage() {
                   </div>
                   
                   {searchError && (
-                    <div className="p-3 bg-red-700/20 border border-red-700/30 rounded-lg text-red-200 text-sm">
+                    <div className="p-2 sm:p-3 bg-red-700/20 border border-red-700/30 rounded-lg text-red-200 text-xs sm:text-sm">
                       {searchError}
                     </div>
                   )}
                   
-                  <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                  <div className="max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar">
                     {searchResults.length === 0 && !searchLoading && !search.trim() && (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Music className="w-8 h-8 text-red-300" />
+                      <div className="text-center py-8 sm:py-12">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Music className="w-6 h-6 sm:w-8 sm:h-8 text-red-300" />
                         </div>
-                        <p className="text-red-200 font-medium">Start typing to search</p>
-                        <p className="text-sm text-red-300 mt-1">Search for songs, artists, or albums</p>
+                        <p className="text-red-200 font-medium text-sm sm:text-base">Start typing to search</p>
+                        <p className="text-xs sm:text-sm text-red-300 mt-1">Search for songs, artists, or albums</p>
                       </div>
                     )}
                     {searchResults.length === 0 && !searchLoading && search.trim() && (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Search className="w-8 h-8 text-red-300" />
+                      <div className="text-center py-8 sm:py-12">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Search className="w-6 h-6 sm:w-8 sm:h-8 text-red-300" />
                         </div>
-                        <p className="text-red-200 font-medium">No results found</p>
-                        <p className="text-sm text-red-300 mt-1">Try a different search term</p>
+                        <p className="text-red-200 font-medium text-sm sm:text-base">No results found</p>
+                        <p className="text-xs sm:text-sm text-red-300 mt-1">Try a different search term</p>
                       </div>
                     )}
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {searchResults.map((item, idx) => (
                         <motion.div
                           key={item.videoId}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.1 }}
-                          className="flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-all duration-200 group cursor-pointer"
+                          className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-all duration-200 group cursor-pointer"
                         >
                           <div className="relative flex-shrink-0">
                             <img 
                               src={item.thumbnail} 
                               alt={item.title} 
-                              className="w-16 h-16 rounded-lg shadow-lg object-cover" 
+                              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover" 
                             />
                             <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -581,13 +581,13 @@ export default function RoomPage() {
                             </div>
                           </div>
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            <h4 className="font-semibold text-white text-base leading-tight line-clamp-2 mb-1">{item.title}</h4>
-                            <p className="text-sm text-red-200 opacity-80">Click to add to queue</p>
+                            <h4 className="font-semibold text-white text-xs sm:text-base leading-tight line-clamp-2 mb-1">{item.title}</h4>
+                            <p className="text-xs sm:text-sm text-red-200 opacity-80">Click to add to queue</p>
                           </div>
                           <div className="flex-shrink-0">
                             <Button
                               onClick={() => handleAddToQueue(item)}
-                              className="cursor-pointer bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-medium px-4 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 text-sm whitespace-nowrap"
+                              className="cursor-pointer bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-medium px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                             >
                               <span className="text-lg font-bold">+</span>
                               <span>Add</span>
@@ -603,7 +603,7 @@ export default function RoomPage() {
           </motion.div>
 
           {/* Player and Queue Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
             {/* Player Section */}
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
@@ -626,7 +626,7 @@ export default function RoomPage() {
                 )}
                 
                 <CardContent className="relative z-10 p-0">
-                  <div className="aspect-video sm:aspect-[21/9] flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+                  <div className="aspect-video sm:aspect-[21/9] flex items-center justify-center min-h-[180px] sm:min-h-[300px] xl:min-h-[400px]">
                     {videoId ? (
                       <SyncAudio
                         roomId={roomId}
@@ -651,10 +651,10 @@ export default function RoomPage() {
                     <motion.div 
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="absolute left-4 sm:left-6 bottom-4 sm:bottom-6 right-4 sm:right-6"
+                      className="absolute left-2 sm:left-6 bottom-2 sm:bottom-6 right-2 sm:right-6"
                     >
-                      <div className="bg-black/60 backdrop-blur-sm rounded-xl p-6 sm:p-4 border border-white/20 mt-4">
-                        <div className="flex items-center   gap-3">
+                      <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 mt-2 sm:mt-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
                           <img 
                             src={currentSong.thumbnail} 
                             alt={currentSong.title}
@@ -682,17 +682,17 @@ export default function RoomPage() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="xl:col-span-1"
             >
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl h-[600px] flex flex-col">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl h-[350px] sm:h-[450px] xl:h-[600px] flex flex-col">
                 {/* Queue Header */}
-                <div className="p-6 pb-4 border-b border-white/10">
+                <div className="p-3 sm:p-6 pb-2 sm:pb-4 border-b border-white/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
                         <Music className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white">Up Next</h3>
-                        <p className="text-sm text-red-200">{queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue</p>
+                        <h3 className="text-base sm:text-lg font-bold text-white">Up Next</h3>
+                        <p className="text-xs sm:text-sm text-red-200">{queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue</p>
                       </div>
                     </div>
                     <button
@@ -706,7 +706,7 @@ export default function RoomPage() {
                 
                 {/* Queue Content */}
                 <div className={`flex-1 overflow-y-auto custom-scrollbar ${isQueueCollapsed ? 'hidden xl:block' : 'block'}`}>
-                  <div className="p-6 pt-4">
+                  <div className="p-3 sm:p-6 pt-2 sm:pt-4">
                     <QueueList 
                       roomId={roomId} 
                       queue={queue}

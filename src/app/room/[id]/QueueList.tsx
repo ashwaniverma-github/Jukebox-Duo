@@ -163,7 +163,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center  space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
