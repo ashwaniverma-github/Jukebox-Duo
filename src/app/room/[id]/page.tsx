@@ -651,9 +651,9 @@ export default function RoomPage() {
                     <motion.div 
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="absolute left-2 sm:left-6 bottom-2 sm:bottom-6 right-2 sm:right-6"
+                      className="absolute left-2 sm:left-6 bottom-0.5  sm:bottom-4 right-2 sm:right-6"
                     >
-                      <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 mt-2 sm:mt-4">
+                      <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 mt-16 sm:mt-20">
                         <div className="flex items-center gap-2 sm:gap-3">
                           <img 
                             src={currentSong.thumbnail} 
