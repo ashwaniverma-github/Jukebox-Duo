@@ -1,7 +1,7 @@
 // app/room/[id]/page.tsx
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import SyncAudio from '../../../components/SyncAudio'
@@ -24,6 +24,9 @@ export default function RoomPage() {
   const [videoId, setVideoId] = useState('');
   const [currentSong, setCurrentSong] = useState<{ videoId: string; title: string; thumbnail?: string } | null>(null);
   const [queue, setQueue] = useState<{ id: string; videoId: string; title: string; thumbnail?: string; order: number }[]>([]);
+  const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
+  const currentQueueIndexRef = useRef(currentQueueIndex);
+  useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<{ videoId: string; title: string; thumbnail?: string }[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -50,11 +53,15 @@ export default function RoomPage() {
     if (status !== "authenticated") return;
     fetch(`/api/rooms/${roomId}/queue`)
       .then(r => r.json())
-      .then((queueData) => {
-        setQueue(queueData);
-        if (queueData.length > 0) {
-          setVideoId(queueData[0].videoId);
-          setCurrentSong(queueData[0]);
+      .then((data) => {
+        setQueue(data.queue);
+        setCurrentQueueIndex(data.currentQueueIndex);
+        if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
+          setVideoId(data.queue[data.currentQueueIndex].videoId);
+          setCurrentSong(data.queue[data.currentQueueIndex]);
+        } else {
+          setVideoId('');
+          setCurrentSong(null);
         }
       });
     // Log joining room
@@ -76,13 +83,16 @@ export default function RoomPage() {
       });
   }, [roomId, status]);
 
-  // When videoId changes, update currentSong
+  // When queue or currentQueueIndex changes, update currentSong and videoId
   useEffect(() => {
-    if (status !== "authenticated") return;
-    if (!videoId) return;
-    const song = queue.find((item) => item.videoId === videoId);
-    if (song) setCurrentSong(song);
-  }, [videoId, queue, status]);
+    if (queue.length > 0 && queue[currentQueueIndex]) {
+      setCurrentSong(queue[currentQueueIndex]);
+      setVideoId(queue[currentQueueIndex].videoId);
+    } else {
+      setCurrentSong(null);
+      setVideoId('');
+    }
+  }, [queue, currentQueueIndex]);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -173,46 +183,54 @@ export default function RoomPage() {
   };
 
   // Play next song handler
-  const handlePlayNext = () => {
-    if (!videoId || queue.length === 0) return;
-    const currentIdx = queue.findIndex(item => item.videoId === videoId);
-    if (currentIdx !== -1 && currentIdx < queue.length - 1) {
-      const nextVideoId = queue[currentIdx + 1].videoId;
-      setVideoId(nextVideoId);
-      console.log('[Socket] emitting change-video (next)', { roomId, newVideoId: nextVideoId });
-      getSocket().emit('change-video', { roomId, newVideoId: nextVideoId });
+  const handlePlayNext = async () => {
+    const idx = currentQueueIndexRef.current;
+    if (queue.length === 0) return;
+    if (idx < queue.length - 1) {
+      const newIndex = idx + 1;
+      setCurrentQueueIndex(newIndex);
+      // Update backend
+      await fetch(`/api/rooms/${roomId}/queue`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentIndex: newIndex })
+      });
+      // Emit change-video event
+      getSocket().emit('change-video', { roomId, newVideoId: queue[newIndex].videoId });
     }
   };
 
   // Play previous song handler
-  const handlePlayPrev = () => {
-    if (!videoId || queue.length === 0) return;
-    const currentIdx = queue.findIndex(item => item.videoId === videoId);
-    if (currentIdx > 0) {
-      const prevVideoId = queue[currentIdx - 1].videoId;
-      setVideoId(prevVideoId);
-      console.log('[Socket] emitting change-video (prev)', { roomId, newVideoId: prevVideoId });
-      getSocket().emit('change-video', { roomId, newVideoId: prevVideoId });
+  const handlePlayPrev = async () => {
+    if (queue.length === 0) return;
+    if (currentQueueIndex > 0) {
+      const newIndex = currentQueueIndex - 1;
+      setCurrentQueueIndex(newIndex);
+      // Update backend
+      await fetch(`/api/rooms/${roomId}/queue`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentIndex: newIndex })
+      });
+      // Emit change-video event
+      getSocket().emit('change-video', { roomId, newVideoId: queue[newIndex].videoId });
     }
   };
 
   // Listen for video-changed event from socket
   useEffect(() => {
     const socket = getSocket();
-    console.log('[Socket] Setting up video-changed listener for room:', roomId);
     const handler = (newVideoId: string) => {
-      console.log('[Socket] received video-changed', newVideoId);
-      console.log('[Socket] Current videoId before change:', videoId);
-      setVideoId(newVideoId);
-      console.log('[Socket] setVideoId called with:', newVideoId);
+      const idx = queue.findIndex(item => item.videoId === newVideoId);
+      if (idx !== -1) {
+        setCurrentQueueIndex(idx);
+      }
     };
     socket.on('video-changed', handler);
-    console.log('[Socket] video-changed listener added');
     return () => {
-      console.log('[Socket] Removing video-changed listener');
       socket.off('video-changed', handler);
     };
-  }, [roomId]);
+  }, [roomId, queue]);
 
   // Listen for queue-updated event from socket
   useEffect(() => {
@@ -710,11 +728,20 @@ export default function RoomPage() {
                     <QueueList 
                       roomId={roomId} 
                       queue={queue}
-                      onSelect={(id) => {
-                        setVideoId(id);
-                        console.log('[Socket] emitting change-video', { roomId, newVideoId: id });
-                        getSocket().emit('change-video', { roomId, newVideoId: id });
-                      }} 
+                      onSelect={async (id) => {
+                        const idx = queue.findIndex(item => item.id === id);
+                        if (idx !== -1) {
+                          setCurrentQueueIndex(idx);
+                          // Update backend
+                          await fetch(`/api/rooms/${roomId}/queue`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ currentIndex: idx })
+                          });
+                          // Emit change-video event
+                          getSocket().emit('change-video', { roomId, newVideoId: queue[idx].videoId });
+                        }
+                      }}
                       currentVideoId={videoId} 
                       onRemove={handleRemoveFromQueue}
                       removingQueueItemId={removingQueueItemId}

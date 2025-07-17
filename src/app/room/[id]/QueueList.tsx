@@ -37,8 +37,8 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
     const itemIndex = queue.findIndex(q => q.id === item.id)
     if (itemIndex !== -1) {
       setCurrentIndex(itemIndex)
-      console.log('[QueueList] Calling onSelect with videoId:', item.videoId);
-      onSelect(item.videoId)
+      console.log('[QueueList] Calling onSelect with id:', item.id);
+      onSelect(item.id)
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

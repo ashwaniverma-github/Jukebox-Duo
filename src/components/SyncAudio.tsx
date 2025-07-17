@@ -63,6 +63,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // true on initial mount
 
   // 1) Initialize YouTube IFrame API once
   const playerInitialized = useRef(false);
@@ -85,12 +86,20 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             const player = playerRef.current;
             if (player) {
               setDuration(player.getDuration());
+              // Set loading false if not buffering
+              const state = player.getPlayerState ? player.getPlayerState() : null;
+              if (state !== window.YT.PlayerState.BUFFERING) {
+                setIsLoading(false);
+              }
             }
           },
           onStateChange: (e: { data: number }) => {
             console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
+            // Set loading state
+            if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
+            else if (e.data === window.YT.PlayerState.PLAYING || e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsLoading(false);
             // Auto-advance to next song if host and song ended
             if (e.data === window.YT.PlayerState.ENDED && isHost && typeof onPlayNext === 'function') {
               onPlayNext();
@@ -117,6 +126,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     // Reset time states
     setCurrentTime(0);
     setDuration(0);
+    setIsLoading(true); // Set loading true when video changes
     // If the player is playing after loading, pause it to prevent double playback
     setTimeout(() => {
       if (playerRef.current && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
@@ -230,7 +240,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             </button>
             {!isPlaying && (
               <button
-                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg"
+                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg relative"
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p) return console.error('Player not ready');
@@ -240,13 +250,23 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                 }}
                 aria-label="Play"
                 type="button"
+                disabled={isLoading}
               >
-                <CirclePlay size={60} />
+                {isLoading ? (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <svg className="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  </span>
+                ) : (
+                  <CirclePlay size={60} />
+                )}
               </button>
             )}
             {isPlaying && (
               <button
-                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg"
+                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg relative"
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p) return console.error('Player not ready');
@@ -256,8 +276,18 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                 }}
                 aria-label="Pause"
                 type="button"
+                disabled={isLoading}
               >
-                <CirclePause size={60} />
+                {isLoading ? (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <svg className="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  </span>
+                ) : (
+                  <CirclePause size={60} />
+                )}
               </button>
             )}
             <button

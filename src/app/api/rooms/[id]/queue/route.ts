@@ -31,7 +31,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     where: { roomId },
     orderBy: { order: 'asc' }
   })
-  return NextResponse.json(items)
+  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { currentQueueIndex: true } });
+  const currentQueueIndex = room?.currentQueueIndex ?? 0;
+  return NextResponse.json({ queue: items, currentQueueIndex });
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
