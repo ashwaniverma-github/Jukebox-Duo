@@ -91,6 +91,10 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
+            // Auto-advance to next song if host and song ended
+            if (e.data === window.YT.PlayerState.ENDED && isHost && typeof onPlayNext === 'function') {
+              onPlayNext();
+            }
           },
         },
       });

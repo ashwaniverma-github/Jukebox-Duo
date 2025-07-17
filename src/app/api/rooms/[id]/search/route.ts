@@ -18,6 +18,6 @@ export async function GET(req: Request) {
     title: i.snippet.title,
     thumbnail: i.snippet.thumbnails.default.url
   }))
-
+  console.log("items", items)
   return NextResponse.json(items)
 }
