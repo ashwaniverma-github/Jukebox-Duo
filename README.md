@@ -17,7 +17,7 @@ All these features are powered by the WebSocket server for real-time communicati
 This repository contains the **frontend only**. The WebSocket server is in a separate repository for better scalability and deployment flexibility.
 
 - **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and Socket.IO client
-- **WebSocket Server**: [JukeboxDuo-Websocket](https://github.com/ashwaniverma-github/Music-Duo-Websocket) - Separate repository with TypeScript and Socket.IO server
+- **WebSocket Server**: [JukeboxDuo-Websocket](https://github.com/ashwaniverma-github/Jukebox-Duo-Websocket) - Separate repository with TypeScript and Socket.IO server
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js
 
@@ -47,22 +47,7 @@ This repository contains the **frontend only**. The WebSocket server is in a sep
    ```bash
    cp .env.example .env.local
    ```
-   
-   Configure the following variables:
-   ```env
-   # Database
-   DATABASE_URL="postgresql://..."
-   
-   # Authentication
-   NEXTAUTH_SECRET="your-secret"
-   NEXTAUTH_URL="http://localhost:3000"
-   
-   # YouTube API
-   YOUTUBE_API_KEY="your-youtube-api-key"
-   
-   # WebSocket Server (for production)
-   NEXT_PUBLIC_SOCKET_URL="https://your-websocket-server.com"
-   ```
+   See `.env.example` for required keys.
 
 4. **Set up the database:**
    ```bash
@@ -92,7 +77,7 @@ For local development, you'll need to run the WebSocket server separately:
 
 1. **Clone the WebSocket server repository:**
    ```bash
-   git clone https://github.com/ashwaniverma-github/Music-Duo-Websocket.git
+   git clone https://github.com/ashwaniverma-github/Jukebox-Duo-Websocket.git
    ```
 2. **Follow its setup instructions**
 3. **Set `NEXT_PUBLIC_SOCKET_URL=http://localhost:3001` in your `.env.local`**
@@ -115,7 +100,7 @@ For local development, you'll need to run the WebSocket server separately:
 
 ### WebSocket Server
 
-Deploy the WebSocket server to Railway, Render, or DigitalOcean following the instructions in the [JukeboxDuo-Websocket repository](https://github.com/ashwaniverma-github/Music-Duo-Websocket).
+Deploy the WebSocket server to Railway, Render, or DigitalOcean following the instructions in the [JukeboxDuo-Websocket repository](https://github.com/ashwaniverma-github/Jukebox-Duo-Websocket). See `jukebox-duo-websocket/DEPLOYMENT.md` for detailed steps.
 
 ## 📁 Project Structure
 
