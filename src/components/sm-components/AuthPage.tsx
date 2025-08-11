@@ -23,7 +23,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white">
       <div className="bg-white/5 p-8 rounded-2xl shadow-2xl border border-white/10 max-w-md w-full flex flex-col items-center">
-        <h1 className="text-3xl font-bold mb-4 text-center">Sign in to Music Duo</h1>
+        <h1 className="text-3xl font-bold mb-4 text-center">Sign in to JukeboxDuo</h1>
         <p className="text-gray-300 mb-8 text-center">Sign in to access your dashboard and rooms.</p>
         <button
           onClick={() => signIn("google", { callbackUrl })}

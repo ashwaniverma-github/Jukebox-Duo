@@ -1,6 +1,6 @@
-# Music Duo - Frontend
+# JukeboxDuo - Frontend
 
-A Next.js frontend for Music Duo, a real-time synchronized music listening application.
+A Next.js frontend for JukeboxDuo, a real-time synchronized music listening application.
 
 ## 🎵 Features
 
@@ -17,7 +17,7 @@ All these features are powered by the WebSocket server for real-time communicati
 This repository contains the **frontend only**. The WebSocket server is in a separate repository for better scalability and deployment flexibility.
 
 - **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and Socket.IO client
-- **WebSocket Server**: [Music-Duo-Websocket](https://github.com/ashwaniverma-github/Music-Duo-Websocket) - Separate repository with TypeScript and Socket.IO server
+- **WebSocket Server**: [JukeboxDuo-Websocket](https://github.com/ashwaniverma-github/Music-Duo-Websocket) - Separate repository with TypeScript and Socket.IO server
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js
 
@@ -34,8 +34,8 @@ This repository contains the **frontend only**. The WebSocket server is in a sep
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/music-duo.git
-   cd music-duo
+   git clone https://github.com/your-username/jukebox-duo.git
+   cd jukebox-duo
    ```
 
 2. **Install dependencies:**
@@ -115,7 +115,7 @@ For local development, you'll need to run the WebSocket server separately:
 
 ### WebSocket Server
 
-Deploy the WebSocket server to Railway, Render, or DigitalOcean following the instructions in the [Music-Duo-Websocket repository](https://github.com/ashwaniverma-github/Music-Duo-Websocket).
+Deploy the WebSocket server to Railway, Render, or DigitalOcean following the instructions in the [JukeboxDuo-Websocket repository](https://github.com/ashwaniverma-github/Music-Duo-Websocket).
 
 ## 📁 Project Structure
 

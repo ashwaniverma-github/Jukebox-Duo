@@ -27,7 +27,7 @@ const Navbar = () => {
           </svg>
         </button>
         <Link href="/" className="font-extrabold text-xl tracking-tight text-white flex items-center gap-2 md:ml-0 ml-2">
-          <h1 className="text-red-500 text-md flex items-center justify-center">Music Duo</h1>
+          <h1 className="text-red-500 text-md flex items-center justify-center">Jukebox Duo</h1>
         </Link>
         {/* Dropdown menu (mobile only) */}
         {menuOpen && (
