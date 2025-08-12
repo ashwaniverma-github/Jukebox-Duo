@@ -32,18 +32,18 @@ const Navbar = () => {
         {/* Dropdown menu (mobile only) */}
         {menuOpen && (
           <div className="absolute top-14 left-2 bg-gray-900 border border-white/10 rounded-xl shadow-lg py-2 w-44 flex flex-col items-stretch z-50 animate-fade-in">
-            <a href="#about" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>About</a>
-            <a href="#features" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Features</a>
-            <a href="#contact" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Contact</a>
+            <Link href="/features" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Features</Link>
+            <Link href="/about" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>About</Link>
+            <Link href="/contact" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Contact</Link>
           </div>
         )}
       </div>
 
       {/* Center: Links (desktop only) */}
       <div className="hidden md:flex flex-1 items-center justify-center gap-8">
-        <a href="#about" className="text-white opacity-85 font-semibold text-base hover:underline">About</a>
-        <a href="#features" className="text-white opacity-85 font-semibold text-base hover:underline">Features</a>
-        <a href="#contact" className="text-white opacity-85 font-semibold text-base hover:underline">Contact</a>
+        <Link href="/features" className="text-white opacity-85 font-semibold text-base hover:underline">Features</Link>
+        <Link href="/about" className="text-white opacity-85 font-semibold text-base hover:underline">About</Link>
+        <Link href="/contact" className="text-white opacity-85 font-semibold text-base hover:underline">Contact</Link>
       </div>
 
       {/* Right: Sign In/Up (always right) */}

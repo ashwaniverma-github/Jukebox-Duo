@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const Footer = () => (
   <motion.footer
@@ -14,10 +15,10 @@ const Footer = () => (
     transition={{ duration: 0.7 }}
   >
     <nav style={{ marginBottom: '1.2rem', display: 'flex', justifyContent: 'center', gap: '2.5rem', flexWrap: 'wrap' }}>
-      <a href="#about" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>About</a>
-      <a href="https://github.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>GitHub</a>
-      <a href="#privacy" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Privacy Policy</a>
-      <a href="#contact" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Contact</a>
+      <Link href="/features" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Features</Link>
+      <Link href="/about" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>About</Link>
+      <Link href="/contact" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Contact</Link>
+      <Link href="/privacyPolicy" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Privacy Policy</Link>
     </nav>
     <div style={{ color: '#fff', opacity: 0.7, fontSize: '0.95rem' }}>
       © 2025 JukeboxDuo.
