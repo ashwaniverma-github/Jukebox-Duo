@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import SyncAudio from '../../../components/SyncAudio'
 import { getSocket } from '../../../lib/socket'
 import QueueList from './QueueList'
+import JoinRoom from './JoinRoom'
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogTrigger, DialogContent } from '../../../components/ui/dialog';
@@ -35,11 +36,13 @@ export default function RoomPage() {
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
-  const [pendingAdds, setPendingAdds] = useState<Set<string>>(new Set());
+  // Debounce timer for search
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { name?: string; email?: string } } | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : '';
   const [copied, setCopied] = useState(false);
+  const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -83,6 +86,19 @@ export default function RoomPage() {
       });
   }, [roomId, status]);
 
+  // Live presence via socket
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const socket = getSocket();
+    const onPresence = (list: { id: string; name?: string; image?: string }[]) => {
+      setMembers(list);
+    };
+    socket.on('room-presence', onPresence);
+    return () => {
+      socket.off('room-presence', onPresence);
+    };
+  }, [roomId, status]);
+
   // When queue or currentQueueIndex changes, update currentSong and videoId
   useEffect(() => {
     if (queue.length > 0 && queue[currentQueueIndex]) {
@@ -94,35 +110,48 @@ export default function RoomPage() {
     }
   }, [queue, currentQueueIndex]);
 
+  // Helper: refetch queue from backend to ensure canonical IDs/order
+  const refreshQueue = useCallback(async () => {
+    const res = await fetch(`/api/rooms/${roomId}/queue`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setQueue(data.queue);
+    setCurrentQueueIndex(data.currentQueueIndex);
+    if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
+      setVideoId(data.queue[data.currentQueueIndex].videoId);
+      setCurrentSong(data.queue[data.currentQueueIndex]);
+    } else {
+      setVideoId('');
+      setCurrentSong(null);
+    }
+  }, [roomId]);
+
   // Debounced search function
   const debouncedSearch = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (searchTerm: string) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(async () => {
-          if (!searchTerm.trim()) {
-            setSearchResults([]);
-            setSearchLoading(false);
-            setSearchError('');
-            return;
-          }
-          setSearchLoading(true);
+    (searchTerm: string) => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = setTimeout(async () => {
+        if (!searchTerm.trim()) {
+          setSearchResults([]);
+          setSearchLoading(false);
           setSearchError('');
-          try {
-            const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(searchTerm)}`);
-            if (!res.ok) throw new Error('Search failed');
-            const data = await res.json();
-            setSearchResults(data);
-          } catch (err) {
-            setSearchError('Failed to search. Try again.');
-            console.error('Search failed:', err);
-          } finally {
-            setSearchLoading(false);
-          }
-        }, 300); // 300ms delay
-      };
-    })(),
+          return;
+        }
+        setSearchLoading(true);
+        setSearchError('');
+        try {
+          const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(searchTerm)}`);
+          if (!res.ok) throw new Error('Search failed');
+          const data = await res.json();
+          setSearchResults(data);
+        } catch (err) {
+          setSearchError('Failed to search. Try again.');
+          console.error('Search failed:', err);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 300);
+    },
     [roomId]
   );
 
@@ -135,23 +164,12 @@ export default function RoomPage() {
     debouncedSearch(search);
   }, [search, debouncedSearch, status]);
 
-  // Add to queue handler (optimistic update + toast)
+  // Add to queue handler (server-first; then sync via socket)
   const handleAddToQueue = async (item: { videoId: string; title: string; thumbnail?: string }) => {
-    // Add to pending adds to prevent duplication
-    setPendingAdds(prev => new Set(prev).add(item.videoId));
-    
-    // Optimistically update queue
-    setQueue(prev => [...prev, {
-      id: Math.random().toString(36).slice(2), // temp id
-      videoId: item.videoId,
-      title: item.title,
-      thumbnail: item.thumbnail,
-      order: prev.length
-    }]);
-    setModalOpen(false); // Close modal after adding
-    
+    setModalOpen(false);
+
     try {
-      await fetch(`/api/rooms/${roomId}/queue`, {
+      const res = await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,6 +178,9 @@ export default function RoomPage() {
           thumbnail: item.thumbnail
         })
       });
+      if (!res.ok) throw new Error('Add failed');
+      // Refresh to get canonical DB IDs/order
+      await refreshQueue();
       
       // Emit queue-updated event to sync with other clients
       console.log('[Socket] emitting queue-updated', { roomId, item });
@@ -173,12 +194,8 @@ export default function RoomPage() {
       });
     } catch {
       console.error('Failed to add to queue');
-      // Remove from pending adds if the request failed
-      setPendingAdds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(item.videoId);
-        return newSet;
-      });
+    } finally {
+      // no-op
     }
   };
 
@@ -232,32 +249,13 @@ export default function RoomPage() {
     };
   }, [roomId, queue]);
 
-  // Listen for queue-updated event from socket
+  // Listen for queue-updated event from socket → always refresh from server
   useEffect(() => {
     const socket = getSocket();
     console.log('[Socket] Setting up queue-updated listener for room:', roomId);
-    const handler = (item: { videoId: string; title: string; thumbnail?: string }) => {
-      console.log('[Socket] received queue-updated', item);
-      
-      // Check if this item is already pending (to prevent duplication)
-      if (pendingAdds.has(item.videoId)) {
-        console.log('[Socket] Skipping duplicate item:', item.videoId);
-        // Remove from pending adds since we've received the confirmation
-        setPendingAdds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(item.videoId);
-          return newSet;
-        });
-        return;
-      }
-      
-      setQueue(prev => [...prev, {
-        id: Math.random().toString(36).slice(2), // temp id
-        videoId: item.videoId,
-        title: item.title,
-        thumbnail: item.thumbnail,
-        order: prev.length
-      }]);
+    const handler = async () => {
+      console.log('[Socket] received queue-updated; refreshing queue');
+      await refreshQueue();
     };
     socket.on('queue-updated', handler);
     console.log('[Socket] queue-updated listener added');
@@ -265,15 +263,15 @@ export default function RoomPage() {
       console.log('[Socket] Removing queue-updated listener');
       socket.off('queue-updated', handler);
     };
-  }, [roomId, pendingAdds]);
+  }, [roomId, refreshQueue]);
 
-  // Listen for queue-removed event from socket
+  // Listen for queue-removed event from socket → refresh from server
   useEffect(() => {
     const socket = getSocket();
     console.log('[Socket] Setting up queue-removed listener for room:', roomId);
-    const handler = (itemId: string) => {
-      console.log('[Socket] received queue-removed', itemId);
-      setQueue(prev => prev.filter(item => item.id !== itemId));
+    const handler = async () => {
+      console.log('[Socket] received queue-removed; refreshing queue');
+      await refreshQueue();
     };
     socket.on('queue-removed', handler);
     console.log('[Socket] queue-removed listener added');
@@ -281,11 +279,12 @@ export default function RoomPage() {
       console.log('[Socket] Removing queue-removed listener');
       socket.off('queue-removed', handler);
     };
-  }, [roomId]);
+  }, [roomId, refreshQueue]);
 
-  // Optimistically remove a song from the queue
-  const handleRemoveFromQueue = (itemId: string) => {
-    setQueue(prev => prev.filter(item => item.id !== itemId));
+  // After remove, sync by refetching
+  const handleRemoveFromQueue = async (itemId: string) => {
+    void itemId;
+    await refreshQueue();
     setRemovingQueueItemId(null);
   };
 
@@ -295,6 +294,8 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black relative overflow-hidden">
+      {/* Persist membership and join socket room on mount */}
+      <JoinRoom roomId={roomId} />
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-red-700/10 rounded-full blur-3xl animate-pulse"></div>
@@ -332,8 +333,25 @@ export default function RoomPage() {
               </div>
             </motion.div>
           </div>
-          {/* Right: Invite Button + Profile Avatar */}
+          {/* Right: Participants + Invite Button + Profile Avatar */}
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Participants (avatars) */}
+            <div className="hidden sm:flex -space-x-2">
+              {members.slice(0, 5).map((m) => (
+                m.image ? (
+                  <img key={m.id} src={m.image} alt={m.name || 'User'} className="w-8 h-8 rounded-full border-2 border-white/30 object-cover" />
+                ) : (
+                  <div key={m.id} className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
+                    {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                  </div>
+                )
+              ))}
+              {members.length > 5 && (
+                <div className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
+                  +{members.length - 5}
+                </div>
+              )}
+            </div>
             {/* Invite Button */}
             <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
               <DialogTrigger asChild>

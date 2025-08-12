@@ -20,6 +20,12 @@ export async function POST(
     )
   }
 
+  // Validate room exists
+  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true } })
+  if (!room) {
+    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+  }
+
   // Upsert membership
   await prisma.roomMember.upsert({
     where: {

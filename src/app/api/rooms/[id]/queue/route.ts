@@ -11,7 +11,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  // Ensure user is a member or host of the room
+  const membership = await prisma.roomMember.findFirst({ where: { roomId, userId: session.user.id }, select: { id: true } })
+  const isHost = await prisma.room.findFirst({ where: { id: roomId, hostId: session.user.id }, select: { id: true } })
+  if (!membership && !isHost) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+  }
+
   const { videoId, title, thumbnail } = await req.json()
+  if (!videoId || typeof videoId !== 'string') {
+    return NextResponse.json({ error: 'Invalid videoId' }, { status: 400 })
+  }
+  if (!title || typeof title !== 'string') {
+    return NextResponse.json({ error: 'Invalid title' }, { status: 400 })
+  }
+  if (thumbnail && typeof thumbnail !== 'string') {
+    return NextResponse.json({ error: 'Invalid thumbnail' }, { status: 400 })
+  }
   const count = await prisma.queueItem.count({ where: { roomId: roomId } })
   const item = await prisma.queueItem.create({
     data: {
@@ -27,12 +43,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: roomId } = await params
+  // No auth required to view queue, but ensure room exists
+  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, currentQueueIndex: true } })
+  if (!room) {
+    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+  }
   const items = await prisma.queueItem.findMany({
     where: { roomId },
     orderBy: { order: 'asc' }
   })
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { currentQueueIndex: true } });
-  const currentQueueIndex = room?.currentQueueIndex ?? 0;
+  const currentQueueIndex = room.currentQueueIndex ?? 0;
   return NextResponse.json({ queue: items, currentQueueIndex });
 }
 
@@ -50,9 +70,20 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Item ID required' }, { status: 400 })
   }
 
-  await prisma.queueItem.delete({
-    where: { id: itemId }
-  })
+  // Ensure user is a member or host of the room
+  const membership = await prisma.roomMember.findFirst({ where: { roomId, userId: session.user.id }, select: { id: true } })
+  const isHost = await prisma.room.findFirst({ where: { id: roomId, hostId: session.user.id }, select: { id: true } })
+  if (!membership && !isHost) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+  }
+
+  try {
+    await prisma.queueItem.delete({
+      where: { id: itemId }
+    })
+  } catch {
+    return NextResponse.json({ error: 'Item not found' }, { status: 404 })
+  }
 
   // Reorder remaining items
   const remainingItems = await prisma.queueItem.findMany({
@@ -77,7 +108,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  // Only the host can change the current playing index
+  const isHost = await prisma.room.findFirst({ where: { id: roomId, hostId: session.user.id }, select: { id: true } })
+  if (!isHost) {
+    return NextResponse.json({ error: 'Only host can update current index' }, { status: 403 })
+  }
+
   const { currentIndex } = await req.json()
+  if (typeof currentIndex !== 'number' || currentIndex < 0) {
+    return NextResponse.json({ error: 'Invalid currentIndex' }, { status: 400 })
+  }
   
   // Update room's current playing index
   await prisma.room.update({
