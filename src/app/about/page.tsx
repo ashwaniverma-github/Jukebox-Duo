@@ -45,15 +45,15 @@ export default function AboutPage() {
           >
             <h2 className="text-3xl font-bold text-white mb-6">Our Story</h2>
             <div className="space-y-4 text-gray-300">
-              <p>
-                Jukebox Duo was born from a simple idea: music is better when shared. In a world where we're increasingly connected digitally but often isolated physically, we wanted to create a space where friends, families, and communities could come together through music.
-              </p>
-              <p>
-                Whether you're hosting a virtual party, studying with friends, or just want to share your favorite tracks with someone special, Jukebox Duo makes it effortless to create shared musical experiences in real-time.
-              </p>
-              <p>
-                We believe that music has the power to bring people together, create memories, and build connections. That's why we've built a platform that's not just about playing music, but about creating moments together.
-              </p>
+                             <p>
+                 Jukebox Duo was born from a simple idea: music is better when shared. In a world where we&apos;re increasingly connected digitally but often isolated physically, we wanted to create a space where friends, families, and communities could come together through music.
+               </p>
+                             <p>
+                 Whether you&apos;re hosting a virtual party, studying with friends, or just want to share your favorite tracks with someone special, Jukebox Duo makes it effortless to create shared musical experiences in real-time.
+               </p>
+                             <p>
+                 We believe that music has the power to bring people together, create memories, and build connections. That&apos;s why we&apos;ve built a platform that&apos;s not just about playing music, but about creating moments together.
+               </p>
             </div>
           </motion.div>
 
@@ -106,7 +106,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Innovation First</h3>
                   <p className="text-gray-300">
-                    Continuously push the boundaries of what's possible with real-time music collaboration and sharing.
+                    Continuously push the boundaries of what&apos;s possible with real-time music collaboration and sharing.
                   </p>
                 </div>
               </div>
@@ -129,7 +129,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Simplicity</h3>
                   <p className="text-gray-300">
-                    We believe the best technology is invisible. Our platform should feel natural and intuitive, letting you focus on the music and the people you're sharing it with.
+                    We believe the best technology is invisible. Our platform should feel natural and intuitive, letting you focus on the music and the people you&apos;re sharing it with.
                   </p>
                 </div>
               </div>
@@ -140,7 +140,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Inclusivity</h3>
                   <p className="text-gray-300">
-                    Music is for everyone. We're committed to creating a platform that welcomes all music lovers, regardless of their background, location, or technical skills.
+                    Music is for everyone. We&apos;re committed to creating a platform that welcomes all music lovers, regardless of their background, location, or technical skills.
                   </p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Quality</h3>
                   <p className="text-gray-300">
-                    We're passionate about delivering the best possible experience. From audio quality to user interface, every detail matters.
+                    We&apos;re passionate about delivering the best possible experience. From audio quality to user interface, every detail matters.
                   </p>
                 </div>
               </div>

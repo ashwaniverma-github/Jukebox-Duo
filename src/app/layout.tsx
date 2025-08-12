@@ -11,6 +11,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Jukebox Duo",
   description: "Listen Together, No Matter Where You Are",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons.svg", type: "image/svg+xml" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icons.svg",
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

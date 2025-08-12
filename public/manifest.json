@@ -1,0 +1,17 @@
+{
+  "name": "Jukebox Duo",
+  "short_name": "Jukebox Duo",
+  "description": "Listen Together, No Matter Where You Are",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

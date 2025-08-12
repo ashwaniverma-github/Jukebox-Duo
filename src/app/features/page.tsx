@@ -48,9 +48,9 @@ export default function FeaturesPage() {
                 <Users className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Real-time Collaboration</h3>
-              <p className="text-gray-300">
-                Create music rooms and invite friends to join. Everyone can add songs, control playback, and see who's online in real-time.
-              </p>
+                           <p className="text-gray-300">
+               Create music rooms and invite friends to join. Everyone can add songs, control playback, and see who&apos;s online in real-time.
+             </p>
             </motion.div>
 
             <motion.div
@@ -94,7 +94,7 @@ export default function FeaturesPage() {
               </div>
               <h3 className="text-xl font-bold text-white mb-3">YouTube Integration</h3>
               <p className="text-gray-300">
-                Search and add any song from YouTube's vast library. Instant access to millions of tracks with thumbnails and metadata.
+                Search and add any song from YouTube&apos;s vast library. Instant access to millions of tracks with thumbnails and metadata.
               </p>
             </motion.div>
 

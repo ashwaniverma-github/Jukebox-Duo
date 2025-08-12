@@ -31,9 +31,9 @@ export default function ContactPage() {
               Get in
               <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent"> Touch</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Have questions, feedback, or just want to say hello? I'd love to hear from you!
-            </p>
+                         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+               Have questions, feedback, or just want to say hello? I&apos;d love to hear from you!
+             </p>
           </motion.div>
 
           {/* Contact Methods */}
@@ -49,9 +49,9 @@ export default function ContactPage() {
                 <Twitter className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">Follow on X (Twitter)</h3>
-              <p className="text-gray-300 mb-6">
-                Stay updated with the latest features, announcements, and music-related content. I'm most active here!
-              </p>
+                             <p className="text-gray-300 mb-6">
+                 Stay updated with the latest features, announcements, and music-related content. I&apos;m most active here!
+               </p>
               <a
                 href="https://x.com/ashwanivermax"
                 target="_blank"
@@ -97,7 +97,7 @@ export default function ContactPage() {
             transition={{ delay: 0.3 }}
             className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
           >
-                         <h2 className="text-3xl font-bold text-white mb-6">What I'd Love to Hear</h2>
+                         <h2 className="text-3xl font-bold text-white mb-6">What I&apos;d Love to Hear</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">Feedback & Suggestions</h3>
@@ -111,7 +111,7 @@ export default function ContactPage() {
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">Community & Support</h3>
                 <ul className="space-y-2 text-gray-300">
-                  <li>• How you're using Jukebox Duo</li>
+                  <li>• How you&apos;re using Jukebox Duo</li>
                   <li>• Success stories and experiences</li>
                   <li>• Questions about features</li>
                   <li>• Technical support</li>
@@ -134,7 +134,7 @@ export default function ContactPage() {
               <h3 className="text-2xl font-bold text-white">Response Time</h3>
             </div>
                          <p className="text-gray-300">
-               I'm a passionate individual builder dedicated to making Jukebox Duo the best it can be. I typically respond to messages within 24 hours, and I read every single message I receive. Your feedback helps me improve and grow!
+               I&apos;m a passionate individual builder dedicated to making Jukebox Duo the best it can be. I typically respond to messages within 24 hours, and I read every single message I receive. Your feedback helps me improve and grow!
              </p>
           </motion.div>
 
