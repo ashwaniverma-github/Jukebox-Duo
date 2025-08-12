@@ -22,6 +22,13 @@ export async function GET(
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
 
+  // Require membership or host to view members
+  const membership = await prisma.roomMember.findFirst({ where: { roomId, userId: session.user.id }, select: { id: true } })
+  const isHost = await prisma.room.findFirst({ where: { id: roomId, hostId: session.user.id }, select: { id: true } })
+  if (!membership && !isHost) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+  }
+
   // List participants (includes host if they joined/auto-joined)
   const members = await prisma.roomMember.findMany({
     where: { roomId },

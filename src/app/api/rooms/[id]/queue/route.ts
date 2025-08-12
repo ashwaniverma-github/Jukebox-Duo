@@ -77,13 +77,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
-  try {
-    await prisma.queueItem.delete({
-      where: { id: itemId }
-    })
-  } catch {
+  // Ensure the item belongs to this room (prevents deleting from other rooms)
+  const queueItem = await prisma.queueItem.findUnique({ where: { id: itemId } })
+  if (!queueItem || queueItem.roomId !== roomId) {
     return NextResponse.json({ error: 'Item not found' }, { status: 404 })
   }
+
+  await prisma.queueItem.delete({ where: { id: itemId } })
 
   // Reorder remaining items
   const remainingItems = await prisma.queueItem.findMany({

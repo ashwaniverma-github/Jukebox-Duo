@@ -14,7 +14,7 @@ export async function GET(
   }
   const room = await prisma.room.findUnique({
     where: { id },
-    include: { host: { select: { name: true, email: true, id: true } } },
+    include: { host: { select: { name: true, id: true } } },
   });
   if (!room) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 });
@@ -23,7 +23,7 @@ export async function GET(
     id: room.id,
     name: room.name,
     host: room.host
-      ? { name: room.host.name, email: room.host.email, id: room.host.id }
+      ? { name: room.host.name, id: room.host.id }
       : null,
     createdAt: room.createdAt,
   });
