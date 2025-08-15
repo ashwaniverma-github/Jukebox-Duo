@@ -243,14 +243,14 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                 className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg relative"
                 onClick={() => {
                   const p = playerRef.current;
-                  if (!p) return console.error('Player not ready');
+                  if (!p || !videoId) return console.error('Player not ready or no video');
                   p.playVideo();
                   sendCommand('play', p.getCurrentTime(), Date.now() + BUFFER);
                   setIsPlaying(true);
                 }}
                 aria-label="Play"
                 type="button"
-                disabled={isLoading}
+                disabled={isLoading || !videoId}
               >
                 {isLoading ? (
                   <span className="absolute inset-0 flex items-center justify-center">

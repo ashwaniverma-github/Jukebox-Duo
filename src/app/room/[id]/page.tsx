@@ -43,6 +43,7 @@ export default function RoomPage() {
   const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : '';
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
+  const [playerMounted, setPlayerMounted] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -66,6 +67,8 @@ export default function RoomPage() {
           setVideoId('');
           setCurrentSong(null);
         }
+        // Mount the player after initial data load; keep it mounted thereafter
+        setPlayerMounted(true);
       });
     // Log joining room
     const socket = getSocket();
@@ -212,8 +215,11 @@ export default function RoomPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
-      // Emit change-video event
-      getSocket().emit('change-video', { roomId, newVideoId: queue[newIndex].videoId });
+      // Emit change-video and video-changed for compatibility
+      const newVideoId = queue[newIndex].videoId;
+      const socket = getSocket();
+      socket.emit('change-video', { roomId, newVideoId });
+      socket.emit('video-changed', newVideoId);
     }
   };
 
@@ -229,8 +235,11 @@ export default function RoomPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
-      // Emit change-video event
-      getSocket().emit('change-video', { roomId, newVideoId: queue[newIndex].videoId });
+      // Emit change-video and video-changed for compatibility
+      const newVideoId = queue[newIndex].videoId;
+      const socket = getSocket();
+      socket.emit('change-video', { roomId, newVideoId });
+      socket.emit('video-changed', newVideoId);
     }
   };
 
@@ -663,40 +672,41 @@ export default function RoomPage() {
                 
                 <CardContent className="relative z-10 p-5 sm:p-14"> 
                   <div className="aspect-video sm:aspect-[21/9] pt-6 ">
-                    {videoId ? (
-                      <>
-                        <SyncAudio
-                          roomId={roomId}
-                          videoId={videoId}
-                          isHost={true}
-                          onPlayNext={handlePlayNext}
-                          onPlayPrev={handlePlayPrev}
-                        />
-                        {currentSong && (
-                          <motion.div 
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="mt-10 sm:mt-16"
-                          >
-                            <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20">
-                              <div className="flex items-center gap-2 sm:gap-3">
-                                <img 
-                                  src={currentSong.thumbnail} 
-                                  alt={currentSong.title}
-                                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="font-bold text-white text-sm sm:text-lg truncate">{currentSong.title}</h3>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                    <span className="text-xs sm:text-sm text-green-300 font-medium">Now Playing</span>
-                                  </div>
-                                </div>
+                    {/* Mount once after initial data load; keep mounted thereafter */}
+                    {playerMounted && (
+                      <SyncAudio
+                        roomId={roomId}
+                        videoId={videoId}
+                        isHost={true}
+                        onPlayNext={handlePlayNext}
+                        onPlayPrev={handlePlayPrev}
+                      />
+                    )}
+
+                    {/* Now Playing card or Empty state */}
+                    {currentSong ? (
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="mt-10 sm:mt-16"
+                      >
+                        <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <img 
+                              src={currentSong.thumbnail} 
+                              alt={currentSong.title}
+                              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-white text-sm sm:text-lg truncate">{currentSong.title}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-xs sm:text-sm text-green-300 font-medium">Now Playing</span>
                               </div>
                             </div>
-                          </motion.div>
-                        )}
-                      </>
+                          </div>
+                        </div>
+                      </motion.div>
                     ) : (
                       <div className="text-center">
                         <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -756,8 +766,11 @@ export default function RoomPage() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ currentIndex: idx })
                           });
-                          // Emit change-video event
-                          getSocket().emit('change-video', { roomId, newVideoId: queue[idx].videoId });
+                          // Emit change-video and video-changed for compatibility
+                          const newVideoId = queue[idx].videoId;
+                          const socket = getSocket();
+                          socket.emit('change-video', { roomId, newVideoId });
+                          socket.emit('video-changed', newVideoId);
                         }
                       }}
                       currentVideoId={videoId} 
