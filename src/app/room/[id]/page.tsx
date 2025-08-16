@@ -27,7 +27,9 @@ export default function RoomPage() {
   const [queue, setQueue] = useState<{ id: string; videoId: string; title: string; thumbnail?: string; order: number }[]>([]);
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
   const currentQueueIndexRef = useRef(currentQueueIndex);
+  const queueRef = useRef(queue);
   useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<{ videoId: string; title: string; thumbnail?: string }[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -204,42 +206,74 @@ export default function RoomPage() {
 
   // Play next song handler
   const handlePlayNext = async () => {
+    // Always use the most current queue state
+    const currentQueue = queueRef.current;
     const idx = currentQueueIndexRef.current;
-    if (queue.length === 0) return;
-    if (idx < queue.length - 1) {
+    
+    console.log(`[handlePlayNext] Current index: ${idx}, Queue length: ${currentQueue.length}`);
+    console.log(`[handlePlayNext] Current queue:`, currentQueue.map(q => q.title));
+    
+    if (currentQueue.length === 0) {
+      console.log('[handlePlayNext] No songs in queue');
+      return;
+    }
+    
+    if (idx < currentQueue.length - 1) {
       const newIndex = idx + 1;
+      console.log(`[handlePlayNext] Moving to next song at index ${newIndex}: ${currentQueue[newIndex].title}`);
+      
       setCurrentQueueIndex(newIndex);
+      
       // Update backend
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
+      
       // Emit change-video and video-changed for compatibility
-      const newVideoId = queue[newIndex].videoId;
+      const newVideoId = currentQueue[newIndex].videoId;
       const socket = getSocket();
       socket.emit('change-video', { roomId, newVideoId });
       socket.emit('video-changed', newVideoId);
+    } else {
+      console.log('[handlePlayNext] Reached end of queue');
     }
   };
 
   // Play previous song handler
   const handlePlayPrev = async () => {
-    if (queue.length === 0) return;
-    if (currentQueueIndex > 0) {
-      const newIndex = currentQueueIndex - 1;
+    // Always use the most current queue state
+    const currentQueue = queueRef.current;
+    const idx = currentQueueIndexRef.current;
+    
+    console.log(`[handlePlayPrev] Current index: ${idx}, Queue length: ${currentQueue.length}`);
+    
+    if (currentQueue.length === 0) {
+      console.log('[handlePlayPrev] No songs in queue');
+      return;
+    }
+    
+    if (idx > 0) {
+      const newIndex = idx - 1;
+      console.log(`[handlePlayPrev] Moving to previous song at index ${newIndex}: ${currentQueue[newIndex].title}`);
+      
       setCurrentQueueIndex(newIndex);
+      
       // Update backend
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
+      
       // Emit change-video and video-changed for compatibility
-      const newVideoId = queue[newIndex].videoId;
+      const newVideoId = currentQueue[newIndex].videoId;
       const socket = getSocket();
       socket.emit('change-video', { roomId, newVideoId });
       socket.emit('video-changed', newVideoId);
+    } else {
+      console.log('[handlePlayPrev] Already at first song');
     }
   };
 
@@ -247,16 +281,21 @@ export default function RoomPage() {
   useEffect(() => {
     const socket = getSocket();
     const handler = (newVideoId: string) => {
-      const idx = queue.findIndex(item => item.videoId === newVideoId);
+      // Use current queue ref to find the video
+      const currentQueue = queueRef.current;
+      const idx = currentQueue.findIndex(item => item.videoId === newVideoId);
+      console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
       if (idx !== -1) {
         setCurrentQueueIndex(idx);
+      } else {
+        console.warn(`[video-changed] VideoId ${newVideoId} not found in current queue`);
       }
     };
     socket.on('video-changed', handler);
     return () => {
       socket.off('video-changed', handler);
     };
-  }, [roomId, queue]);
+  }, [roomId]); // Removed queue dependency since we use queueRef
 
   // Listen for queue-updated event from socket → always refresh from server
   useEffect(() => {
@@ -278,9 +317,30 @@ export default function RoomPage() {
   useEffect(() => {
     const socket = getSocket();
     console.log('[Socket] Setting up queue-removed listener for room:', roomId);
-    const handler = async () => {
-      console.log('[Socket] received queue-removed; refreshing queue');
+    const handler = async (data: { roomId: string; itemId: string; deletedOrder?: number; newCurrentIndex?: number }) => {
+      console.log('[Socket] received queue-removed; refreshing queue', data);
+      
+      // Store the old current index for comparison
+      const oldCurrentIndex = currentQueueIndexRef.current;
+      
+      // Refresh the queue to get the updated state from server
       await refreshQueue();
+      
+      // Log queue state after refresh for debugging
+      console.log(`[Socket] Queue refreshed after deletion. Old index: ${oldCurrentIndex}, New index: ${data.newCurrentIndex}`);
+      
+      // If the currently playing song changed due to deletion, emit video-changed
+      if (data.newCurrentIndex !== undefined && data.newCurrentIndex !== oldCurrentIndex) {
+        console.log(`[Socket] Current playing song changed due to deletion, will sync video`);
+        // The refreshQueue already updated videoId and currentSong based on new index
+        // But we should emit video-changed to sync the player across all clients
+        const updatedQueue = queueRef.current;
+        if (updatedQueue.length > 0 && updatedQueue[data.newCurrentIndex]) {
+          const newVideoId = updatedQueue[data.newCurrentIndex].videoId;
+          console.log(`[Socket] Emitting video-changed for new current song: ${newVideoId}`);
+          socket.emit('video-changed', newVideoId);
+        }
+      }
     };
     socket.on('queue-removed', handler);
     console.log('[Socket] queue-removed listener added');
@@ -290,11 +350,13 @@ export default function RoomPage() {
     };
   }, [roomId, refreshQueue]);
 
-  // After remove, sync by refetching
-  const handleRemoveFromQueue = async (itemId: string) => {
-    void itemId;
+  // After remove, sync by refetching and updating current index if needed
+  const handleRemoveFromQueue = async () => {
     await refreshQueue();
     setRemovingQueueItemId(null);
+    
+    // The refreshQueue will get the updated currentQueueIndex from the server
+    // and update our local state accordingly
   };
 
   if (status === "loading" || status === "unauthenticated") {

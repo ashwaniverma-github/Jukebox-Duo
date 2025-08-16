@@ -15,21 +15,67 @@ interface Props {
   onAdd: () => void
 }
 
+interface ErrorState {
+  message: string
+  isQuotaExceeded?: boolean
+  estimatedResetHours?: number
+}
+
 export default function SearchBar({ roomId, onAdd }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
-  const [focused, setFocused] = useState(false);
+  const [focused, setFocused] = useState(false)
+  const [error, setError] = useState<ErrorState | null>(null)
 
   useEffect(() => {
-    if (!query) return setResults([])
+    if (!query) {
+      setResults([])
+      setError(null)
+      return
+    }
+    
     const id = setTimeout(async () => {
       setLoading(true)
-      const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(query)}`)
-      const json: Result[] = await res.json()
-      setResults(json)
+      setError(null)
+      
+      try {
+        const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(query)}`)
+        const json = await res.json()
+        
+        if (!res.ok) {
+          // Handle API error response
+          if (res.status === 503 && json.quotaExceeded) {
+            setError({
+              message: json.error,
+              isQuotaExceeded: true,
+              estimatedResetHours: json.estimatedResetHours
+            })
+          } else if (res.status === 429) {
+            setError({
+              message: 'Too many requests. Please wait a moment before searching again.'
+            })
+          } else {
+            setError({
+              message: json.error || 'Search failed. Please try again.'
+            })
+          }
+          setResults([])
+        } else {
+          // Success - json is Result[]
+          setResults(json)
+        }
+      } catch (err) {
+        console.error('Search error:', err)
+        setError({
+          message: 'Network error. Please check your connection and try again.'
+        })
+        setResults([])
+      }
+      
       setLoading(false)
     }, 300)
+    
     return () => clearTimeout(id)
   }, [query, roomId])
 
@@ -75,7 +121,39 @@ export default function SearchBar({ roomId, onAdd }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-          >Searching 6 6</motion.p>
+          >Searching...</motion.p>
+        )}
+        {error && !loading && (
+          <motion.div
+            className={`mt-2 p-3 rounded-lg ${
+              error.isQuotaExceeded 
+                ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' 
+                : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+            }`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <p className={`text-sm font-medium ${
+              error.isQuotaExceeded 
+                ? 'text-amber-800 dark:text-amber-200' 
+                : 'text-red-800 dark:text-red-200'
+            }`}>
+              {error.isQuotaExceeded ? '⚠️ Search Temporarily Unavailable' : '❌ Search Error'}
+            </p>
+            <p className={`text-xs mt-1 ${
+              error.isQuotaExceeded 
+                ? 'text-amber-600 dark:text-amber-300' 
+                : 'text-red-600 dark:text-red-300'
+            }`}>
+              {error.message}
+            </p>
+            {error.isQuotaExceeded && error.estimatedResetHours && (
+              <p className="text-xs mt-2 text-amber-600 dark:text-amber-300">
+                💡 Tip: Try again in {error.estimatedResetHours} hour{error.estimatedResetHours !== 1 ? 's' : ''}, or use cached results if available.
+              </p>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
       <ul className="space-y-2 max-h-60 overflow-y-auto mt-2">

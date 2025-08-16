@@ -49,15 +49,38 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
 
   const handleRemove = async (itemId: string) => {
     if (setRemovingQueueItemId) setRemovingQueueItemId(itemId);
-    await fetch(`/api/rooms/${roomId}/queue?itemId=${itemId}`, {
-      method: 'DELETE'
-    })
-    // Emit queue-removed event to sync with other clients
-    getSocket().emit('queue-removed', { roomId, itemId });
-    if (onRemove) onRemove(itemId);
-    const removedIndex = queue.findIndex(item => item.id === itemId)
-    if (removedIndex <= currentIndex && currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+    
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/queue?itemId=${itemId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Queue item deleted:', result)
+        
+        // The backend has already updated the currentQueueIndex if needed
+        // Emit queue-removed event to sync with other clients
+        getSocket().emit('queue-removed', { 
+          roomId, 
+          itemId, 
+          deletedOrder: result.deletedOrder,
+          newCurrentIndex: result.newCurrentIndex 
+        });
+        
+        // Call the parent's onRemove callback which will refresh the queue
+        if (onRemove) onRemove(itemId);
+        
+        // Update local state based on server response
+        const removedIndex = queue.findIndex(item => item.id === itemId)
+        if (removedIndex <= currentIndex && currentIndex > 0) {
+          setCurrentIndex(currentIndex - 1)
+        }
+      } else {
+        console.error('Failed to delete queue item:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error deleting queue item:', error)
     }
   }
 

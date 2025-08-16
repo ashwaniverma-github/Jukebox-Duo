@@ -71,22 +71,21 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     let destroyed = false;
     if (playerInitialized.current) return;
     playerInitialized.current = true;
-    console.log('🔧 Registering onYouTubeIframeAPIReady');
-    window.onYouTubeIframeAPIReady = () => {
+
+    const createPlayer = () => {
       if (destroyed) return;
       if (playerRef.current) return; // Only create one player
-      console.log('▶️ onYouTubeIframeAPIReady fired');
+      if (!window.YT || !window.YT.Player) return; // Wait until API ready
+      console.log('▶️ Creating YT Player instance');
       playerRef.current = new window.YT.Player('audio-player', {
         videoId,
         playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0 },
         events: {
           onReady: () => {
             console.log('🛠️ YouTube Player Ready');
-            // Get initial duration
             const player = playerRef.current;
             if (player) {
               setDuration(player.getDuration());
-              // Set loading false if not buffering
               const state = player.getPlayerState ? player.getPlayerState() : null;
               if (state !== window.YT.PlayerState.BUFFERING) {
                 setIsLoading(false);
@@ -97,18 +96,37 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
-            // Set loading state
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
-            else if (e.data === window.YT.PlayerState.PLAYING || e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsLoading(false);
-            // Auto-advance to next song if host and song ended
-            if (e.data === window.YT.PlayerState.ENDED && isHost && typeof onPlayNext === 'function') {
+            else if (
+              e.data === window.YT.PlayerState.PLAYING ||
+              e.data === window.YT.PlayerState.PAUSED ||
+              e.data === window.YT.PlayerState.ENDED
+            ) setIsLoading(false);
+            if (e.data === window.YT.PlayerState.ENDED && isHost && onPlayNext) {
               onPlayNext();
             }
+          },
+          onError: (e: unknown) => {
+            console.error('YouTube Player Error', e);
+            setIsLoading(false);
+            setIsPlaying(false);
           },
         },
       });
       console.log('Player instance created');
     };
+
+    console.log('🔧 Registering onYouTubeIframeAPIReady');
+    window.onYouTubeIframeAPIReady = () => {
+      console.log('onYouTubeIframeAPIReady fired');
+      createPlayer();
+    };
+
+    // In case the script has already loaded before we set the callback
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    }
+
     return () => {
       destroyed = true;
       playerInitialized.current = false;
@@ -123,19 +141,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     console.log('🔄 videoId prop changed:', videoId);
     console.log('[SyncAudio] Loading video by ID:', videoId);
     playerRef.current.loadVideoById(videoId);
-    // Reset time states
     setCurrentTime(0);
     setDuration(0);
-    setIsLoading(true); // Set loading true when video changes
-    // If the player is playing after loading, pause it to prevent double playback
-    setTimeout(() => {
-      if (playerRef.current && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING) {
-        playerRef.current.pauseVideo();
-        setIsPlaying(false);
-      } else {
-        setIsPlaying(false);
-      }
-    }, 200);
+    setIsLoading(true);
   }, [videoId]);
 
   // 3) Listen for remote video changes and load accordingly
@@ -156,7 +164,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       console.log('[SyncAudio] Removing video-changed listener');
       socket.off('video-changed', onChange);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, videoId]); // Added videoId dependency
 
   // 4) Sync play/pause commands
   useEffect(() => {

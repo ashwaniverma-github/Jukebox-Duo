@@ -77,20 +77,35 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
-  // Ensure the item belongs to this room (prevents deleting from other rooms)
+  // Get the room and the item to be deleted
+  const room = await prisma.room.findUnique({ 
+    where: { id: roomId }, 
+    select: { currentQueueIndex: true } 
+  })
+  
   const queueItem = await prisma.queueItem.findUnique({ where: { id: itemId } })
   if (!queueItem || queueItem.roomId !== roomId) {
     return NextResponse.json({ error: 'Item not found' }, { status: 404 })
   }
 
+  if (!room) {
+    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+  }
+
+  // Get the position of the item being deleted
+  const deletedItemOrder = queueItem.order
+  const currentIndex = room.currentQueueIndex || 0
+
+  // Delete the item
   await prisma.queueItem.delete({ where: { id: itemId } })
 
-  // Reorder remaining items
+  // Get remaining items and reorder them
   const remainingItems = await prisma.queueItem.findMany({
     where: { roomId },
     orderBy: { order: 'asc' }
   })
 
+  // Reorder remaining items
   for (let i = 0; i < remainingItems.length; i++) {
     await prisma.queueItem.update({
       where: { id: remainingItems[i].id },
@@ -98,7 +113,41 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     })
   }
 
-  return NextResponse.json({ success: true })
+  // Update the room's currentQueueIndex if necessary
+  let newCurrentIndex = currentIndex
+  
+  if (deletedItemOrder < currentIndex) {
+    // If we deleted an item before the current playing item, shift index down
+    newCurrentIndex = Math.max(0, currentIndex - 1)
+  } else if (deletedItemOrder === currentIndex) {
+    // If we deleted the currently playing item
+    if (remainingItems.length === 0) {
+      // No items left, reset to 0
+      newCurrentIndex = 0
+    } else if (currentIndex >= remainingItems.length) {
+      // Current index is now out of bounds, set to last item
+      newCurrentIndex = remainingItems.length - 1
+    }
+    // If currentIndex < remainingItems.length, keep the same index (plays next song)
+  }
+  // If deletedItemOrder > currentIndex, no change needed
+
+  // Update the room's currentQueueIndex if it changed
+  if (newCurrentIndex !== currentIndex) {
+    await prisma.room.update({
+      where: { id: roomId },
+      data: { currentQueueIndex: newCurrentIndex }
+    })
+    console.log(`Updated currentQueueIndex from ${currentIndex} to ${newCurrentIndex} after deleting item at position ${deletedItemOrder}`)
+  }
+
+  return NextResponse.json({ 
+    success: true, 
+    deletedOrder: deletedItemOrder,
+    oldCurrentIndex: currentIndex,
+    newCurrentIndex,
+    remainingItemsCount: remainingItems.length
+  })
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
