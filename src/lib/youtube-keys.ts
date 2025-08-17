@@ -110,6 +110,7 @@ class YouTubeKeyManager {
     const apiKey = this.apiKeys.find(k => k.key === key);
     if (apiKey) {
       apiKey.quotaUsed = Math.min(apiKey.quotaUsed + quotaUsed, apiKey.dailyQuota);
+      apiKey.lastUsed = Date.now();
       if (apiKey.quotaUsed >= apiKey.dailyQuota) {
         apiKey.isActive = false;
         console.log(`API key ${this.apiKeys.indexOf(apiKey) + 1} has been deactivated due to quota exhaustion`);
@@ -149,6 +150,30 @@ class YouTubeKeyManager {
     }
 
     return { isQuotaError: false, shouldRetry: false };
+  }
+
+  // Get a prioritized list of available API keys without mutating state
+  getKeyAttemptOrder(): string[] {
+    const now = Date.now();
+    this.apiKeys.forEach(apiKey => {
+      if (now - apiKey.lastUsed > this.quotaResetTime) {
+        apiKey.quotaUsed = 0;
+        apiKey.isActive = true;
+      }
+    });
+
+    const availableKeys = this.apiKeys
+      .filter(apiKey => apiKey.isActive && apiKey.quotaUsed < apiKey.dailyQuota)
+      .slice();
+
+    availableKeys.sort((a, b) => {
+      if (a.quotaUsed !== b.quotaUsed) {
+        return a.quotaUsed - b.quotaUsed;
+      }
+      return a.lastUsed - b.lastUsed;
+    });
+
+    return availableKeys.map(k => k.key);
   }
 
   // Get total available quota across all keys

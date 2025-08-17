@@ -186,135 +186,95 @@ export async function GET(
     // Continue with API call if cache fails
   }
 
-  // Get next available API key
-  const apiKey = youtubeKeyManager.getNextKey()
-  if (!apiKey) {
+  // Try all available API keys in prioritized order before returning an error
+  const attemptKeys = youtubeKeyManager.getKeyAttemptOrder()
+  if (attemptKeys.length === 0) {
+    const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
     return NextResponse.json({ 
-      error: 'All YouTube API keys have exceeded daily quota. Please try again tomorrow.' 
+      error: message,
+      quotaExceeded: true,
+      estimatedResetHours
     }, { status: 503 })
   }
 
-  try {
-    // Search YouTube without duration filter to get all songs including 2-4 minute tracks
-    // Use the original query but optimize for music results
-    const ytUrl = `https://www.googleapis.com/youtube/v3/search` +
-      `?part=snippet&type=video&maxResults=40` + // Increased significantly to account for aggressive shorts filtering
-      `&q=${encodeURIComponent(q)}` +
-      `&order=relevance` + // Order by relevance to get popular songs first
-      `&regionCode=US` + // US region for better music results
-      `&key=${apiKey}`
+  let lastErrorMessage: string | undefined
 
-    const res = await fetch(ytUrl)
-    
-    if (!res.ok) {
-      let errorData: YouTubeAPIError | null = null
-      try {
-        errorData = await res.json()
-      } catch (parseError) {
-        console.error('Failed to parse error response:', parseError)
-      }
-
-      // Handle the error using the key manager
-      const { shouldRetry } = youtubeKeyManager.handleApiError(apiKey, res, errorData)
-      
-      // Try with another key if error handling suggests we should retry
-      if (shouldRetry) {
-        const fallbackKey = youtubeKeyManager.getNextKey()
-        if (fallbackKey) {
-          console.log('Attempting fallback with another API key')
-          const fallbackUrl = `https://www.googleapis.com/youtube/v3/search` +
-            `?part=snippet&type=video&maxResults=40` +
-            `&q=${encodeURIComponent(q)}` +
-            `&order=relevance` +
-            `&regionCode=US` +
-            `&key=${fallbackKey}`
-          
-          try {
-            const fallbackRes = await fetch(fallbackUrl)
-            if (fallbackRes.ok) {
-              const json = await fallbackRes.json()
-              const originalCount = json.items?.length || 0
-              const filteredItems = filterShorts(json.items || [])
-              const filteredCount = filteredItems.length
-              
-              console.log(`Fallback shorts filtering: ${originalCount} → ${filteredCount} (filtered out ${originalCount - filteredCount} shorts)`)
-              
-              const items = filteredItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
-                videoId: i.id.videoId,
-                title: i.snippet.title,
-                thumbnail: i.snippet.thumbnails.default.url
-              }))
-
-              // Cache the results
-              try {
-                await cacheService.cacheSearchResults(q, items)
-              } catch (error) {
-                console.error('Failed to cache results:', error)
-              }
-
-              return NextResponse.json(items)
-            } else {
-              // Handle fallback error
-              let fallbackErrorData: YouTubeAPIError | null = null
-              try {
-                fallbackErrorData = await fallbackRes.json()
-              } catch (parseError) {
-                console.error('Failed to parse fallback error response:', parseError)
-              }
-
-              youtubeKeyManager.handleApiError(fallbackKey, fallbackRes, fallbackErrorData)
-            }
-          } catch (fallbackError) {
-            console.error('Fallback API call failed:', fallbackError)
-          }
-        }
-      }
-      
-      // If we get here, all available keys have failed
-      if (!youtubeKeyManager.hasAvailableKeys()) {
-        const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
-        
-        return NextResponse.json({ 
-          error: message,
-          quotaExceeded: true,
-          estimatedResetHours
-        }, { status: 503 })
-      }
-
-      throw new Error(`YouTube API failed: ${errorData?.error?.message || 'Unknown error'}`)
-    }
-
-    const json = await res.json()
-    
-    // Filter out shorts and limit results
-    const originalCount = json.items?.length || 0
-    const filteredItems = filterShorts(json.items || [])
-    const filteredCount = filteredItems.length
-    
-    // Log filtering effectiveness
-    console.log(`Shorts filtering: ${originalCount} → ${filteredCount} (filtered out ${originalCount - filteredCount} shorts)`)
-    
-    // Ensure we have enough results
-    if (filteredCount === 0 && originalCount > 0) {
-      console.warn('All results were filtered as shorts - this might be too aggressive filtering')
-    }
-    
-    const items = filteredItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
-      videoId: i.id.videoId,
-      title: i.snippet.title,
-      thumbnail: i.snippet.thumbnails.default.url
-    }))
-
-    // Cache the results
+  for (const apiKey of attemptKeys) {
     try {
-      await cacheService.cacheSearchResults(q, items)
-    } catch (error) {
-      console.error('Failed to cache results:', error)
-    }
+      const ytUrl = `https://www.googleapis.com/youtube/v3/search` +
+        `?part=snippet&type=video&maxResults=40` +
+        `&q=${encodeURIComponent(q)}` +
+        `&order=relevance` +
+        `&regionCode=US` +
+        `&key=${apiKey}`
 
-    return NextResponse.json(items)
-  } catch (error) {
-    console.error('YouTube search error:', error)
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+      const res = await fetch(ytUrl)
+
+      if (!res.ok) {
+        let errorData: YouTubeAPIError | null = null
+        try {
+          errorData = await res.json()
+          lastErrorMessage = errorData?.error?.message || `HTTP ${res.status}`
+        } catch (parseError) {
+          lastErrorMessage = `HTTP ${res.status}`
+          console.error('Failed to parse error response:', parseError)
+        }
+
+        // Update key state; continue to next key regardless
+        youtubeKeyManager.handleApiError(apiKey, res, errorData)
+        continue
+      }
+
+      const json = await res.json()
+
+      const originalCount = json.items?.length || 0
+      const filteredItems = filterShorts(json.items || [])
+      const filteredCount = filteredItems.length
+
+      console.log(`Shorts filtering: ${originalCount} → ${filteredCount} (filtered out ${originalCount - filteredCount} shorts)`) 
+
+      if (filteredCount === 0 && originalCount > 0) {
+        console.warn('All results were filtered as shorts - this might be too aggressive filtering')
+      }
+
+      const items = filteredItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
+        videoId: i.id.videoId,
+        title: i.snippet.title,
+        thumbnail: i.snippet.thumbnails.default.url
+      }))
+
+      // Record success usage for fair rotation
+      try {
+        youtubeKeyManager.updateQuotaUsage(apiKey, 100)
+      } catch {}
+
+      try {
+        await cacheService.cacheSearchResults(q, items)
+      } catch (error) {
+        console.error('Failed to cache results:', error)
+      }
+
+      return NextResponse.json(items)
+    } catch (err: unknown) {
+      console.error('YouTube API call failed for a key, trying next key:', err)
+      if (err && typeof err === 'object' && 'message' in err) {
+        lastErrorMessage = String((err as { message?: unknown }).message) || 'Unknown error'
+      } else {
+        lastErrorMessage = 'Unknown error'
+      }
+      continue
+    }
   }
+
+  // After trying all keys
+  if (!youtubeKeyManager.hasAvailableKeys()) {
+    const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
+    return NextResponse.json({ 
+      error: message,
+      quotaExceeded: true,
+      estimatedResetHours
+    }, { status: 503 })
+  }
+
+  return NextResponse.json({ error: 'Search failed', details: lastErrorMessage }, { status: 500 })
 }
