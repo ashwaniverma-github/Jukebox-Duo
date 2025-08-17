@@ -30,8 +30,8 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold">1. Acceptance of Terms</h2>
               <p className="mt-3 text-gray-300">
-                By accessing or using Jukebox Duo (the "Service"), you agree to be bound by these Terms of
-                Service (the "Terms"). If you do not agree to the Terms, do not use the Service.
+                By accessing or using Jukebox Duo (the &quot;Service&quot;), you agree to be bound by these Terms of
+                Service (the &quot;Terms&quot;). If you do not agree to the Terms, do not use the Service.
               </p>
             </section>
 
@@ -106,7 +106,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold">10. Disclaimers</h2>
               <p className="mt-3 text-gray-300">
-                THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
+                THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
                 IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
                 PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED OR ERROR-FREE.
               </p>
@@ -125,7 +125,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-2xl font-semibold">12. Indemnification</h2>
               <p className="mt-3 text-gray-300">
                 You agree to indemnify and hold harmless Jukebox Duo and its affiliates from any claims, liabilities,
-                damages, losses, and expenses, including reasonable attorneys' fees, arising from your use of the
+                damages, losses, and expenses, including reasonable attorneys&apos; fees, arising from your use of the
                 Service or violation of these Terms.
               </p>
             </section>
@@ -149,7 +149,7 @@ export default function TermsOfServicePage() {
             <p className="text-sm text-gray-400">Last updated: {new Date().toLocaleDateString()}</p>
           </div>
         </main>
-        
+        <Footer />
       </div>
     </div>
   );
