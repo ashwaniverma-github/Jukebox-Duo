@@ -9,8 +9,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Jukebox Duo",
-  description: "Listen Together, No Matter Where You Are",
+  title: "Jukebox Duo - Listen Together, No Matter Where You Are",
+  description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time. Perfect for long-distance relationships, virtual hangouts, and shared music experiences.",
+  keywords: ["music sharing", "synchronized music", "YouTube music", "virtual hangouts", "music rooms", "collaborative playlists", "real-time music", "social music app"],
+  authors: [{ name: "Jukebox Duo Team" }],
+  creator: "Jukebox Duo",
+  publisher: "Jukebox Duo",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: "YOUR_GOOGLE_VERIFICATION_CODE", // Add your Google Search Console verification code
+  },
+  alternates: {
+    canonical: "https://jukeboxduo.com",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -23,28 +44,39 @@ export const metadata: Metadata = {
 
   // Open Graph (social preview)
   openGraph: {
-    title: "Jukebox Duo",
-    description: "Listen Together, No Matter Where You Are",
-    url: "https://jukeboxduo.com",                // <- update to your production URL
+    title: "Jukebox Duo - Listen Together, No Matter Where You Are",
+    description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+    url: "https://jukeboxduo.com",
     siteName: "Jukebox Duo",
+    locale: "en_US",
+    type: "website",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Jukebox Duo — Listen together"
+        alt: "Jukebox Duo — Listen together with friends in real-time",
+        type: "image/png",
       }
     ],
-    type: "website"
   },
 
   // Twitter card
   twitter: {
     card: "summary_large_image",
-    title: "Jukebox Duo",
-    description: "Listen Together, No Matter Where You Are",
-    images: ["/og-image.png"]
-  }
+    title: "Jukebox Duo - Listen Together, No Matter Where You Are",
+    description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+    images: ["/og-image.png"],
+    creator: "@jukeboxduo", // Add your Twitter handle if you have one
+  },
+
+  // Additional metadata for better SEO
+  category: "music",
+  classification: "music sharing application",
+  other: {
+    "theme-color": "#000000",
+    "color-scheme": "dark",
+  },
 };
 
 export default function RootLayout({
@@ -54,6 +86,43 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Structured Data for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "Jukebox Duo",
+              "description": "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+              "url": "https://jukeboxduo.com",
+              "applicationCategory": "MusicApplication",
+              "operatingSystem": "Web Browser",
+              "browserRequirements": "Requires JavaScript. Requires HTML5.",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "Jukebox Duo Team"
+              },
+              "featureList": [
+                "Synchronized music listening",
+                "YouTube music sharing",
+                "Real-time collaboration",
+                "Virtual music rooms",
+                "Playlist creation",
+                "Cross-platform compatibility"
+              ],
+              "screenshot": "https://jukeboxduo.com/og-image.png",
+              "softwareVersion": "1.0.0"
+            })
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} antialiased`}
       >
