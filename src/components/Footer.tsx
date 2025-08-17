@@ -1,3 +1,4 @@
+"use client"
 import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -18,6 +19,7 @@ const Footer = () => (
       <Link href="/features" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Features</Link>
       <Link href="/about" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>About</Link>
       <Link href="/contact" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Contact</Link>
+      <Link href="/terms" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Terms</Link>
       <Link href="/privacyPolicy" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Privacy Policy</Link>
     </nav>
     <div style={{ color: '#fff', opacity: 0.7, fontSize: '0.95rem' }}>
