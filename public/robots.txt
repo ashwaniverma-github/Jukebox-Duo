@@ -1,1 +1,13 @@
- 
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /room/
+
+# Host
+Host: https://jukeboxduo.com
+
+# Sitemaps
+Sitemap: https://jukeboxduo.com/sitemap.xml
