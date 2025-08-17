@@ -11,6 +11,7 @@ type Bucket = { count: number; resetAt: number }
 const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 50 // Increased since we have multiple API keys
 const buckets = new Map<string, Bucket>()
+const SWR_STALE_AFTER_MS = 12 * 60 * 60 * 1000 // 12 hours
 
 function getClientKey(userId: string | undefined, req: Request): string {
   if (userId) return `user:${userId}`
@@ -45,6 +46,30 @@ interface YouTubeSearchItem {
     };
     duration?: string;
   };
+}
+
+// In-flight request deduplication map (server-side coalescing by normalized query)
+type SearchResultItem = { videoId: string; title: string; thumbnail: string }
+const inFlightSearches = new Map<string, Promise<SearchResultItem[]>>()
+
+function normalizeQueryForKey(q: string) {
+  return q.toLowerCase().trim().replace(/\s+/g, ' ')
+}
+
+function scheduleBackgroundRefresh(q: string, runner: (q: string) => Promise<SearchResultItem[]>) {
+  const key = normalizeQueryForKey(q)
+  if (inFlightSearches.has(key)) return
+  const promise = runner(q)
+    .catch(() => [] as SearchResultItem[])
+    .finally(() => { inFlightSearches.delete(key) })
+  inFlightSearches.set(key, promise)
+}
+
+// Minimal shape for videos.list response items we care about
+interface VideosListItem {
+  id: string;
+  contentDetails?: { duration?: string };
+  statistics?: { viewCount?: string };
 }
 
 // Comprehensive YouTube Shorts filtering
@@ -128,6 +153,132 @@ function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
   });
 }
 
+// Parse ISO 8601 duration (e.g., PT3M25S) to total seconds
+function parseISODurationToSeconds(iso: string): number {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+// Core search runner used by GET and SWR background refresh
+async function performSearchAndCache(query: string): Promise<SearchResultItem[]> {
+  const attemptKeys = youtubeKeyManager.getKeyAttemptOrder()
+  if (attemptKeys.length === 0) return []
+
+  for (const apiKey of attemptKeys) {
+    try {
+      const ytUrl = `https://www.googleapis.com/youtube/v3/search` +
+        `?part=snippet&type=video&maxResults=40` +
+        `&q=${encodeURIComponent(query)}` +
+        `&order=relevance` +
+        `&regionCode=US` +
+        `&key=${apiKey}`
+
+      const res = await fetch(ytUrl)
+
+      if (!res.ok) {
+        let errorData: YouTubeAPIError | null = null
+        try {
+          errorData = await res.json()
+        } catch {}
+        youtubeKeyManager.handleApiError(apiKey, res, errorData)
+        continue
+      }
+
+      const json = await res.json()
+      const ids = (json.items || [])
+        .map((i: YouTubeSearchItem) => i?.id?.videoId)
+        .filter(Boolean)
+        .slice(0, 50)
+        .join(',')
+
+      let itemsToReturn: SearchResultItem[] = []
+
+      if (ids) {
+        try {
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos` +
+            `?part=contentDetails,statistics&id=${ids}&key=${apiKey}`
+          const detailsRes = await fetch(detailsUrl)
+          if (detailsRes.ok) {
+            const detailsJson = await detailsRes.json()
+            const durationById: Record<string, number> = {}
+            const viewCountById: Record<string, number> = {}
+            for (const v of (detailsJson.items || []) as VideosListItem[]) {
+              const id = v?.id
+              const dur = v?.contentDetails?.duration
+              if (id && dur) durationById[id] = parseISODurationToSeconds(dur)
+              const vc = v?.statistics?.viewCount
+              if (id && typeof vc === 'string') {
+                const n = Number(vc)
+                if (!Number.isNaN(n)) viewCountById[id] = n
+              }
+            }
+
+            const MIN_DURATION_SECONDS = 90
+            const MAX_DURATION_SECONDS = 540
+
+            const filteredByDuration = (json.items || []).filter((i: YouTubeSearchItem) => {
+              const id = i?.id?.videoId
+              if (!id) return false
+              const secs = durationById[id]
+              if (typeof secs === 'number') {
+                return secs >= MIN_DURATION_SECONDS && secs <= MAX_DURATION_SECONDS
+              }
+              return filterShorts([i]).length > 0
+            })
+
+            let finalItems = filteredByDuration.length > 0 ? filteredByDuration : filterShorts(json.items || [])
+            finalItems = finalItems.sort((a: YouTubeSearchItem, b: YouTubeSearchItem) => {
+              const av = viewCountById[a.id.videoId] ?? -1
+              const bv = viewCountById[b.id.videoId] ?? -1
+              return bv - av
+            })
+
+            itemsToReturn = finalItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
+              videoId: i.id.videoId,
+              title: i.snippet.title,
+              thumbnail: i.snippet.thumbnails.default.url
+            }))
+          } else {
+            const heuristics = filterShorts(json.items || [])
+            itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
+              videoId: i.id.videoId,
+              title: i.snippet.title,
+              thumbnail: i.snippet.thumbnails.default.url
+            }))
+          }
+        } catch {
+          const heuristics = filterShorts(json.items || [])
+          itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
+            videoId: i.id.videoId,
+            title: i.snippet.title,
+            thumbnail: i.snippet.thumbnails.default.url
+          }))
+        }
+      } else {
+        const heuristics = filterShorts(json.items || [])
+        itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
+          videoId: i.id.videoId,
+          title: i.snippet.title,
+          thumbnail: i.snippet.thumbnails.default.url
+        }))
+      }
+
+      try { youtubeKeyManager.updateQuotaUsage(apiKey, 100) } catch {}
+      try { await cacheService.cacheSearchResults(query, itemsToReturn) } catch {}
+      return itemsToReturn
+    } catch {
+      // Try next key
+      continue
+    }
+  }
+
+  return []
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -159,6 +310,9 @@ export async function GET(
 
   // Input validation
   if (!q) return NextResponse.json([], { status: 200 })
+  if (q.length < 3) {
+    return NextResponse.json([], { status: 200 })
+  }
   if (q.length > 100) {
     return NextResponse.json({ error: 'Query too long' }, { status: 400 })
   }
@@ -172,13 +326,22 @@ export async function GET(
     return res
   }
 
-  // Check cache first
+  // SWR: return cache immediately if present, then refresh in background
   console.log(`🔍 Checking cache for: "${q}"`)
   try {
-    const cachedResults = await cacheService.getCachedSearchResults(q)
-    if (cachedResults) {
-      console.log(`🎯 Returning cached results for: "${q}"`)
-      return NextResponse.json(cachedResults)
+    const cachedWithMeta = await cacheService.getCachedSearchResultsWithMeta(q)
+    if (cachedWithMeta?.results?.length) {
+      console.log(`🎯 Returning cached results for: "${q}" (SWR)`) 
+      const ageMs = Date.now() - cachedWithMeta.timestamp
+      if (ageMs >= SWR_STALE_AFTER_MS) {
+        // Trigger background refresh only when cache is stale
+        scheduleBackgroundRefresh(q, async (_q) => {
+          return await performSearchAndCache(_q)
+        })
+      } else {
+        console.log(`⏳ Cache is fresh (age ${(ageMs/3600000).toFixed(1)}h), skipping background refresh`)
+      }
+      return NextResponse.json(cachedWithMeta.results)
     }
     console.log(`No cache found for: "${q}"`)
   } catch (error) {
@@ -186,87 +349,21 @@ export async function GET(
     // Continue with API call if cache fails
   }
 
-  // Try all available API keys in prioritized order before returning an error
-  const attemptKeys = youtubeKeyManager.getKeyAttemptOrder()
-  if (attemptKeys.length === 0) {
-    const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
-    return NextResponse.json({ 
-      error: message,
-      quotaExceeded: true,
-      estimatedResetHours
-    }, { status: 503 })
+  // In-flight dedupe for foreground request
+  const inflightKey = normalizeQueryForKey(q)
+  if (inFlightSearches.has(inflightKey)) {
+    const results = await inFlightSearches.get(inflightKey)!
+    return NextResponse.json(results)
   }
 
-  let lastErrorMessage: string | undefined
+  const promise = (async () => await performSearchAndCache(q))()
+  inFlightSearches.set(inflightKey, promise)
+  const results = await promise.finally(() => inFlightSearches.delete(inflightKey))
 
-  for (const apiKey of attemptKeys) {
-    try {
-      const ytUrl = `https://www.googleapis.com/youtube/v3/search` +
-        `?part=snippet&type=video&maxResults=40` +
-        `&q=${encodeURIComponent(q)}` +
-        `&order=relevance` +
-        `&regionCode=US` +
-        `&key=${apiKey}`
-
-      const res = await fetch(ytUrl)
-
-      if (!res.ok) {
-        let errorData: YouTubeAPIError | null = null
-        try {
-          errorData = await res.json()
-          lastErrorMessage = errorData?.error?.message || `HTTP ${res.status}`
-        } catch (parseError) {
-          lastErrorMessage = `HTTP ${res.status}`
-          console.error('Failed to parse error response:', parseError)
-        }
-
-        // Update key state; continue to next key regardless
-        youtubeKeyManager.handleApiError(apiKey, res, errorData)
-        continue
-      }
-
-      const json = await res.json()
-
-      const originalCount = json.items?.length || 0
-      const filteredItems = filterShorts(json.items || [])
-      const filteredCount = filteredItems.length
-
-      console.log(`Shorts filtering: ${originalCount} → ${filteredCount} (filtered out ${originalCount - filteredCount} shorts)`) 
-
-      if (filteredCount === 0 && originalCount > 0) {
-        console.warn('All results were filtered as shorts - this might be too aggressive filtering')
-      }
-
-      const items = filteredItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
-        videoId: i.id.videoId,
-        title: i.snippet.title,
-        thumbnail: i.snippet.thumbnails.default.url
-      }))
-
-      // Record success usage for fair rotation
-      try {
-        youtubeKeyManager.updateQuotaUsage(apiKey, 100)
-      } catch {}
-
-      try {
-        await cacheService.cacheSearchResults(q, items)
-      } catch (error) {
-        console.error('Failed to cache results:', error)
-      }
-
-      return NextResponse.json(items)
-    } catch (err: unknown) {
-      console.error('YouTube API call failed for a key, trying next key:', err)
-      if (err && typeof err === 'object' && 'message' in err) {
-        lastErrorMessage = String((err as { message?: unknown }).message) || 'Unknown error'
-      } else {
-        lastErrorMessage = 'Unknown error'
-      }
-      continue
-    }
+  if (results.length) {
+    return NextResponse.json(results)
   }
 
-  // After trying all keys
   if (!youtubeKeyManager.hasAvailableKeys()) {
     const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
     return NextResponse.json({ 
@@ -276,5 +373,5 @@ export async function GET(
     }, { status: 503 })
   }
 
-  return NextResponse.json({ error: 'Search failed', details: lastErrorMessage }, { status: 500 })
+  return NextResponse.json({ error: 'Search failed' }, { status: 500 })
 }

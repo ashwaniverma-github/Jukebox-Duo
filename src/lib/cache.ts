@@ -26,6 +26,7 @@ class CacheService {
   private isConnected = false;
   private readonly CACHE_TTL = 24 * 60 * 60; // 24 hours
   private readonly SEARCH_CACHE_PREFIX = 'youtube_search:';
+  // Suggestions are removed
 
   constructor() {
     console.log('🔍 CacheService constructor - checking env vars:');
@@ -113,6 +114,8 @@ class CacheService {
 
       await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(cachedData));
       console.log(`💾 Cached: "${query}"`);
+
+      // Suggestions removed
     } catch (error) {
       console.error('Cache failed:', error);
     }
@@ -140,6 +143,34 @@ class CacheService {
     } catch (error) {
       console.error('Get cache failed:', error);
       return null;
+    }
+  }
+
+  // Suggestions removed
+
+  // Returns cached results with metadata for SWR logic
+  async getCachedSearchResultsWithMeta(query: string): Promise<{ results: YouTubeSearchResult[]; timestamp: number; expiresAt: number } | null> {
+    if (!this.redis) {
+      console.log('❌ Redis not initialized, skipping cache check')
+      return null
+    }
+
+    try {
+      const cacheKey = this.SEARCH_CACHE_PREFIX + this.normalizeQuery(query)
+      const cachedData = await this.redis.get(cacheKey)
+
+      if (cachedData) {
+        const parsed: CachedSearchResult = JSON.parse(cachedData)
+        if (Date.now() < parsed.expiresAt) {
+          console.log(`🎯 Cache hit (with meta): "${query}"`)
+          return { results: parsed.results, timestamp: parsed.timestamp, expiresAt: parsed.expiresAt }
+        }
+        await this.redis.del(cacheKey)
+      }
+      return null
+    } catch (error) {
+      console.error('Get cache (with meta) failed:', error)
+      return null
     }
   }
 

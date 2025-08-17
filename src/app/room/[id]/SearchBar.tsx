@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { MagnifyingGlassIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
@@ -27,56 +27,51 @@ export default function SearchBar({ roomId, onAdd }: Props) {
   const [loading, setLoading] = useState(false)
   const [focused, setFocused] = useState(false)
   const [error, setError] = useState<ErrorState | null>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  // suggestions removed
+
+  const performSearch = async () => {
+    const trimmed = query.trim()
+    if (trimmed.length < 3) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(trimmed)}`)
+      const json = await res.json()
+      if (!res.ok) {
+        if (res.status === 503 && json.quotaExceeded) {
+          setError({ message: json.error, isQuotaExceeded: true, estimatedResetHours: json.estimatedResetHours })
+        } else if (res.status === 429) {
+          setError({ message: 'Too many requests. Please wait a moment before searching again.' })
+        } else {
+          setError({ message: json.error || 'Search failed. Please try again.' })
+        }
+        setResults([])
+      } else {
+        setResults(json)
+      }
+    } catch (err) {
+      console.error('Search error:', err)
+      setError({ message: 'Network error. Please check your connection and try again.' })
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!query) {
+    const trimmed = query.trim()
+    if (trimmed.length < 3) {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      setLoading(false)
       setResults([])
       setError(null)
+      // suggestions removed
       return
     }
-    
-    const id = setTimeout(async () => {
-      setLoading(true)
-      setError(null)
-      
-      try {
-        const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(query)}`)
-        const json = await res.json()
-        
-        if (!res.ok) {
-          // Handle API error response
-          if (res.status === 503 && json.quotaExceeded) {
-            setError({
-              message: json.error,
-              isQuotaExceeded: true,
-              estimatedResetHours: json.estimatedResetHours
-            })
-          } else if (res.status === 429) {
-            setError({
-              message: 'Too many requests. Please wait a moment before searching again.'
-            })
-          } else {
-            setError({
-              message: json.error || 'Search failed. Please try again.'
-            })
-          }
-          setResults([])
-        } else {
-          // Success - json is Result[]
-          setResults(json)
-        }
-      } catch (err) {
-        console.error('Search error:', err)
-        setError({
-          message: 'Network error. Please check your connection and try again.'
-        })
-        setResults([])
-      }
-      
-      setLoading(false)
-    }, 300)
-    
-    return () => clearTimeout(id)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => { void performSearch() }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [query, roomId])
 
   const handleAddToQueue = async (item: Result) => {
@@ -106,11 +101,17 @@ export default function SearchBar({ roomId, onAdd }: Props) {
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search YouTube"
+          placeholder="Search YouTube (min 3 chars)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              if (debounceRef.current) clearTimeout(debounceRef.current)
+              void performSearch()
+            }
+          }}
           className="w-full bg-transparent outline-none text-base placeholder:text-gray-400"
         />
       </div>
@@ -158,6 +159,7 @@ export default function SearchBar({ roomId, onAdd }: Props) {
       </AnimatePresence>
       <ul className="space-y-2 max-h-60 overflow-y-auto mt-2">
         <AnimatePresence>
+          {/* suggestions removed */}
           {results.map((r) => (
             <motion.li
               key={r.videoId}
