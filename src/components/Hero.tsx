@@ -68,6 +68,30 @@ const Hero = () => {
       style={{ fontFamily: 'var(--font-inter)' }}
     >
       <Navbar />
+      
+      {/* Product Hunt Badge */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+        className="flex justify-center mb-8"
+      >
+        <a 
+          href="https://www.producthunt.com/products/jukebox-duo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-jukebox&#0045;duo" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="transition-transform duration-200 hover:scale-105"
+        >
+          <img 
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1006181&theme=neutral&t=1755671872306" 
+            alt="Jukebox Duo - Listen Music Together No Matter Where You Are | Product Hunt" 
+            style={{ width: '250px', height: '54px' }} 
+            width="250" 
+            height="54" 
+          />
+        </a>
+      </motion.div>
+      
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
