@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   keywords: ["music sharing", "synchronized music", "YouTube music", "virtual hangouts", "music rooms", "collaborative playlists", "real-time music", "social music app"],
   authors: [{ name: "Jukebox Duo Team" }],
   creator: "Jukebox Duo",
-  publisher: "Jukebox Duo",
+  publisher: "JukeboxDuo",
   robots: {
     index: true,
     follow: true,
