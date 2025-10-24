@@ -15,6 +15,7 @@ import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, X, Share2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { DonationModal } from '../../../components/DonationModal';
 
 export default function RoomPage() {
   const { id: roomId } = useParams() as { id: string };
@@ -423,6 +424,13 @@ export default function RoomPage() {
                 </div>
               )}
             </div>
+            
+            <button
+            className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 ' 
+            onClick={()=>router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')} >
+              Support
+            </button>
+
             {/* Invite Button */}
             <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
               <DialogTrigger asChild>
@@ -865,6 +873,9 @@ export default function RoomPage() {
           background: rgba(239, 68, 68, 0.7);
         }
       `}</style>
+
+      {/* Donation Modal */}
+      <DonationModal />
     </div>
   );
 }
