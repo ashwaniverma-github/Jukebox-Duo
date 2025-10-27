@@ -3,21 +3,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button'
 
 export function DonationModal() {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
   const [pulseHeart, setPulseHeart] = useState(false)
 
   useEffect(() => {
-    setIsOpen(true)
-    const interval = setInterval(() => {
-      setPulseHeart(true)
-      setTimeout(() => setPulseHeart(false), 100)
-    }, 1000)
-    return () => clearInterval(interval)
+    // Check if the donation modal has been shown in this session
+    const hasShownDonationModal = sessionStorage.getItem('donationModalShown')
+
+    if (!hasShownDonationModal) {
+      setIsOpen(true)
+      // Mark that the donation modal has been shown
+      sessionStorage.setItem('donationModalShown', 'true')
+
+      const interval = setInterval(() => {
+        setPulseHeart(true)
+        setTimeout(() => setPulseHeart(false), 100)
+      }, 1000)
+      return () => clearInterval(interval)
+    }
   }, [])
 
+  const handleClose = () => {
+    setIsOpen(false)
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] bg-gray-900 border-2 border-yellow-500 text-white">
         <DialogHeader>
           <div className="flex justify-center mb-3">
@@ -81,11 +92,12 @@ export function DonationModal() {
           <Button 
             variant="ghost" 
             className="text-gray-400 hover:bg-gray-800 hover:text-white text-sm"
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
           >
             Maybe later
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )}
+  )
+}
