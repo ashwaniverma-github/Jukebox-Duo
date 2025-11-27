@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Play, Music, Menu, X, ArrowRight } from "lucide-react";
 
 const Navbar = () => {
   const router = useRouter();
@@ -9,140 +10,211 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      initial={{ opacity: 0, y: -30 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.1 }}
-      className="fixed top-0 left-0 w-full  flex items-center justify-between px-4 py-3 md:py-5 font-sans bg backdrop-blur-lg  z-1"
+      transition={{ duration: 0.5 }}
+      className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-md bg-black/20 border-b border-white/5"
     >
-      {/* Left: Hamburger + Logo (mobile), Logo only (desktop) */}
-      <div className="flex items-center flex-1 md:flex-none">
-        {/* Hamburger (mobile only) */}
-        <button
-          aria-label="Open menu"
-          className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 md:hidden"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-white">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <Link href="/" className="font-extrabold text-xl tracking-tight text-white flex items-center gap-2 md:ml-0 ml-2">
-          <h1 className="text-red-500 text-md flex items-center justify-center">Jukebox Duo</h1>
+      <div className="flex items-center gap-2">
+
+        <Link href="/" className="font-bold text-xl tracking-tight text-white">
+          Jukebox<span className="text-red-500">Duo</span>
         </Link>
-        {/* Dropdown menu (mobile only) */}
-        {menuOpen && (
-          <div className="absolute top-14 left-2 bg-gray-900 border border-white/10 rounded-xl shadow-lg py-2 w-44 flex flex-col items-stretch z-50 animate-fade-in">
-            <Link href="/features" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Features</Link>
-            <Link href="/about" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>About</Link>
-            <Link href="/contact" className="px-5 py-3 text-white hover:bg-gray-800 text-center" onClick={() => setMenuOpen(false)}>Contact</Link>
-          </div>
-        )}
       </div>
 
-      {/* Center: Links (desktop only) */}
-      <div className="hidden md:flex flex-1 items-center justify-center gap-8">
-        <Link href="/features" className="text-white opacity-85 font-semibold text-base hover:underline">Features</Link>
-        <Link href="/about" className="text-white opacity-85 font-semibold text-base hover:underline">About</Link>
-        <Link href="/contact" className="text-white opacity-85 font-semibold text-base hover:underline">Contact</Link>
+      {/* Desktop Links */}
+      <div className="hidden md:flex items-center gap-8">
+        {["Features", "About", "Contact"].map((item) => (
+          <Link
+            key={item}
+            href={`/${item.toLowerCase()}`}
+            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          >
+            {item}
+          </Link>
+        ))}
       </div>
 
-      {/* Right: Sign In/Up (always right) */}
-      <div className="flex-1 flex items-center justify-end">
+      {/* Desktop CTA */}
+      <div className="hidden md:flex items-center gap-4">
         <button
-          onClick={() => router.push('/signin')}
-          className="ml-2 md:ml-0 cursor-pointer bg-white text-red-500 font-bold text-base px-5 py-2 rounded-full shadow-md transition-colors duration-150 hover:bg-red-100"
-          style={{ fontFamily: 'var(--font-inter)' }}
+          onClick={() => router.push("/signin")}
+          className="text-sm font-medium text-white hover:text-red-400 transition-colors"
         >
           Sign In
         </button>
+        <button
+          onClick={() => router.push("/signin")}
+          className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors"
+        >
+          Get Started
+        </button>
       </div>
+
+      {/* Mobile Menu Toggle */}
+      <button
+        className="md:hidden text-white p-2"
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        {menuOpen ? <X /> : <Menu />}
+      </button>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-full left-0 w-full bg-black/95 backdrop-blur-xl border-b border-white/10 p-6 flex flex-col gap-4 md:hidden"
+        >
+          {["Features", "About", "Contact"].map((item) => (
+            <Link
+              key={item}
+              href={`/${item.toLowerCase()}`}
+              className="text-lg font-medium text-gray-300 hover:text-white"
+              onClick={() => setMenuOpen(false)}
+            >
+              {item}
+            </Link>
+          ))}
+          <div className="h-px bg-white/10 my-2" />
+          <button
+            onClick={() => router.push("/signin")}
+            className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold"
+          >
+            Sign In
+          </button>
+        </motion.div>
+      )}
     </motion.nav>
+  );
+};
+
+const AudioVisualizer = () => {
+  return (
+    <div className="flex items-center justify-center gap-1 h-16 md:h-24">
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="w-2 md:w-3 bg-gradient-to-t from-red-600 to-red-400 rounded-full"
+          animate={{
+            height: ["20%", "80%", "40%", "100%", "30%"],
+          }}
+          transition={{
+            duration: 1.2,
+            repeat: Infinity,
+            repeatType: "mirror",
+            ease: "easeInOut",
+            delay: i * 0.1,
+          }}
+          style={{
+            opacity: 0.8,
+          }}
+        />
+      ))}
+    </div>
   );
 };
 
 const Hero = () => {
   const router = useRouter();
+
   return (
-    <section
-      className="flex flex-col items-center justify-center min-h-[80vh] pt-30 md:pt-40 px-4 pb-8 text-center relative font-sans"
-      style={{ fontFamily: 'var(--font-inter)' }}
-    >
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
       <Navbar />
-      
-      {/* Product Hunt Badge */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-        className="flex justify-center mb-8"
-      >
-        <a 
-          href="https://www.producthunt.com/products/jukebox-duo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-jukebox&#0045;duo" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="transition-transform duration-200 hover:scale-105"
-        >
-          <img 
-            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1006181&theme=neutral&t=1755671872306" 
-            alt="Jukebox Duo - Listen Music Together No Matter Where You Are | Product Hunt" 
-            style={{ width: '250px', height: '54px' }} 
-            width="250" 
-            height="54" 
-          />
-        </a>
-      </motion.div>
-      
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-      >
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 text-white">
-          Listen Together
-        </h1>
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-white">
-          No Matter Where You Are
-        </h2>
-        
-        <p style={{ fontSize: '1.25rem', maxWidth: 600, margin: '5px auto 2rem auto', color: '#fff', opacity: 0.9 , gap: '10px' }}>
-          Create rooms, queue your favorite YouTube tunes <br /> and play/pause in perfect sync with friends.
-        </p>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => router.push('/signin')}
-            className="cursor-pointer bg-gradient-to-r from-red-700 to-red-500 text-white font-bold text-[1.1rem] px-9 py-3 rounded-full shadow-md hover:from-red-800 hover:to-red-600 transition-all duration-200"
-            style={{ fontFamily: 'var(--font-inter)' }}
-          >
-            Try Now
-          </button>
-          <a href="#features" className="bg-white/10 text-white font-semibold text-[1.1rem] px-9 py-3 rounded-full border border-white/20 opacity-85 hover:bg-white/20 transition-all duration-200" style={{ fontFamily: 'var(--font-inter)' }}>See How It Works</a>
-        </div>
-        {/* Placeholder SVG illustration with musical vibe */}
+
+      {/* Clean Background - Removed heavy blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900/50 via-black to-black" />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10 text-center">
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8, type: 'spring' }}
-          style={{ maxWidth: 420, margin: '0 auto' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8 flex justify-center"
         >
-          <svg width="100%" height="180" viewBox="0 0 420 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="210" cy="170" rx="180" ry="10" fill="#fff" fillOpacity="0.08" />
-            <rect x="60" y="40" width="80" height="60" rx="16" fill="#fff" fillOpacity="0.12" />
-            <rect x="280" y="60" width="80" height="60" rx="16" fill="#fff" fillOpacity="0.12" />
-            <circle cx="100" cy="70" r="24" fill="#ef4444" />
-            <circle cx="320" cy="90" r="24" fill="#ef4444" />
-            <path d="M124 70 Q170 100 296 90" stroke="#b91c1c" strokeWidth="4" fill="none" />
-            <rect x="90" y="110" width="40" height="8" rx="4" fill="#fff" fillOpacity="0.18" />
-            <rect x="310" y="130" width="40" height="8" rx="4" fill="#fff" fillOpacity="0.18" />
-            {/* Musical notes */}
-            <g>
-              <path d="M180 60 Q182 50 190 55 Q198 60 196 70" stroke="#b91c1c" strokeWidth="2.5" fill="none" />
-              <ellipse cx="196" cy="70" rx="4" ry="6" fill="#ef4444" />
-              <path d="M240 80 Q242 70 250 75 Q258 80 256 90" stroke="#b91c1c" strokeWidth="2.5" fill="none" />
-              <ellipse cx="256" cy="90" rx="4" ry="6" fill="#ef4444" />
-            </g>
-          </svg>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            <span className="text-sm text-gray-300 font-medium">
+              Vibe together in real-time
+            </span>
+          </div>
         </motion.div>
-      </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6"
+        >
+          Music is better <br />
+          <span className="text-white">
+            when shared.
+          </span>
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+        >
+          Create a room, invite your friends, and listen to your favorite tracks
+          in perfect sync. No more counting down to press play.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+        >
+          <button
+            onClick={() => router.push("/signin")}
+            className="group relative px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+          >
+            Start Listening
+            <Play className="w-4 h-4 fill-current" />
+            <div className="absolute inset-0 rounded-full ring-4 ring-red-600/20 group-hover:ring-red-600/40 transition-all" />
+          </button>
+          <button
+            onClick={() => {
+              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+          >
+            How it works
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </motion.div>
+
+        {/* Visualizer Demo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="relative max-w-4xl mx-auto"
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
+          <div className=" backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-2xl">
+            <div className="flex flex-col items-center gap-6">
+              <AudioVisualizer />
+              <div className="text-center mt-4">
+                <p className="text-sm text-gray-500 font-mono uppercase tracking-widest">
+                  Now Playing
+                </p>
+                <p className="text-white font-medium mt-1">
+                  Lo-Fi Beats to Study/Relax To
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </section>
   );
 };

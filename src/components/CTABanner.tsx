@@ -1,31 +1,38 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 
 const CTABanner = () => (
-  <motion.section
-    className="w-full bg-gradient-to-r from-red-700 to-red-500 text-white py-10 px-4 text-center shadow-lg mt-12 font-sans"
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.3 }}
-    transition={{ duration: 0.7 }}
-  >
-    <motion.h2
-      className="text-2xl font-extrabold mb-5"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1, duration: 0.7 }}
-    >
-      Ready to start listening together?
-    </motion.h2>
-    <motion.a
-      href="/dashboard"
-      className="bg-white text-red-500 font-bold text-lg px-9 py-3 rounded-full shadow-md inline-block transition-all duration-200 hover:bg-red-100"
-      whileHover={{ scale: 1.06, boxShadow: '0 4px 24px #fff8' }}
-      transition={{ type: 'spring', stiffness: 80, damping: 14 }}
-    >
-      Create Your First Room — It&apos;s Free
-    </motion.a>
-  </motion.section>
+  <section className="py-24 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-red-900/20 pointer-events-none" />
+
+    <div className="container mx-auto px-4 relative z-10 text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="max-w-3xl mx-auto"
+      >
+        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          Ready to start listening?
+        </h2>
+        <p className="text-xl text-gray-400 mb-10">
+          Create a room in seconds. No account required for guests.
+        </p>
+
+        <motion.a
+          href="/dashboard"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-colors"
+        >
+          Create Your Room
+          <ArrowRight className="w-5 h-5" />
+        </motion.a>
+      </motion.div>
+    </div>
+  </section>
 );
 
 export default CTABanner; 

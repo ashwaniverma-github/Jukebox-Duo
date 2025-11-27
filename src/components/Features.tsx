@@ -1,78 +1,87 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { Zap, ListMusic, Globe, Github } from "lucide-react";
 
 const features = [
   {
-    title: "Real‑Time Sync",
-    desc: "Low‑latency play/pause across any device",
-    img: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="36" fill="#fff" fillOpacity="0.10"/><rect x="28" y="36" width="24" height="8" rx="4" fill="#ef4444"/><rect x="36" y="28" width="8" height="24" rx="4" fill="#ef4444"/></svg>
-    )
+    title: "Real-Time Sync",
+    desc: "Experience music together with zero latency. When you hit play, it plays for everyone instantly.",
+    icon: <Zap className="w-6 h-6 text-red-500" />,
+    gradient: "from-red-500/20 to-orange-500/20",
   },
   {
     title: "Collaborative Queue",
-    desc: "Everyone can add and reorder tracks",
-    img: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><rect x="16" y="24" width="48" height="8" rx="4" fill="#ef4444"/><rect x="16" y="40" width="32" height="8" rx="4" fill="#fff" fillOpacity="0.18"/><rect x="16" y="56" width="40" height="8" rx="4" fill="#fff" fillOpacity="0.18"/></svg>
-    )
+    desc: "Build the perfect playlist together. Add, remove, and reorder tracks in real-time.",
+    icon: <ListMusic className="w-6 h-6 text-blue-500" />,
+    gradient: "from-blue-500/20 to-cyan-500/20",
   },
   {
-    title: "No Downloads",
-    desc: "Runs entirely in your browser",
-    img: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><rect x="20" y="20" width="40" height="40" rx="12" fill="#fff" fillOpacity="0.10"/><rect x="32" y="32" width="16" height="16" rx="4" fill="#ef4444"/></svg>
-    )
+    title: "No Downloads Required",
+    desc: "Jump straight into the action. Runs entirely in your browser with no software to install.",
+    icon: <Globe className="w-6 h-6 text-green-500" />,
+    gradient: "from-green-500/20 to-emerald-500/20",
   },
   {
-    title: "Free & Open",
-    desc: "Powered by YouTube & WebSockets",
-    img: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="36" fill="#fff" fillOpacity="0.10"/><rect x="28" y="36" width="24" height="8" rx="4" fill="#ef4444"/><circle cx="40" cy="40" r="8" fill="#fff" fillOpacity="0.18"/></svg>
-    )
-  }
+    title: "Open Source",
+    desc: "Transparent and community-driven. Powered by YouTube and built with modern web tech.",
+    icon: <Github className="w-6 h-6 text-purple-500" />,
+    gradient: "from-purple-500/20 to-pink-500/20",
+  },
 ];
 
-const container = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.18
-    }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 40, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 80, damping: 14 } }
-};
-
-const Features = () => (
-  <motion.section id="features" style={{ padding: '4rem 1rem 3rem 1rem', fontFamily: 'var(--font-inter)' }}
-    initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} variants={container}
-  >
-    <motion.h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, marginBottom: '2.5rem', color: '#fff' }}
-      initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
-    >
-      Features
-    </motion.h2>
-    <motion.div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }} variants={container}>
-      {features.map((f, i) => (
-        <motion.div key={i} variants={item} whileHover={{ scale: 1.03, boxShadow: '0 4px 24px rgba(239,68,68,0.2)' }} style={{
-          display: 'flex', flexDirection: i % 2 === 0 ? 'row' : 'row-reverse', alignItems: 'center',
-          gap: '2.5rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.04)', borderRadius: 18, padding: '2rem 1.5rem', boxShadow: '0 2px 12px rgba(10,31,68,0.08)',
-          fontFamily: 'var(--font-inter)'
-        }}>
-          <div style={{ flex: '0 0 100px', display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 100 }}>
-            {f.img}
-          </div>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: '#fff' }}>{f.title}</h3>
-            <p style={{ color: '#fff', opacity: 0.85, fontSize: '1rem' }}>{f.desc}</p>
-          </div>
+const Features = () => {
+  return (
+    <section id="features" className="py-24 relative overflow-hidden">
+      <div className="container mx-auto px-4 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+            Everything you need to <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+              vibe together.
+            </span>
+          </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+            Simple, powerful features designed to make listening together seamless and fun.
+          </p>
         </motion.div>
-      ))}
-    </motion.div>
-  </motion.section>
-);
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="group relative p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all hover:bg-white/10"
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`}
+              />
+
+              <div className="relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 leading-relaxed">
+                  {feature.desc}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default Features; 
