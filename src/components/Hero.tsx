@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Play, Music, Menu, X, ArrowRight } from "lucide-react";
+import { Play, Menu, X, ArrowRight } from "lucide-react";
 
 const Navbar = () => {
   const router = useRouter();
