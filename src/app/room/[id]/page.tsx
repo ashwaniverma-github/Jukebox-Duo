@@ -187,7 +187,7 @@ export default function RoomPage() {
       if (!res.ok) throw new Error('Add failed');
       // Refresh to get canonical DB IDs/order
       await refreshQueue();
-      
+
       // Emit queue-updated event to sync with other clients
       console.log('[Socket] emitting queue-updated', { roomId, item });
       getSocket().emit('queue-updated', {
@@ -210,28 +210,28 @@ export default function RoomPage() {
     // Always use the most current queue state
     const currentQueue = queueRef.current;
     const idx = currentQueueIndexRef.current;
-    
+
     console.log(`[handlePlayNext] Current index: ${idx}, Queue length: ${currentQueue.length}`);
     console.log(`[handlePlayNext] Current queue:`, currentQueue.map(q => q.title));
-    
+
     if (currentQueue.length === 0) {
       console.log('[handlePlayNext] No songs in queue');
       return;
     }
-    
+
     if (idx < currentQueue.length - 1) {
       const newIndex = idx + 1;
       console.log(`[handlePlayNext] Moving to next song at index ${newIndex}: ${currentQueue[newIndex].title}`);
-      
+
       setCurrentQueueIndex(newIndex);
-      
+
       // Update backend
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
-      
+
       // Emit change-video and video-changed for compatibility
       const newVideoId = currentQueue[newIndex].videoId;
       const socket = getSocket();
@@ -247,27 +247,27 @@ export default function RoomPage() {
     // Always use the most current queue state
     const currentQueue = queueRef.current;
     const idx = currentQueueIndexRef.current;
-    
+
     console.log(`[handlePlayPrev] Current index: ${idx}, Queue length: ${currentQueue.length}`);
-    
+
     if (currentQueue.length === 0) {
       console.log('[handlePlayPrev] No songs in queue');
       return;
     }
-    
+
     if (idx > 0) {
       const newIndex = idx - 1;
       console.log(`[handlePlayPrev] Moving to previous song at index ${newIndex}: ${currentQueue[newIndex].title}`);
-      
+
       setCurrentQueueIndex(newIndex);
-      
+
       // Update backend
       await fetch(`/api/rooms/${roomId}/queue`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentIndex: newIndex })
       });
-      
+
       // Emit change-video and video-changed for compatibility
       const newVideoId = currentQueue[newIndex].videoId;
       const socket = getSocket();
@@ -320,16 +320,16 @@ export default function RoomPage() {
     console.log('[Socket] Setting up queue-removed listener for room:', roomId);
     const handler = async (data: { roomId: string; itemId: string; deletedOrder?: number; newCurrentIndex?: number }) => {
       console.log('[Socket] received queue-removed; refreshing queue', data);
-      
+
       // Store the old current index for comparison
       const oldCurrentIndex = currentQueueIndexRef.current;
-      
+
       // Refresh the queue to get the updated state from server
       await refreshQueue();
-      
+
       // Log queue state after refresh for debugging
       console.log(`[Socket] Queue refreshed after deletion. Old index: ${oldCurrentIndex}, New index: ${data.newCurrentIndex}`);
-      
+
       // If the currently playing song changed due to deletion, emit video-changed
       if (data.newCurrentIndex !== undefined && data.newCurrentIndex !== oldCurrentIndex) {
         console.log(`[Socket] Current playing song changed due to deletion, will sync video`);
@@ -355,7 +355,7 @@ export default function RoomPage() {
   const handleRemoveFromQueue = async () => {
     await refreshQueue();
     setRemovingQueueItemId(null);
-    
+
     // The refreshQueue will get the updated currentQueueIndex from the server
     // and update our local state accordingly
   };
@@ -376,7 +376,7 @@ export default function RoomPage() {
       </div>
 
       {/* Header */}
-      <motion.header 
+      <motion.header
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -385,7 +385,7 @@ export default function RoomPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left: Room Info (dynamic) */}
           <div className="flex items-center gap-3 sm:gap-4">
-            <motion.div 
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 sm:gap-3"
@@ -414,7 +414,7 @@ export default function RoomPage() {
                   <img key={m.id} src={m.image} alt={m.name || 'User'} className="w-8 h-8 rounded-full border-2 border-white/30 object-cover" />
                 ) : (
                   <div key={m.id} className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
-                    {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                    {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                 )
               ))}
@@ -424,10 +424,10 @@ export default function RoomPage() {
                 </div>
               )}
             </div>
-            
+
             <button
-            className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 ' 
-            onClick={()=>router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')} >
+              className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 '
+              onClick={() => router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')} >
               Support
             </button>
 
@@ -470,62 +470,97 @@ export default function RoomPage() {
               </DialogContent>
             </Dialog>
             {/* Profile Avatar + Dropdown */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              {session?.user?.image ? (
-                <img
-                  src={session.user.image}
-                  alt={session.user.name || 'Profile'}
-                  className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
-                />
-              ) : (
-                <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
-                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                </div>
-              )}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                sideOffset={8}
-                align="end"
-                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-              >
-                <div className="flex flex-col items-center gap-2 px-2 py-3">
-                  {session?.user?.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || 'Profile'}
-                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
-                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name || 'Profile'}
+                    className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                    {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
                   </div>
-                </div>
-                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
-                <DropdownMenu.Item
-                  onSelect={() => { window.location.href = '/dashboard'; }}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                )}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  sideOffset={8}
+                  align="end"
+                  className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
                 >
-                  My Dashboard
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onSelect={() => signOut({ callbackUrl: '/' })}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
-                >
-                  Logout
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+                  <div className="flex flex-col items-center gap-2 px-2 py-3">
+                    {session?.user?.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || 'Profile'}
+                        className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                        {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                      <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                    </div>
+                  </div>
+                  <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                  <DropdownMenu.Item
+                    onSelect={() => { window.location.href = '/dashboard'; }}
+                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                  >
+                    My Dashboard
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onSelect={() => signOut({ callbackUrl: '/' })}
+                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
+                  >
+                    Logout
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
           </div>
         </div>
       </motion.header>
+
+      {/* Server Overload Warning Banner */}
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="relative z-10 mx-4 sm:mx-6 mb-4"
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md border border-amber-400/40 rounded-xl p-4 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-amber-200 font-semibold text-sm sm:text-base mb-1">
+                  ⚠️ Real-Time Music Sharing Paused
+                </h3>
+                <p className="text-amber-100/80 text-xs sm:text-sm leading-relaxed">
+                  Real-time music sharing is temporarily paused due to server overload and high bills.
+                  You can make a small donation to help keep it running!
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')}
+                className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+              >
+                Donate Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Mobile menu overlay */}
       <AnimatePresence>
@@ -547,16 +582,16 @@ export default function RoomPage() {
             >
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-lg font-bold text-white">Room Menu</h2>
-                <button 
+                <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5 cursor-pointer" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
-                <Button 
+                <Button
                   onClick={() => {
                     setModalOpen(true);
                     setIsMobileMenuOpen(false);
@@ -566,7 +601,7 @@ export default function RoomPage() {
                   <Search className="w-5 h-5 mr-2" />
                   Search Music
                 </Button>
-                
+
                 <div className="text-sm text-red-200 pt-4 border-t border-white/10">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -629,7 +664,7 @@ export default function RoomPage() {
                       <p className="text-xs sm:text-sm text-red-200">Find and add songs to your queue</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="relative">
                       <input
@@ -648,13 +683,13 @@ export default function RoomPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   {searchError && (
                     <div className="p-2 sm:p-3 bg-red-700/20 border border-red-700/30 rounded-lg text-red-200 text-xs sm:text-sm">
                       {searchError}
                     </div>
                   )}
-                  
+
                   <div className="max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar">
                     {searchResults.length === 0 && !searchLoading && !search.trim() && (
                       <div className="text-center py-8 sm:py-12">
@@ -684,10 +719,10 @@ export default function RoomPage() {
                           className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-all duration-200 group cursor-pointer"
                         >
                           <div className="relative flex-shrink-0">
-                            <img 
-                              src={item.thumbnail} 
-                              alt={item.title} 
-                              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover" 
+                            <img
+                              src={item.thumbnail}
+                              alt={item.title}
+                              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
                             />
                             <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -720,7 +755,7 @@ export default function RoomPage() {
           {/* Player and Queue Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
             {/* Player Section */}
-            <motion.div 
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -739,8 +774,8 @@ export default function RoomPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                   </div>
                 )}
-                
-                <CardContent className="relative z-10 p-5 sm:p-14"> 
+
+                <CardContent className="relative z-10 p-5 sm:p-14">
                   <div className="aspect-video sm:aspect-[21/9] pt-6 ">
                     {/* Mount once after initial data load; keep mounted thereafter */}
                     {playerMounted && (
@@ -755,15 +790,15 @@ export default function RoomPage() {
 
                     {/* Now Playing card or Empty state */}
                     {currentSong ? (
-                      <motion.div 
+                      <motion.div
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         className="mt-10 sm:mt-16"
                       >
                         <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20">
                           <div className="flex items-center gap-2 sm:gap-3">
-                            <img 
-                              src={currentSong.thumbnail} 
+                            <img
+                              src={currentSong.thumbnail}
                               alt={currentSong.title}
                               className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
                             />
@@ -792,7 +827,7 @@ export default function RoomPage() {
             </motion.div>
 
             {/* Queue Section */}
-            <motion.div 
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.4 }}
@@ -819,12 +854,12 @@ export default function RoomPage() {
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Queue Content */}
                 <div className={`flex-1 overflow-y-auto custom-scrollbar ${isQueueCollapsed ? 'hidden xl:block' : 'block'}`}>
                   <div className="p-3 sm:p-6 pt-2 sm:pt-4">
-                    <QueueList 
-                      roomId={roomId} 
+                    <QueueList
+                      roomId={roomId}
                       queue={queue}
                       onSelect={async (id) => {
                         const idx = queue.findIndex(item => item.id === id);
@@ -843,7 +878,7 @@ export default function RoomPage() {
                           socket.emit('video-changed', newVideoId);
                         }
                       }}
-                      currentVideoId={videoId} 
+                      currentVideoId={videoId}
                       onRemove={handleRemoveFromQueue}
                       removingQueueItemId={removingQueueItemId}
                       setRemovingQueueItemId={setRemovingQueueItemId}

@@ -1,27 +1,56 @@
 // app/api/rooms/route.ts
 import { NextResponse } from 'next/server'
-import  prisma  from '../../../lib/prisma'
+import prisma from '../../../lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth/[...nextauth]/options'
-export async function POST(req: Request) {
+import jwt from 'jsonwebtoken'
+
+// Helper function to get user ID from either session or JWT token
+async function getUserId(req: Request): Promise<string | null> {
+  // Check for NextAuth session first (web)
   const session = await getServerSession(authOptions)
-  if (!session?.user?.email) return NextResponse.error()
+  if (session?.user?.id) {
+    return session.user.id
+  }
+
+  // Check for JWT token (mobile)
+  const authHeader = req.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7)
+    try {
+      const secret = process.env.NEXTAUTH_SECRET || 'your-secret-key'
+      const decoded = jwt.verify(token, secret) as { sub: string }
+      return decoded.sub
+    } catch (error) {
+      console.error('JWT verification failed:', error)
+      return null
+    }
+  }
+
+  return null
+}
+
+export async function POST(req: Request) {
+  const userId = await getUserId(req)
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { name } = await req.json()
   const room = await prisma.room.create({
-    data: { name, hostId: session.user.id }
+    data: { name, hostId: userId }
   })
   // auto-join host
   await prisma.roomMember.create({
-    data: { roomId: room.id, userId: session.user.id }
+    data: { roomId: room.id, userId }
   })
   return NextResponse.json(room)
 }
 
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json([], { status: 401 })
+export async function GET(req: Request) {
+  const userId = await getUserId(req)
+  if (!userId) return NextResponse.json([], { status: 401 })
+
   const rooms = await prisma.room.findMany({
-    where: { hostId: session.user.id },
+    where: { hostId: userId },
     orderBy: { createdAt: 'desc' }
   })
   return NextResponse.json(rooms)
