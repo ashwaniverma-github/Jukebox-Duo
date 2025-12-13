@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./Providers";
+import Script from "next/script";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -128,6 +129,19 @@ export default function RootLayout({
       >
         <Providers>
           {children}
+          <Script id="feedinbox-config" strategy="afterInteractive">
+          {`
+            window.feedinboxConfig = {
+              projectKey: "cmj3omf3600035qx2fnqkgkot"
+            };
+          `}
+        </Script>
+
+        {/* 2. Widget Script */}
+        <Script
+          src="https://www.feedinbox.com/widget.js"
+          strategy="lazyOnload"
+        />
         </Providers>
         
       </body>
