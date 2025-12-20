@@ -527,7 +527,7 @@ export default function RoomPage() {
         </div>
       </motion.header>
 
-      {/* Server Overload Warning Banner */}
+      {/* Server Coming Soon Announcement Banner */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -535,27 +535,27 @@ export default function RoomPage() {
         className="relative z-10 mx-4 sm:mx-6 mb-4"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md border border-amber-400/40 rounded-xl p-4 shadow-lg">
+          <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-400/40 rounded-xl p-4 shadow-lg">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
-                <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg className="w-6 h-6 text-emerald-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-amber-200 font-semibold text-sm sm:text-base mb-1">
-                  ⚠️ Real-Time Music Sharing Paused
+                <h3 className="text-emerald-200 font-semibold text-sm sm:text-base mb-1">
+                  Real-Time Music Sharing will be live Soon!
                 </h3>
-                <p className="text-amber-100/80 text-xs sm:text-sm leading-relaxed">
-                  Real-time music sharing is temporarily paused due to server overload and high bills.
-                  You can make a small donation to help keep it running!
+                <p className="text-emerald-100/80 text-xs sm:text-sm leading-relaxed">
+                  We're working hard to bring the live sync feature back! Your support keeps the music playing —
+                  every donation helps us build something amazing together. 💚
                 </p>
               </div>
               <button
                 onClick={() => router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')}
-                className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+                className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Donate Now
+                Support Us 💖
               </button>
             </div>
           </div>
