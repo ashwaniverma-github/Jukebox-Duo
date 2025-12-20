@@ -548,7 +548,7 @@ export default function RoomPage() {
                 </h3>
                 <p className="text-emerald-100/80 text-xs sm:text-sm leading-relaxed">
                   We&apos;re working hard to bring the live sync feature back! Your support keeps the music playing —
-                  every donation helps us build something amazing together. 💚
+                  every donation helps us build something amazing together.
                 </p>
               </div>
               <button
