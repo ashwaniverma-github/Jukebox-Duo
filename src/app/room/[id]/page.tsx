@@ -547,7 +547,7 @@ export default function RoomPage() {
                   Real-Time Music Sharing will be live Soon!
                 </h3>
                 <p className="text-emerald-100/80 text-xs sm:text-sm leading-relaxed">
-                  We're working hard to bring the live sync feature back! Your support keeps the music playing —
+                  We&apos;re working hard to bring the live sync feature back! Your support keeps the music playing —
                   every donation helps us build something amazing together. 💚
                 </p>
               </div>
