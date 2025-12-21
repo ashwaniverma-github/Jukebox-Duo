@@ -43,11 +43,11 @@ export function DonationModal() {
             Help us keep the music playing for everyone
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 mt-4">
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <p className="text-gray-200 text-center text-sm leading-relaxed">
-              <span className="font-semibold text-white">Jukebox Duo</span> is a passion project built by an indie developer. 
+              <span className="font-semibold text-white">Jukebox Duo</span> is a passion project built by an indie developer.
               Your support helps me keep the servers running, add new features, and maintain an ad-free experience.
             </p>
           </div>
@@ -59,7 +59,7 @@ export function DonationModal() {
                 <div className="text-xs text-gray-400">Songs played</div>
               </div>
               <div>
-                <div className="text-xl font-bold text-yellow-400">500+</div>
+                <div className="text-xl font-bold text-yellow-400">1K+</div>
                 <div className="text-xs text-gray-400">Users</div>
               </div>
               <div>
@@ -68,11 +68,11 @@ export function DonationModal() {
               </div>
             </div>
           </div>
-          
-          <form 
-            action="https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48" 
-            method="post" 
-            target="_blank" 
+
+          <form
+            action="https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48"
+            method="post"
+            target="_blank"
             className="w-full"
           >
             <button
@@ -87,10 +87,10 @@ export function DonationModal() {
             🔒 Secure payment via PayPal • No recurring charges
           </p>
         </div>
-        
+
         <div className="mt-3 text-center">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="text-gray-400 hover:bg-gray-800 hover:text-white text-sm"
             onClick={handleClose}
           >
