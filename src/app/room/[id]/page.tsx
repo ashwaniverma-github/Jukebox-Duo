@@ -427,7 +427,7 @@ export default function RoomPage() {
 
             <button
               className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 '
-              onClick={() => router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')} >
+              onClick={() => window.open('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48', '_blank')} >
               Support
             </button>
 
@@ -552,7 +552,7 @@ export default function RoomPage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48')}
+                onClick={() => window.open('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48', '_blank')}
                 className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
               >
                 Support Us 💖
