@@ -1,11 +1,45 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Play, Menu, X, ArrowRight } from "lucide-react";
+import { Play, Menu, X, AlertTriangle, Heart } from "lucide-react";
+
+// Donation link from room page
+const DONATION_LINK = "https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48";
+const DONATION_TARGET = 50;
+
+// Server Maintenance Banner Component
+const ServerMaintenanceBanner = () => (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2 }}
+    className="fixed top-[72px] left-0 w-full z-40 px-4 py-3 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md border-b border-red-500/30"
+  >
+    <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-center md:text-left">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="w-5 h-5 text-yellow-400 animate-pulse" />
+        <span className="font-bold text-white text-sm md:text-base">
+          ⚠️ Service Temporarily Unavailable
+        </span>
+      </div>
+      <p className="text-red-100/90 text-xs md:text-sm max-w-xl">
+        Our database compute is overdue due to heavy usage and all services are currently shut down.
+        We need to raise <span className="font-bold text-yellow-300">${DONATION_TARGET}</span> to restore all services.
+      </p>
+      <a
+        href={DONATION_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold rounded-full text-sm transition-all hover:scale-105 shadow-lg"
+      >
+        <Heart className="w-4 h-4" />
+        Donate Now
+      </a>
+    </div>
+  </motion.div>
+);
 
 const Navbar = () => {
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -35,17 +69,19 @@ const Navbar = () => {
         ))}
       </div>
 
-      {/* Desktop CTA */}
+      {/* Desktop CTA - DISABLED */}
       <div className="hidden md:flex items-center gap-4">
         <button
-          onClick={() => router.push("/signin")}
-          className="text-sm font-medium text-white hover:text-red-400 transition-colors"
+          disabled
+          className="text-sm font-medium text-gray-500 cursor-not-allowed opacity-50"
+          title="Service temporarily unavailable"
         >
           Sign In
         </button>
         <button
-          onClick={() => router.push("/signin")}
-          className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors"
+          disabled
+          className="bg-gray-600 text-gray-400 px-5 py-2 rounded-full text-sm font-semibold cursor-not-allowed opacity-50"
+          title="Service temporarily unavailable"
         >
           Get Started
         </button>
@@ -78,11 +114,22 @@ const Navbar = () => {
           ))}
           <div className="h-px bg-white/10 my-2" />
           <button
-            onClick={() => router.push("/signin")}
-            className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold"
+            disabled
+            className="w-full py-3 bg-gray-700 text-gray-400 rounded-lg font-semibold cursor-not-allowed opacity-50"
+            title="Service temporarily unavailable"
           >
             Sign In
           </button>
+          {/* Donation button in mobile menu */}
+          <a
+            href={DONATION_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-bold text-center flex items-center justify-center gap-2"
+          >
+            <Heart className="w-4 h-4" />
+            Support Us - Donate
+          </a>
         </motion.div>
       )}
     </motion.nav>
@@ -116,11 +163,10 @@ const AudioVisualizer = () => {
 };
 
 const Hero = () => {
-  const router = useRouter();
-
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
       <Navbar />
+      <ServerMaintenanceBanner />
 
       {/* Clean Background - Removed heavy blobs */}
       <div className="absolute inset-0 pointer-events-none">
@@ -174,22 +220,23 @@ const Hero = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <button
-            onClick={() => router.push("/signin")}
-            className="group relative px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+            disabled
+            className="group relative px-8 py-4 bg-gray-700 text-gray-400 rounded-full font-semibold cursor-not-allowed opacity-50 flex items-center gap-2"
+            title="Service temporarily unavailable"
           >
             Start Listening
             <Play className="w-4 h-4 fill-current" />
-            <div className="absolute inset-0 rounded-full ring-4 ring-red-600/20 group-hover:ring-red-600/40 transition-all" />
+            <div className="absolute inset-0 rounded-full ring-4 ring-gray-600/20 transition-all" />
           </button>
-          <button
-            onClick={() => {
-              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+          <a
+            href={DONATION_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black rounded-full font-bold transition-all hover:scale-105 flex items-center gap-2 shadow-lg"
           >
-            How it works
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            <Heart className="w-4 h-4" />
+            Support Us - Donate
+          </a>
         </motion.div>
 
         {/* Visualizer Demo */}
