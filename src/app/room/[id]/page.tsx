@@ -567,23 +567,23 @@ export default function RoomPage() {
             >
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     {/* Left: Room Info (dynamic) */}
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-shrink">
                         <motion.div
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 sm:gap-3"
+                            className="flex items-center gap-2 sm:gap-3 min-w-0"
                         >
-                            <div className="relative">
+                            <div className="relative flex-shrink-0">
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
                                     <Music className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                             </div>
-                            <div>
-                                <h1 className="text-xl sm:text-2xl font-bold text-white">{roomDetails?.name || 'Room'}</h1>
-                                <div className="flex items-center gap-2 text-xs sm:text-sm text-red-200">
-                                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                                    <span>Hosted by {roomDetails?.host?.name || 'Unknown'}</span>
+                            <div className="min-w-0">
+                                <h1 className="text-lg sm:text-2xl font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
+                                <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-red-200">
+                                    <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="truncate max-w-[80px] sm:max-w-[150px]">Hosted by {roomDetails?.host?.name || 'Unknown'}</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -612,22 +612,23 @@ export default function RoomPage() {
                         {!isSyncEnabled ? (
                             <Button
                                 onClick={handleEnableSync}
-                                className=" bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-2 rounded-xl shadow-lg transition-all duration-200 text-sm"
+                                className="bg-white/10 hover:bg-white/20 text-white font-medium px-2 sm:px-3 py-2 rounded-xl shadow-lg transition-all duration-200 text-sm"
                             >
-                                <span className="mr-1.5">🔗</span>
-                                Enable Sync
+                                <span>🔗</span>
+                                <span className="hidden sm:inline ml-1.5">Enable Sync</span>
                             </Button>
                         ) : (
-                            <div className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
+                            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                <span className="text-green-300 text-sm font-medium">Live</span>
+                                <span className="hidden sm:inline text-green-300 text-sm font-medium">Live</span>
                             </div>
                         )}
 
                         <button
-                            className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 '
+                            className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
                             onClick={() => window.open('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48', '_blank')} >
-                            Support
+                            <span className="sm:hidden">💛</span>
+                            <span className="hidden sm:inline">Support</span>
                         </button>
 
                         {/* Invite Button */}
