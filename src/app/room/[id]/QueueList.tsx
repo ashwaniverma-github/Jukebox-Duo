@@ -1,6 +1,6 @@
 // app/room/[id]/QueueList.tsx
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getSocket } from '../../../lib/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayCircleIcon, TrashIcon, QueueListIcon } from '@heroicons/react/24/outline';
@@ -26,11 +26,7 @@ interface Props {
 
 export default function QueueList({ roomId, queue, onSelect, currentVideoId, onRemove, removingQueueItemId, setRemovingQueueItemId }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0)
-
-  useEffect(() => {
-    const socket = getSocket()
-    socket.emit('join-room', roomId)
-  }, [roomId])
+  // Note: socket.emit('join-room') removed - already done in page.tsx
 
   const handlePlay = async (item: QueueItem) => {
     console.log('[QueueList] handlePlay called for item:', item);
@@ -49,28 +45,30 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
 
   const handleRemove = async (itemId: string) => {
     if (setRemovingQueueItemId) setRemovingQueueItemId(itemId);
-    
+
     try {
       const response = await fetch(`/api/rooms/${roomId}/queue?itemId=${itemId}`, {
         method: 'DELETE'
       })
-      
+
       if (response.ok) {
         const result = await response.json()
         console.log('Queue item deleted:', result)
-        
-        // The backend has already updated the currentQueueIndex if needed
-        // Emit queue-removed event to sync with other clients
-        getSocket().emit('queue-removed', { 
-          roomId, 
-          itemId, 
-          deletedOrder: result.deletedOrder,
-          newCurrentIndex: result.newCurrentIndex 
-        });
-        
+
+        // Emit queue-removed event to sync with other clients (if socket connected)
+        const socket = getSocket();
+        if (socket) {
+          socket.emit('queue-removed', {
+            roomId,
+            itemId,
+            deletedOrder: result.deletedOrder,
+            newCurrentIndex: result.newCurrentIndex
+          });
+        }
+
         // Call the parent's onRemove callback which will refresh the queue
         if (onRemove) onRemove(itemId);
-        
+
         // Update local state based on server response
         const removedIndex = queue.findIndex(item => item.id === itemId)
         if (removedIndex <= currentIndex && currentIndex > 0) {
@@ -89,7 +87,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
 
       {/* Queue Content */}
       {queue.length === 0 ? (
-        <motion.div 
+        <motion.div
           className="text-center py-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -107,7 +105,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
             {queue.map((item, idx) => {
               const isCurrentVideo = item.videoId === currentVideoId;
               const isRemoving = removingQueueItemId === item.id;
-              
+
               return (
                 <motion.div
                   key={item.id}
@@ -115,25 +113,23 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                   initial={{ opacity: 0, x: 40, scale: 0.95 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: -40, scale: 0.95 }}
-                  transition={{ 
-                    type: 'spring', 
-                    stiffness: 400, 
+                  transition={{
+                    type: 'spring',
+                    stiffness: 400,
                     damping: 25,
                     layout: { duration: 0.3 }
                   }}
-                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${
-                    isCurrentVideo 
-                      ? 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/20 border-2 border-red-200 dark:border-red-700 shadow-lg scale-[1.02]' 
-                      : 'bg-white/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/70 hover:shadow-md hover:scale-[1.01]'
-                  }`}
+                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${isCurrentVideo
+                    ? 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/20 border-2 border-red-200 dark:border-red-700 shadow-lg scale-[1.02]'
+                    : 'bg-white/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/70 hover:shadow-md hover:scale-[1.01]'
+                    }`}
                 >
                   {/* Queue Number Indicator */}
                   <div className="absolute top-3 left-3 z-10">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isCurrentVideo 
-                        ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-lg' 
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                    }`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isCurrentVideo
+                      ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                      }`}>
                       {idx + 1}
                     </div>
                   </div>
@@ -151,12 +147,12 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                   <div className="flex items-center p-4 space-x-4">
                     {/* Thumbnail */}
                     <div className="relative flex-shrink-0">
-                      <img 
-                        src={item.thumbnail} 
-                        width={80} 
-                        height={60} 
+                      <img
+                        src={item.thumbnail}
+                        width={80}
+                        height={60}
                         alt={item.title}
-                        className="rounded-xl shadow-md object-cover w-20 h-15 group-hover:scale-105 transition-transform duration-300" 
+                        className="rounded-xl shadow-md object-cover w-20 h-15 group-hover:scale-105 transition-transform duration-300"
                       />
                       {isCurrentVideo && (
                         <div className="absolute inset-0 bg-gradient-to-r from-red-700/20 to-red-500/20 rounded-xl flex items-center justify-center">
@@ -197,7 +193,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                       >
                         <PlayCircleIcon className="w-5 h-5" />
                       </motion.button>
-                      
+
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

@@ -57,7 +57,7 @@ const formatTime = (seconds: number): string => {
 
 export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev }: Props) {
   const playerRef = useRef<YT.Player | null>(null);
-  const socket = getSocket();
+  const socket = getSocket(); // May be null if sync not enabled
   const { offset, sendCommand } = useSyncPlayer(roomId);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -148,6 +148,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
   // 3) Listen for remote video changes and load accordingly
   useEffect(() => {
+    // Only set up socket listeners if socket is connected
+    if (!socket) return;
+
     console.log('[SyncAudio] Setting up video-changed listener for room:', roomId);
     const onChange = (newVideoId: string) => {
       console.log('🔄 Received video-changed →', newVideoId);
@@ -168,6 +171,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
   // 4) Sync play/pause commands
   useEffect(() => {
+    // Only set up socket listeners if socket is connected
+    if (!socket) return;
+
     const onSync = ({ cmd, timestamp, seekTime }: { cmd: string; timestamp: number; seekTime: number }) => {
       const execAt = timestamp + offset;
       const delay = Math.max(execAt - Date.now(), 0);
@@ -202,7 +208,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const player = playerRef.current;
     if (!player || !isHost) return;
-    
+
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
     setIsSeeking(true);
@@ -212,10 +218,10 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const handleSeekEnd = () => {
     const player = playerRef.current;
     if (!player || !isHost) return;
-    
+
     setIsSeeking(false);
     player.seekTo(currentTime, true);
-    
+
     // If currently playing, send sync command
     if (isPlaying) {
       sendCommand('play', currentTime, Date.now() + BUFFER);
@@ -345,7 +351,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
               {formatTime(currentTime)}
             </span>
             <div className="flex-1 relative min-w-0">
-              <div 
+              <div
                 className="w-full h-3 bg-red-100/40 rounded-lg relative overflow-hidden"
                 style={{
                   background: `linear-gradient(to right, #f87171 0%, #f87171 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`

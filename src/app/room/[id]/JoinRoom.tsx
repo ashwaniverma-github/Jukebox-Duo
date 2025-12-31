@@ -1,43 +1,36 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getSocket } from '../../../lib/socket'
 import { useSession } from 'next-auth/react'
 
 interface Props { roomId: string }
 
+/**
+ * JoinRoom component - handles DB membership persistence only.
+ * WebSocket connection is now handled by the parent page.tsx based on sync state.
+ */
 export default function JoinRoom({ roomId }: Props) {
   const { data: session } = useSession();
 
   useEffect(() => {
-    // 1) Persist to your DB
-    fetch(`/api/rooms/${roomId}/join`, { method: 'POST' })
-      .catch(console.error)
+    if (!session?.user?.id) return;
 
-    // 2) Join the Socket.IO room
-    const socket = getSocket()
-    socket.emit('join-room', roomId)
-    if (session?.user?.id) {
-      socket.emit('presence-join', {
-        roomId,
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          image: session.user.image,
-        }
-      })
+    // Persist membership to DB - only on first visit per session
+    // This avoids unnecessary DB calls on every mount/re-render
+    const joinKey = `room_joined_${roomId}_${session.user.id}`;
+    const alreadyJoined = sessionStorage.getItem(joinKey);
+
+    if (!alreadyJoined) {
+      fetch(`/api/rooms/${roomId}/join`, { method: 'POST' })
+        .then(() => {
+          sessionStorage.setItem(joinKey, Date.now().toString());
+        })
+        .catch(console.error);
     }
 
-    // Cleanup isn’t strictly necessary here
-    return () => {
-      const userId = session?.user?.id;
-      if (userId) {
-        try {
-          socket.emit('leave-room', { roomId, userId })
-        } catch {}
-      }
-    }
-  }, [roomId, session?.user?.id, session?.user?.name, session?.user?.image])
+    // Note: WebSocket presence and leave events are now handled by page.tsx
+    // when sync is enabled. This component only handles DB membership.
+  }, [roomId, session?.user?.id]);
 
-  return null  // this component renders nothing
+  return null;  // this component renders nothing
 }

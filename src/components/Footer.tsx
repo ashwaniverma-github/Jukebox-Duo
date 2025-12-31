@@ -2,7 +2,6 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Globe, Twitter } from "lucide-react";
 
 const Footer = () => (
   <motion.footer
@@ -16,20 +15,12 @@ const Footer = () => (
     viewport={{ once: true, amount: 0.3 }}
     transition={{ duration: 0.7 }}
   >
-    <nav style={{ marginBottom: '1.2rem', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+    <nav style={{ marginBottom: '1.2rem', display: 'flex', justifyContent: 'center', gap: '2.5rem', flexWrap: 'wrap' }}>
       <Link href="/features" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Features</Link>
       <Link href="/about" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>About</Link>
       <Link href="/contact" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Contact</Link>
       <Link href="/terms" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Terms</Link>
       <Link href="/privacyPolicy" style={{ color: '#fff', textDecoration: 'none', opacity: 0.85 }}>Privacy Policy</Link>
-      <span style={{ color: '#fff', opacity: 0.3 }}>|</span>
-      <span style={{ color: '#fff', opacity: 0.7, fontSize: '0.9rem' }}>Founder:</span>
-      <a href="https://ashwani.me" target="_blank" rel="noopener noreferrer" style={{ color: '#f87171', display: 'flex', alignItems: 'center' }} title="Portfolio">
-        <Globe size={18} />
-      </a>
-      <a href="https://x.com/ashwanivermax" target="_blank" rel="noopener noreferrer" style={{ color: '#f87171', display: 'flex', alignItems: 'center' }} title="X (Twitter)">
-        <Twitter size={18} />
-      </a>
     </nav>
     <div style={{ color: '#fff', opacity: 0.7, fontSize: '0.95rem' }}>
       © 2025 JukeboxDuo.

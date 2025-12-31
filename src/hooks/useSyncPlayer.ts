@@ -2,15 +2,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Socket } from 'socket.io-client';
 import { getSocket } from '../lib/socket';
 
 export function useSyncPlayer(roomId: string) {
-  const socket: Socket = getSocket();
   const [offset, setOffset] = useState(0);
 
   // join the room & clock sync
   useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return; // Socket not connected, skip sync
+
     const t0 = Date.now();
     socket.emit('sync-ping', t0);
     socket.on('sync-pong', (serverTs: number) => {
@@ -22,7 +23,7 @@ export function useSyncPlayer(roomId: string) {
       socket.off('sync-pong');
       socket.off('sync-command');
     };
-  }, [roomId, socket]);
+  }, [roomId]);
 
   // send a play/pause to the room
   function sendCommand(
@@ -30,7 +31,10 @@ export function useSyncPlayer(roomId: string) {
     seekTime: number,
     timestamp: number
   ) {
-    socket.emit('sync-command', { roomId, cmd, timestamp, seekTime });
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('sync-command', { roomId, cmd, timestamp, seekTime });
+    }
   }
 
   return { offset, sendCommand };

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
+import { checkRoomAccess } from '../../../../../lib/room-auth'
 
 export async function GET(
   _req: NextRequest,
@@ -16,16 +17,12 @@ export async function GET(
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Ensure room exists
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true } })
-  if (!room) {
+  // Consolidated auth check: 1 query instead of 3
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
+  if (!roomExists) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
-
-  // Require membership or host to view members
-  const membership = await prisma.roomMember.findFirst({ where: { roomId, userId: session.user.id }, select: { id: true } })
-  const isHost = await prisma.room.findFirst({ where: { id: roomId, hostId: session.user.id }, select: { id: true } })
-  if (!membership && !isHost) {
+  if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 

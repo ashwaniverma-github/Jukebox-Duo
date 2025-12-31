@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
-import prisma from '@/lib/prisma'
+import { checkRoomAccess } from '../../../../../lib/room-auth'
 import youtubeKeyManager, { YouTubeAPIError } from '@/lib/youtube-keys'
 import cacheService from '@/lib/cache'
 
@@ -76,14 +76,14 @@ interface VideosListItem {
 function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
   return items.filter(item => {
     // 1. Check for /shorts/ in thumbnail URLs (most reliable indicator)
-    const hasShortsUrl = 
-      item.snippet?.thumbnails?.default?.url?.includes('/shorts/') || 
+    const hasShortsUrl =
+      item.snippet?.thumbnails?.default?.url?.includes('/shorts/') ||
       item.snippet?.thumbnails?.medium?.url?.includes('/shorts/') ||
       item.snippet?.thumbnails?.high?.url?.includes('/shorts/');
-    
+
     // 2. Check for typical Shorts keywords in titles
     const title = item.snippet?.title?.toLowerCase() || '';
-    const hasShortsKeywords = 
+    const hasShortsKeywords =
       title.includes('#shorts') ||
       title.includes('#short') ||
       title.includes('youtube shorts') ||
@@ -92,32 +92,32 @@ function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
       title.includes('short video') ||
       title.includes('#ytshorts') ||
       title.includes('#youtubeshorts');
-    
+
     // 3. Check for vertical aspect ratio in thumbnails (Shorts are typically 9:16)
     const defaultThumb = item.snippet?.thumbnails?.default;
-    const hasVerticalAspect = defaultThumb && 
-      defaultThumb.url && 
-      (defaultThumb.url.includes('hq720_shorts') || 
-       defaultThumb.url.includes('mqdefault_6s') ||
-       defaultThumb.url.includes('hqdefault_shorts'));
-    
+    const hasVerticalAspect = defaultThumb &&
+      defaultThumb.url &&
+      (defaultThumb.url.includes('hq720_shorts') ||
+        defaultThumb.url.includes('mqdefault_6s') ||
+        defaultThumb.url.includes('hqdefault_shorts'));
+
     // 4. Check channel names that commonly post shorts
     const channelTitle = item.snippet?.channelTitle?.toLowerCase() || '';
-    const isShortsChannel = 
+    const isShortsChannel =
       channelTitle.includes('shorts') ||
       channelTitle.includes('viral') ||
       channelTitle.includes('tiktok');
-    
+
     // 5. Check for common shorts description patterns
     const description = item.snippet?.description?.toLowerCase() || '';
-    const hasShortsDescription = 
+    const hasShortsDescription =
       description.includes('#shorts') ||
       description.includes('short video') ||
       description.includes('viral video') ||
       description.includes('tiktok');
-    
+
     // 6. Additional title patterns that indicate shorts
-    const hasShortContentIndicators = 
+    const hasShortContentIndicators =
       title.includes('viral') ||
       title.includes('trending') ||
       title.includes('meme') ||
@@ -128,27 +128,26 @@ function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
       title.includes('1 min') ||
       title.includes('under 1') ||
       title.includes('vs ') && title.length < 50; // Short comparison videos
-    
+
     // Filter out if ANY shorts indicator is found
-    const isShort = hasShortsUrl || 
-                   hasShortsKeywords || 
-                   hasVerticalAspect || 
-                   isShortsChannel || 
-                   hasShortsDescription || 
-                   hasShortContentIndicators;
-    
+    const isShort = hasShortsUrl ||
+      hasShortsKeywords ||
+      hasVerticalAspect ||
+      isShortsChannel ||
+      hasShortsDescription ||
+      hasShortContentIndicators;
+
     // Log filtered shorts for debugging
     if (isShort) {
-      console.log(`Filtered short: "${title}" - Reason: ${
-        hasShortsUrl ? 'URL' : 
-        hasShortsKeywords ? 'Keywords' : 
-        hasVerticalAspect ? 'Aspect' : 
-        isShortsChannel ? 'Channel' : 
-        hasShortsDescription ? 'Description' : 
-        'Content'
-      }`);
+      console.log(`Filtered short: "${title}" - Reason: ${hasShortsUrl ? 'URL' :
+          hasShortsKeywords ? 'Keywords' :
+            hasVerticalAspect ? 'Aspect' :
+              isShortsChannel ? 'Channel' :
+                hasShortsDescription ? 'Description' :
+                  'Content'
+        }`);
     }
-    
+
     return !isShort;
   });
 }
@@ -183,7 +182,7 @@ async function performSearchAndCache(query: string): Promise<SearchResultItem[]>
         let errorData: YouTubeAPIError | null = null
         try {
           errorData = await res.json()
-        } catch {}
+        } catch { }
         youtubeKeyManager.handleApiError(apiKey, res, errorData)
         continue
       }
@@ -267,8 +266,8 @@ async function performSearchAndCache(query: string): Promise<SearchResultItem[]>
         }))
       }
 
-      try { youtubeKeyManager.updateQuotaUsage(apiKey, 100) } catch {}
-      try { await cacheService.cacheSearchResults(query, itemsToReturn) } catch {}
+      try { youtubeKeyManager.updateQuotaUsage(apiKey, 100) } catch { }
+      try { await cacheService.cacheSearchResults(query, itemsToReturn) } catch { }
       return itemsToReturn
     } catch {
       // Try next key
@@ -291,16 +290,12 @@ export async function GET(
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Require membership in the room (or host)
-  const membership = await prisma.roomMember.findFirst({
-    where: { roomId, userId: session.user.id },
-    select: { id: true },
-  })
-  const isHost = await prisma.room.findFirst({
-    where: { id: roomId, hostId: session.user.id },
-    select: { id: true },
-  })
-  if (!membership && !isHost) {
+  // Consolidated auth check: 1 query instead of 2
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
+  if (!roomExists) {
+    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+  }
+  if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
@@ -331,7 +326,7 @@ export async function GET(
   try {
     const cachedWithMeta = await cacheService.getCachedSearchResultsWithMeta(q)
     if (cachedWithMeta?.results?.length) {
-      console.log(`🎯 Returning cached results for: "${q}" (SWR)`) 
+      console.log(`🎯 Returning cached results for: "${q}" (SWR)`)
       const ageMs = Date.now() - cachedWithMeta.timestamp
       if (ageMs >= SWR_STALE_AFTER_MS) {
         // Trigger background refresh only when cache is stale
@@ -339,7 +334,7 @@ export async function GET(
           return await performSearchAndCache(_q)
         })
       } else {
-        console.log(`⏳ Cache is fresh (age ${(ageMs/3600000).toFixed(1)}h), skipping background refresh`)
+        console.log(`⏳ Cache is fresh (age ${(ageMs / 3600000).toFixed(1)}h), skipping background refresh`)
       }
       return NextResponse.json(cachedWithMeta.results)
     }
@@ -366,7 +361,7 @@ export async function GET(
 
   if (!youtubeKeyManager.hasAvailableKeys()) {
     const { message, estimatedResetHours } = youtubeKeyManager.getQuotaExhaustedMessage()
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: message,
       quotaExceeded: true,
       estimatedResetHours
