@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./Providers";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -143,7 +144,7 @@ export default function RootLayout({
           strategy="lazyOnload"
         />
         </Providers>
-        
+        <Analytics />
       </body>
     </html>
   );
