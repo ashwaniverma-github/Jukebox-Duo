@@ -1,10 +1,13 @@
 'use client'
 import { SessionProvider } from "next-auth/react"
+import { PostHogProvider } from "@/components/PostHogProvider"
 
-export const Providers= ({children}:{children:React.ReactNode})=>{
+export const Providers = ({ children }: { children: React.ReactNode }) => {
     return <div>
-        <SessionProvider>
-            {children}
-        </SessionProvider>
+        <PostHogProvider>
+            <SessionProvider>
+                {children}
+            </SessionProvider>
+        </PostHogProvider>
     </div>
 }

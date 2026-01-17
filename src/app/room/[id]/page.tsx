@@ -17,6 +17,7 @@ import { Search, Users, Music, X, Share2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DonationModal } from '../../../components/DonationModal';
 import { DonationMilestone } from '../../../components/DonationMilestone';
+import { trackSupportButtonClick, trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
 
 export default function RoomPage() {
     const { id: roomId } = useParams() as { id: string };
@@ -88,6 +89,15 @@ export default function RoomPage() {
 
                 // Mount the player after initial data load
                 setPlayerMounted(true);
+
+                // Track user and room join for PostHog analytics (active users)
+                if (session?.user?.id) {
+                    identifyUser(session.user.id, {
+                        name: session.user.name,
+                        email: session.user.email,
+                    });
+                    trackRoomJoin(roomId);
+                }
             })
             .catch(err => {
                 console.error('Failed to load room:', err);
@@ -95,7 +105,7 @@ export default function RoomPage() {
 
         // NOTE: Socket connection is now handled separately based on sync state
         // This prevents unnecessary WebSocket connections for solo listeners
-    }, [roomId, status]);
+    }, [roomId, status, session]);
 
     // Auto-enable sync if URL has ?sync=true (for shared links)
     useEffect(() => {
@@ -550,7 +560,10 @@ export default function RoomPage() {
 
                         <button
                             className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
-                            onClick={() => setSupportModalOpen(true)} >
+                            onClick={() => {
+                                trackSupportButtonClick()
+                                setSupportModalOpen(true)
+                            }} >
                             <span className="sm:hidden">💛</span>
                             <span className="hidden sm:inline">Support</span>
                         </button>
