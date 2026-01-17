@@ -62,7 +62,7 @@ export function DonationModal({ open, onOpenChange }: DonationModalProps) {
             Support Jukebox Duo
           </DialogTitle>
           <DialogDescription className="text-center text-gray-300 text-sm mt-2">
-            Help us keep the music playing for everyone
+            Help us reach our monthly donation target to keep all services running for free
           </DialogDescription>
         </DialogHeader>
 

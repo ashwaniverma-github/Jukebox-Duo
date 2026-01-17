@@ -16,89 +16,7 @@ import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, X, Share2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DonationModal } from '../../../components/DonationModal';
-
-// New Year 2026 Countdown Component
-function NewYearCountdown() {
-    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-    const [isNewYear, setIsNewYear] = useState(false);
-
-    useEffect(() => {
-        const targetDate = new Date('2026-01-01T00:00:00').getTime();
-
-        const updateCountdown = () => {
-            const now = new Date().getTime();
-            const difference = targetDate - now;
-
-            if (difference <= 0) {
-                setIsNewYear(true);
-                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-                return;
-            }
-
-            setTimeLeft({
-                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-                minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-                seconds: Math.floor((difference % (1000 * 60)) / 1000)
-            });
-        };
-
-        updateCountdown();
-        const interval = setInterval(updateCountdown, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const TimeBox = ({ value }: { value: number }) => (
-        <div className="flex flex-col items-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 backdrop-blur-sm border border-purple-400/30 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl sm:text-3xl font-bold text-white tabular-nums">
-                    {value.toString().padStart(2, '0')}
-                </span>
-            </div>
-        </div>
-    );
-
-    if (isNewYear) {
-        return (
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="relative z-10 mx-4 sm:mx-6 mb-4"
-            >
-                <div className="max-w-7xl mx-auto text-center py-4">
-                    <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
-                        Happy New Year 2026!
-                    </h2>
-                </div>
-            </motion.div>
-        );
-    }
-
-    return (
-        <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="relative z-10 mx-4 sm:mx-6 mb-4"
-        >
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 py-3">
-                    <h2 className="text-2xl sm:text-3xl font-bold bg-white bg-clip-text text-transparent">2026</h2>
-                    <div className="text-2xl sm:text-3xl font-bold bg-white bg-clip-text text-transparent">-</div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <TimeBox value={timeLeft.days} />
-                        <span className="text-purple-400 text-xl font-light">:</span>
-                        <TimeBox value={timeLeft.hours} />
-                        <span className="text-purple-400 text-xl font-light">:</span>
-                        <TimeBox value={timeLeft.minutes} />
-                        <span className="text-purple-400 text-xl font-light">:</span>
-                        <TimeBox value={timeLeft.seconds} />
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
+import { DonationMilestone } from '../../../components/DonationMilestone';
 
 export default function RoomPage() {
     const { id: roomId } = useParams() as { id: string };
@@ -625,6 +543,11 @@ export default function RoomPage() {
                             </div>
                         )}
 
+                        {/* Donation Milestone Progress - Desktop only in header */}
+                        <div className="hidden sm:block">
+                            <DonationMilestone />
+                        </div>
+
                         <button
                             className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
                             onClick={() => setSupportModalOpen(true)} >
@@ -734,8 +657,7 @@ export default function RoomPage() {
                 </div>
             </motion.header>
 
-            {/* New Year 2026 Countdown */}
-            <NewYearCountdown />
+
 
             {/* Mobile menu overlay */}
             <AnimatePresence>
@@ -795,6 +717,11 @@ export default function RoomPage() {
             {/* Main content */}
             <main className="relative z-10 px-2 sm:px-4 pb-6">
                 <div className="max-w-7xl mx-auto">
+                    {/* Donation Milestone - Mobile only, above search */}
+                    <div className="sm:hidden mb-4">
+                        <DonationMilestone />
+                    </div>
+
                     {/* Search Card */}
                     <motion.div
                         initial={{ y: 20, opacity: 0 }}
