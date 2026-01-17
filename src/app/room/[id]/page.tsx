@@ -132,6 +132,7 @@ export default function RoomPage() {
     const [copied, setCopied] = useState(false);
     const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
     const [playerMounted, setPlayerMounted] = useState(false);
+    const [supportModalOpen, setSupportModalOpen] = useState(false);
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
@@ -626,7 +627,7 @@ export default function RoomPage() {
 
                         <button
                             className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
-                            onClick={() => window.open('https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48', '_blank')} >
+                            onClick={() => setSupportModalOpen(true)} >
                             <span className="sm:hidden">💛</span>
                             <span className="hidden sm:inline">Support</span>
                         </button>
@@ -1087,8 +1088,11 @@ export default function RoomPage() {
         }
       `}</style>
 
-            {/* Donation Modal */}
+            {/* Donation Modal - shows on first visit */}
             <DonationModal />
+
+            {/* Support Modal - controlled by button click */}
+            <DonationModal open={supportModalOpen} onOpenChange={setSupportModalOpen} />
         </div>
     );
 }

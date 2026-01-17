@@ -2,11 +2,22 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 
-export function DonationModal() {
+interface DonationModalProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function DonationModal({ open, onOpenChange }: DonationModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [pulseHeart, setPulseHeart] = useState(false)
 
+  // Determine if we're in controlled mode (external open prop provided)
+  const isControlled = open !== undefined
+
   useEffect(() => {
+    // Only auto-show on mount if NOT controlled externally
+    if (isControlled) return
+
     // Check if the donation modal has been shown in this session
     const hasShownDonationModal = sessionStorage.getItem('donationModalShown')
 
@@ -14,21 +25,32 @@ export function DonationModal() {
       setIsOpen(true)
       // Mark that the donation modal has been shown
       sessionStorage.setItem('donationModalShown', 'true')
-
-      const interval = setInterval(() => {
-        setPulseHeart(true)
-        setTimeout(() => setPulseHeart(false), 100)
-      }, 1000)
-      return () => clearInterval(interval)
     }
-  }, [])
+  }, [isControlled])
 
-  const handleClose = () => {
-    setIsOpen(false)
+  useEffect(() => {
+    const actualOpen = isControlled ? open : isOpen
+    if (!actualOpen) return
+
+    const interval = setInterval(() => {
+      setPulseHeart(true)
+      setTimeout(() => setPulseHeart(false), 100)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isControlled, open, isOpen])
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (isControlled && onOpenChange) {
+      onOpenChange(newOpen)
+    } else {
+      setIsOpen(newOpen)
+    }
   }
 
+  const actualOpen = isControlled ? open : isOpen
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={actualOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-gray-900 border-2 border-yellow-500 text-white">
         <DialogHeader>
           <div className="flex justify-center mb-3">
@@ -69,22 +91,35 @@ export function DonationModal() {
             </div>
           </div>
 
-          <form
-            action="https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48"
-            method="post"
-            target="_blank"
-            className="w-full"
-          >
-            <button
-              type="submit"
-              className="w-full cursor-pointer bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl p-4 text-lg transition-all duration-500 hover:scale-105 shadow-lg"
+          {/* Donation buttons */}
+          <div className="space-y-3">
+            {/* PayPal Donate Button */}
+            <form
+              action="https://www.paypal.com/ncp/payment/BHH3LHQ3XLU48"
+              method="post"
+              target="_blank"
+              className="w-full"
             >
-              💝 Donate Now
+              <button
+                type="submit"
+                className="w-full cursor-pointer bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl p-4 text-lg transition-all duration-500 hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+              >
+                💝 Donate via PayPal
+              </button>
+            </form>
+
+            {/* Buy Me a Coffee Button */}
+            <button
+              type="button"
+              onClick={() => window.open('https://www.buymeacoffee.com/ashwanivermax', '_blank')}
+              className="w-full cursor-pointer bg-[#FFDD00] hover:bg-[#ffeb3b] text-black font-bold rounded-2xl p-4 text-lg transition-all duration-500 hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+            >
+              ☕ Buy me a coffee
             </button>
-          </form>
+          </div>
 
           <p className="text-xs text-center text-gray-400">
-            🔒 Secure payment via PayPal • No recurring charges
+            🔒 Secure payments • No recurring charges
           </p>
         </div>
 
@@ -92,7 +127,7 @@ export function DonationModal() {
           <Button
             variant="ghost"
             className="text-gray-400 hover:bg-gray-800 hover:text-white text-sm"
-            onClick={handleClose}
+            onClick={() => handleOpenChange(false)}
           >
             Maybe later
           </Button>
