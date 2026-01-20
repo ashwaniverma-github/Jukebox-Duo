@@ -163,8 +163,7 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Create a room, invite your friends, and listen to your favorite tracks
-          in perfect sync. No more counting down to press play.
+          Create a room, invite your partner or friends, and vibe to music in perfect sync. Built for couples and friends who want to share every beat in real-time .
         </motion.p>
 
         <motion.div
