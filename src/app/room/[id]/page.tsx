@@ -16,8 +16,8 @@ import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, X, Share2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DonationModal } from '../../../components/DonationModal';
-import { DonationMilestone } from '../../../components/DonationMilestone';
 import { trackSupportButtonClick, trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
+import { ThemePurchaseModal } from '../../../components/ThemePurchaseModal';
 
 export default function RoomPage() {
     const { id: roomId } = useParams() as { id: string };
@@ -55,6 +55,44 @@ export default function RoomPage() {
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
+
+    // Theme State
+    const [theme, setTheme] = useState<'default' | 'love'>('default');
+    const [boughtThemes, setBoughtThemes] = useState<string[]>(['default']);
+    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+    const themeStyles = {
+        default: {
+            bg: "bg-gradient-to-br from-gray-900 via-gray-950 to-black",
+            text: "text-red-200",
+            primary: "text-red-500",
+            accent: "bg-red-500",
+            buttonGradient: "from-red-700 to-red-500 hover:from-red-800 hover:to-red-600",
+            iconBg: "bg-gradient-to-br from-red-700 to-red-500",
+            border: "border-red-700/30",
+            subtleBg: "bg-red-700/10",
+            pulse: "bg-gray-800/5",
+            musicIcon: "bg-gradient-to-br from-red-700 to-red-500",
+            searchLoading: "border-red-300/30 border-t-red-300",
+            scrollbarThumb: "bg-red-500/50 hover:bg-red-500/70",
+        },
+        love: {
+            bg: "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950 via-pink-900 to-black",
+            text: "text-pink-100",
+            primary: "text-pink-400",
+            accent: "bg-pink-500",
+            buttonGradient: "from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]",
+            iconBg: "bg-gradient-to-br from-pink-500 to-rose-400 shadow-lg shadow-pink-500/20",
+            border: "border-pink-500/20",
+            subtleBg: "bg-pink-500/5",
+            pulse: "bg-pink-400/5",
+            musicIcon: "bg-gradient-to-br from-pink-500 to-rose-400",
+            searchLoading: "border-pink-200/30 border-t-pink-200",
+            scrollbarThumb: "bg-pink-500/50 hover:bg-pink-500/70",
+        }
+    };
+
+    const currentTheme = themeStyles[theme];
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -103,9 +141,29 @@ export default function RoomPage() {
                 console.error('Failed to load room:', err);
             });
 
-        // NOTE: Socket connection is now handled separately based on sync state
+        // Fetch user's bought themes
+        fetch('/api/user/themes')
+            .then(r => r.json())
+            .then(data => {
+                if (data.boughtThemes) {
+                    setBoughtThemes(data.boughtThemes);
+                }
+            })
+            .catch(err => console.error('Failed to load themes', err));
+
+        // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
     }, [roomId, status, session]);
+
+    // Restore saved theme from local storage when boughtThemes are available
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('selectedTheme');
+        if (savedTheme === 'love' && boughtThemes.includes('love')) {
+            setTheme('love');
+        } else if (savedTheme === 'default') {
+            setTheme('default');
+        }
+    }, [boughtThemes]);
 
     // Auto-enable sync if URL has ?sync=true (for shared links)
     useEffect(() => {
@@ -472,19 +530,160 @@ export default function RoomPage() {
         // and update our local state accordingly
     };
 
+    // Listen for theme-changed event from socket
+    useEffect(() => {
+        if (!isSyncEnabled) return;
+
+        const socket = getSocket();
+        if (!socket) return;
+
+        const handler = (newTheme: 'default' | 'love') => {
+            console.log('[Socket] received theme-changed:', newTheme);
+            setTheme(newTheme);
+            localStorage.setItem('selectedTheme', newTheme);
+        };
+        socket.on('theme-changed', handler);
+        return () => {
+            socket.off('theme-changed', handler);
+        };
+    }, [isSyncEnabled]);
+
     if (status === "loading" || status === "unauthenticated") {
         return null;
     }
 
+    const handleThemeChange = (newTheme: 'default' | 'love') => {
+        const updateTheme = () => {
+            setTheme(newTheme);
+            localStorage.setItem('selectedTheme', newTheme);
+
+            // If host, broadcast theme change
+            const isHost = session?.user?.email && roomDetails?.host?.email && session.user.email === roomDetails.host.email;
+            if (isHost && isSyncEnabled) {
+                const socket = getSocket();
+                if (socket) {
+                    console.log('[Socket] Broadcasting theme change:', newTheme);
+                    socket.emit('theme-changed', { roomId, theme: newTheme });
+                }
+            }
+        };
+
+        if (newTheme === 'default') {
+            updateTheme();
+            return;
+        }
+
+        if (boughtThemes.includes(newTheme)) {
+            updateTheme();
+        } else {
+            setShowPurchaseModal(true);
+        }
+    };
+
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black relative overflow-hidden">
+        <div className={`min-h-screen w-full relative overflow-hidden transition-colors duration-1000 ${currentTheme.bg}`}>
+            <ThemePurchaseModal
+                open={showPurchaseModal}
+                onOpenChange={setShowPurchaseModal}
+                onSuccess={() => {
+                    setBoughtThemes(prev => [...prev, 'love']);
+                    setTheme('love');
+                    localStorage.setItem('selectedTheme', 'love');
+
+                    // If host bought it, sync it immediately
+                    const isHost = session?.user?.email && roomDetails?.host?.email && session.user.email === roomDetails.host.email;
+                    if (isHost && isSyncEnabled) {
+                        const socket = getSocket();
+                        if (socket) {
+                            socket.emit('theme-changed', { roomId, theme: 'love' });
+                        }
+                    }
+                }}
+            />
             {/* Persist membership and join socket room on mount */}
             <JoinRoom roomId={roomId} />
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-72 h-72 bg-red-700/10 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gray-800/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
+                {theme === 'default' ? (
+                    <>
+                        <div className="absolute top-20 left-10 w-72 h-72 bg-red-700/10 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-20 right-10 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gray-800/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
+                    </>
+                ) : (
+                    <>
+                        <div className="absolute top-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-20 right-10 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
+                        {/* Floating Hearts */}
+                        {/* Love Theme Background Effects */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            {/* Floating Hearts - Varied sizes and movements */}
+                            {[...Array(20)].map((_, i) => (
+                                <motion.div
+                                    key={`heart-${i}`}
+                                    initial={{
+                                        y: "110vh",
+                                        x: -50, // Center the element horizontally relative to its left position
+                                        opacity: 0,
+                                        scale: 0
+                                    }}
+                                    animate={{
+                                        y: "-20vh",
+                                        scale: [0, Math.random() * 0.8 + 0.5, 0],
+                                        opacity: [0, 0.8, 0],
+                                        // Gentle sway
+                                        x: [-50, -50 + (Math.random() * 100 - 50), -50],
+                                        rotate: [0, Math.random() * 20 - 10, 0]
+                                    }}
+                                    transition={{
+                                        duration: Math.random() * 10 + 15, // 15-25s duration
+                                        repeat: Infinity,
+                                        delay: Math.random() * 20,
+                                        ease: "linear"
+                                    }}
+                                    className="absolute text-pink-500 blur-none"
+                                    style={{
+                                        left: `${(i / 20) * 100}%`, // Evenly distributed 0% to 100%
+                                        fontSize: Math.random() < 0.3 ? '3rem' : '1.5rem',
+                                        filter: 'drop-shadow(0 0 15px rgba(236,72,153,0.6))',
+                                        textShadow: '0 0 10px rgba(244,63,94,0.5)'
+                                    }}
+                                >
+                                    {Math.random() > 0.5 ? '❤' : '✨'}
+                                </motion.div>
+                            ))}
+
+                            {/* Sparkles */}
+                            {[...Array(30)].map((_, i) => (
+                                <motion.div
+                                    key={`sparkle-${i}`}
+                                    initial={{
+                                        top: Math.random() * 100 + "%",
+                                        left: Math.random() * 100 + "%",
+                                        scale: 0,
+                                        opacity: 0
+                                    }}
+                                    animate={{
+                                        scale: [0, 1, 0],
+                                        opacity: [0, 0.8, 0]
+                                    }}
+                                    transition={{
+                                        duration: Math.random() * 2 + 1,
+                                        repeat: Infinity,
+                                        delay: Math.random() * 5,
+                                        repeatDelay: Math.random() * 3
+                                    }}
+                                    className="absolute w-1 h-1 bg-white rounded-full blur-[0.5px] shadow-[0_0_5px_theme(colors.white)]"
+                                />
+                            ))}
+
+                            {/* Ambient Glow */}
+                            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-pink-500/10 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
+                            <div className="absolute bottom-0 right-1/4 w-1/3 h-1/3 bg-purple-500/10 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '7s' }} />
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Header */}
@@ -503,14 +702,14 @@ export default function RoomPage() {
                             className="flex items-center gap-2 sm:gap-3 min-w-0"
                         >
                             <div className="relative flex-shrink-0">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                                <div className={`w-10 h-10 sm:w-12 sm:h-12 ${currentTheme.iconBg} rounded-xl flex items-center justify-center shadow-lg transition-colors duration-500`}>
                                     <Music className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                             </div>
                             <div className="min-w-0">
                                 <h1 className="text-lg sm:text-2xl font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
-                                <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-red-200">
+                                <div className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${currentTheme.text}`}>
                                     <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                     <span className="truncate max-w-[80px] sm:max-w-[150px]">Hosted by {roomDetails?.host?.name || 'Unknown'}</span>
                                 </div>
@@ -553,10 +752,42 @@ export default function RoomPage() {
                             </div>
                         )}
 
-                        {/* Donation Milestone Progress - Desktop only in header */}
-                        <div className="hidden sm:block">
-                            <DonationMilestone />
-                        </div>
+                        {/* Theme Toggle */}
+                        <DropdownMenu.Root>
+                            <DropdownMenu.Trigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className={`p-2 rounded-full ${theme === 'love' ? 'bg-pink-500/20 text-pink-300' : 'bg-white/10 text-white'} hover:bg-white/20`}
+                                >
+                                    {theme === 'love' ? '❤' : '🎨'}
+                                </Button>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Portal>
+                                <DropdownMenu.Content
+                                    sideOffset={8}
+                                    align="end"
+                                    className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
+                                >
+                                    <DropdownMenu.Item
+                                        onSelect={() => handleThemeChange('default')}
+                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2"
+                                    >
+                                        <div className="w-4 h-4 rounded-full bg-red-600"></div>
+                                        <span>Default Theme</span>
+                                        {theme === 'default' && <span className="ml-auto text-xs">✓</span>}
+                                    </DropdownMenu.Item>
+                                    <DropdownMenu.Item
+                                        onSelect={() => handleThemeChange('love')}
+                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-pink-500/20 transition-colors cursor-pointer flex items-center gap-2"
+                                    >
+                                        <div className="w-4 h-4 rounded-full bg-pink-500"></div>
+                                        <span>Love Theme</span>
+                                        {theme === 'love' && <span className="ml-auto text-xs">✓</span>}
+                                        {!boughtThemes.includes('love') && <span className="text-[10px] bg-pink-500/20 px-1 rounded border border-pink-500/30">PRO</span>}
+                                    </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                            </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
 
                         <button
                             className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
@@ -604,7 +835,7 @@ export default function RoomPage() {
                                             setCopied(true);
                                             setTimeout(() => setCopied(false), 2000);
                                         }}
-                                        className="h-12 px-4 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
+                                        className={`h-12 px-4 bg-gradient-to-r ${currentTheme.buttonGradient} text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
                                     >
                                         {copied ? 'Copied!' : 'Copy'}
                                     </Button>
@@ -647,10 +878,25 @@ export default function RoomPage() {
                                         )}
                                         <div className="text-center">
                                             <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                                            <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                                            <div className={`text-xs ${currentTheme.text}`}>{session?.user?.email || ''}</div>
                                         </div>
                                     </div>
                                     <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                                    <DropdownMenu.Item
+                                        className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'default' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                        onSelect={() => handleThemeChange('default')}
+                                    >
+                                        <span>🎨</span>
+                                        Default Theme
+                                    </DropdownMenu.Item>
+                                    <DropdownMenu.Item
+                                        className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'love' ? 'bg-pink-500/20 text-pink-400' : 'text-gray-400 hover:text-pink-300 hover:bg-pink-500/10'}`}
+                                        onSelect={() => handleThemeChange('love')}
+                                    >
+                                        <span>❤</span>
+                                        Love Theme
+                                        {!boughtThemes.includes('love') && <span className="text-[10px] bg-pink-500/20 px-1 rounded border border-pink-500/30">PRO</span>}
+                                    </DropdownMenu.Item>
                                     <DropdownMenu.Item
                                         onSelect={() => { window.location.href = '/dashboard'; }}
                                         className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
@@ -687,6 +933,7 @@ export default function RoomPage() {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            // We can dynamically set the gradient, but hardcoded gradient is fine for now, maybe just keep it dark
                             className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-[#1a0d2e] to-[#2d145e] border-l border-white/20 p-6"
                             onClick={e => e.stopPropagation()}
                         >
@@ -706,13 +953,13 @@ export default function RoomPage() {
                                         setModalOpen(true);
                                         setIsMobileMenuOpen(false);
                                     }}
-                                    className="w-full bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                    className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
                                 >
                                     <Search className="w-5 h-5 mr-2" />
                                     Search Music
                                 </Button>
 
-                                <div className="text-sm text-red-200 pt-4 border-t border-white/10">
+                                <div className={`text-sm ${currentTheme.text} pt-4 border-t border-white/10`}>
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                         <span>Room is live</span>
@@ -730,11 +977,6 @@ export default function RoomPage() {
             {/* Main content */}
             <main className="relative z-10 px-2 sm:px-4 pb-6">
                 <div className="max-w-7xl mx-auto">
-                    {/* Donation Milestone - Mobile only, above search */}
-                    <div className="sm:hidden mb-4">
-                        <DonationMilestone />
-                    </div>
-
                     {/* Search Card */}
                     <motion.div
                         initial={{ y: 20, opacity: 0 }}
@@ -748,16 +990,16 @@ export default function RoomPage() {
                                     <CardContent className="p-3 sm:p-6">
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
-                                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-700 to-red-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow transition-colors duration-500`}>
                                                     <Search className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                                 </div>
-                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                                                <div className={`absolute -top-1 -right-1 w-6 h-6 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
                                                     <span className="text-white text-xs font-bold">+</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
                                                 <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Search & Add Music</h3>
-                                                <p className="text-sm sm:text-base text-red-200 opacity-90">Discover new tracks and add them to the queue</p>
+                                                <p className={`text-sm sm:text-base ${currentTheme.text} opacity-90`}>Discover new tracks and add them to the queue</p>
                                             </div>
                                             <div className="hidden sm:block">
                                                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -771,12 +1013,12 @@ export default function RoomPage() {
                             <DialogContent className="w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 bg-[#1a0d2e] border-white/20 text-white p-2 sm:p-6 rounded-xl">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center">
+                                        <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center transition-colors duration-500`}>
                                             <Search className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
                                             <h2 className="text-lg sm:text-xl font-bold">Search Music Library</h2>
-                                            <p className="text-xs sm:text-sm text-red-200">Find and add songs to your queue</p>
+                                            <p className={`text-xs sm:text-sm ${currentTheme.text}`}>Find and add songs to your queue</p>
                                         </div>
                                     </div>
 
@@ -784,23 +1026,23 @@ export default function RoomPage() {
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                className="w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-red-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-sm sm:text-base"
+                                                className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 ${theme === 'love' ? 'focus:ring-pink-500' : 'focus:ring-red-500'} focus:border-transparent transition-all text-sm sm:text-base`}
                                                 placeholder="Search for songs, artists, or albums..."
                                                 value={search}
                                                 onChange={e => setSearch(e.target.value)}
                                                 autoFocus
                                             />
-                                            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-300" />
+                                            <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
                                             {searchLoading && (
                                                 <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
-                                                    <div className="w-5 h-5 border-2 border-red-300/30 border-t-red-300 rounded-full animate-spin"></div>
+                                                    <div className={`w-5 h-5 border-2 rounded-full animate-spin ${currentTheme.searchLoading}`}></div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
 
                                     {searchError && (
-                                        <div className="p-2 sm:p-3 bg-red-700/20 border border-red-700/30 rounded-lg text-red-200 text-xs sm:text-sm">
+                                        <div className={`p-2 sm:p-3 ${currentTheme.subtleBg} border ${currentTheme.border} rounded-lg ${currentTheme.text} text-xs sm:text-sm`}>
                                             {searchError}
                                         </div>
                                     )}
@@ -809,19 +1051,19 @@ export default function RoomPage() {
                                         {searchResults.length === 0 && !searchLoading && !search.trim() && (
                                             <div className="text-center py-8 sm:py-12">
                                                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Music className="w-6 h-6 sm:w-8 sm:h-8 text-red-300" />
+                                                    <Music className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
                                                 </div>
-                                                <p className="text-red-200 font-medium text-sm sm:text-base">Start typing to search</p>
-                                                <p className="text-xs sm:text-sm text-red-300 mt-1">Search for songs, artists, or albums</p>
+                                                <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>Start typing to search</p>
+                                                <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for songs, artists, or albums</p>
                                             </div>
                                         )}
                                         {searchResults.length === 0 && !searchLoading && search.trim() && (
                                             <div className="text-center py-8 sm:py-12">
                                                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Search className="w-6 h-6 sm:w-8 sm:h-8 text-red-300" />
+                                                    <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
                                                 </div>
-                                                <p className="text-red-200 font-medium text-sm sm:text-base">No results found</p>
-                                                <p className="text-xs sm:text-sm text-red-300 mt-1">Try a different search term</p>
+                                                <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>No results found</p>
+                                                <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Try a different search term</p>
                                             </div>
                                         )}
                                         <div className="space-y-2 sm:space-y-3">
@@ -847,12 +1089,12 @@ export default function RoomPage() {
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                         <h4 className="font-semibold text-white text-xs sm:text-base leading-tight line-clamp-2 mb-1">{item.title}</h4>
-                                                        <p className="text-xs sm:text-sm text-red-200 opacity-80">Click to add to queue</p>
+                                                        <p className={`text-xs sm:text-sm ${currentTheme.text} opacity-80`}>Click to add to queue</p>
                                                     </div>
                                                     <div className="flex-shrink-0">
                                                         <Button
                                                             onClick={() => handleAddToQueue(item)}
-                                                            className="cursor-pointer bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-medium px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+                                                            className={`cursor-pointer bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap`}
                                                         >
                                                             <span className="text-lg font-bold">+</span>
                                                             <span>Add</span>
@@ -900,6 +1142,7 @@ export default function RoomPage() {
                                                 isHost={true}
                                                 onPlayNext={handlePlayNext}
                                                 onPlayPrev={handlePlayPrev}
+                                                theme={theme}
                                             />
                                         )}
 
@@ -933,7 +1176,7 @@ export default function RoomPage() {
                                                     <Music className="w-10 h-10 text-white" />
                                                 </div>
                                                 <p className="text-white text-xl font-bold mb-2">No song playing</p>
-                                                <p className="text-red-200">Add some music to get started</p>
+                                                <p className={currentTheme.text}>Add some music to get started</p>
                                             </div>
                                         )}
                                     </div>
@@ -953,12 +1196,12 @@ export default function RoomPage() {
                                 <div className="p-3 sm:p-6 pb-2 sm:pb-4 border-b border-white/10">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                                            <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center shadow-lg transition-colors duration-500`}>
                                                 <Music className="w-5 h-5 text-white" />
                                             </div>
                                             <div>
                                                 <h3 className="text-base sm:text-lg font-bold text-white">Up Next</h3>
-                                                <p className="text-xs sm:text-sm text-red-200">{queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue</p>
+                                                <p className={`text-xs sm:text-sm ${currentTheme.text}`}>{queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue</p>
                                             </div>
                                         </div>
                                         <button
@@ -976,6 +1219,7 @@ export default function RoomPage() {
                                         <QueueList
                                             roomId={roomId}
                                             queue={queue}
+                                            theme={theme}
                                             onSelect={async (id) => {
                                                 const idx = queue.findIndex(item => item.id === id);
                                                 if (idx !== -1) {
@@ -1020,11 +1264,11 @@ export default function RoomPage() {
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(239, 68, 68, 0.5);
+          background: ${theme === 'love' ? 'rgba(236, 72, 153, 0.5)' : 'rgba(239, 68, 68, 0.5)'};
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(239, 68, 68, 0.7);
+          background: ${theme === 'love' ? 'rgba(236, 72, 153, 0.7)' : 'rgba(239, 68, 68, 0.7)'};
         }
       `}</style>
 

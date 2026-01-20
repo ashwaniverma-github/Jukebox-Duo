@@ -17,6 +17,7 @@ model User {
   rooms      Room[]      @relation("RoomHost")
   memberships RoomMember[]
   queueItems QueueItem[] @relation("QueueItemAddedBy")
+  boughtThemes String[]  @default(["default"])
   createdAt  DateTime    @default(now())
 }
 

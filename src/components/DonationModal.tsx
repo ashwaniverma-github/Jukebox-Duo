@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { trackPayPalClick, trackBuyMeCoffeeClick } from './PostHogProvider'
 
@@ -71,9 +71,6 @@ export function DonationModal({ open, onOpenChange }: DonationModalProps) {
           <DialogTitle className="text-2xl font-bold text-center text-yellow-400">
             Support Jukebox Duo
           </DialogTitle>
-          <DialogDescription className="text-center text-gray-300 text-sm mt-2">
-            Help us reach our monthly donation target to keep all services running for free
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">

@@ -44,6 +44,7 @@ interface Props {
   isHost: boolean;
   onPlayNext?: () => void;
   onPlayPrev?: () => void;
+  theme?: 'default' | 'love';
 }
 
 const BUFFER = 1000; // ms buffer for scheduling
@@ -55,7 +56,7 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev }: Props) {
+export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, theme = 'default' }: Props) {
   const playerRef = useRef<YT.Player | null>(null);
   const socket = getSocket(); // May be null if sync not enabled
   const { offset, sendCommand } = useSyncPlayer(roomId);
@@ -64,6 +65,33 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
+
+  const themeStyles = {
+    default: {
+      buttonBg: "bg-red-100 hover:bg-red-200",
+      buttonText: "text-red-500",
+      buttonRing: "focus:ring-red-300",
+      playButtonGradient: "from-red-200 to-white hover:from-red-300 hover:to-white text-red-600",
+      spinner: "text-red-500",
+      timerText: "text-red-500",
+      seekBarBg: "bg-red-100/40",
+      seekBarColor: "#f87171", // red-400
+      seekBarThumbShadow: "rgba(248, 113, 113, 0.3)",
+    },
+    love: {
+      buttonBg: "bg-pink-100 hover:bg-pink-200",
+      buttonText: "text-pink-500",
+      buttonRing: "focus:ring-pink-300",
+      playButtonGradient: "from-pink-100 to-white hover:from-pink-200 hover:to-white text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]",
+      spinner: "text-pink-500",
+      timerText: "text-pink-300",
+      seekBarBg: "bg-pink-500/20",
+      seekBarColor: "#ec4899", // pink-500
+      seekBarThumbShadow: "rgba(236, 72, 153, 0.5)",
+    }
+  };
+
+  const currentTheme = themeStyles[theme];
 
   // 1) Initialize YouTube IFrame API once
   const playerInitialized = useRef(false);
@@ -245,7 +273,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
           {/* Play controls */}
           <div className="flex justify-center items-center gap-6">
             <button
-              className="flex items-center cursor-pointer justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+              className={`flex items-center cursor-pointer justify-center w-16 h-16 rounded-full ${currentTheme.buttonBg} ${currentTheme.buttonText} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors`}
               onClick={onPlayPrev}
               aria-label="Previous"
               type="button"
@@ -254,7 +282,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             </button>
             {!isPlaying && (
               <button
-                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg relative"
+                className={`flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentTheme.playButtonGradient} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors shadow-lg relative`}
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p || !videoId) return console.error('Player not ready or no video');
@@ -268,7 +296,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
               >
                 {isLoading ? (
                   <span className="absolute inset-0 flex items-center justify-center">
-                    <svg className="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className={`animate-spin h-8 w-8 ${currentTheme.spinner}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                     </svg>
@@ -280,7 +308,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             )}
             {isPlaying && (
               <button
-                className="flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-200 to-white text-red-600 hover:from-red-300 hover:to-white focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors shadow-lg relative"
+                className={`flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentTheme.playButtonGradient} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors shadow-lg relative`}
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p) return console.error('Player not ready');
@@ -294,7 +322,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
               >
                 {isLoading ? (
                   <span className="absolute inset-0 flex items-center justify-center">
-                    <svg className="animate-spin h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className={`animate-spin h-8 w-8 ${currentTheme.spinner}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                     </svg>
@@ -305,7 +333,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
               </button>
             )}
             <button
-              className="flex items-center cursor-pointer justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+              className={`flex items-center cursor-pointer justify-center w-16 h-16 rounded-full ${currentTheme.buttonBg} ${currentTheme.buttonText} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors`}
               onClick={onPlayNext}
               aria-label="Next"
               type="button"
@@ -317,7 +345,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
           {/* Timer and Seek Bar */}
           <div className="w-full">
             <div className="flex items-center gap-1 mb-2">
-              <span className="text-xs font-mono text-red-500 min-w-[30px]">
+              <span className={`text-xs font-mono ${currentTheme.timerText} min-w-[30px]`}>
                 {formatTime(currentTime)}
               </span>
               <div className="flex-1 relative min-w-0">
@@ -329,13 +357,13 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                   onChange={handleSeek}
                   onMouseUp={handleSeekEnd}
                   onTouchEnd={handleSeekEnd}
-                  className="w-full h-3 bg-red-100/40 rounded-lg appearance-none cursor-pointer slider"
+                  className={`w-full h-3 ${currentTheme.seekBarBg} rounded-lg appearance-none cursor-pointer slider`}
                   style={{
-                    background: `linear-gradient(to right, #f87171 0%, #f87171 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
+                    background: `linear-gradient(to right, ${currentTheme.seekBarColor} 0%, ${currentTheme.seekBarColor} ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
                   }}
                 />
               </div>
-              <span className="text-xs font-mono text-red-500 min-w-[30px]">
+              <span className={`text-xs font-mono ${currentTheme.timerText} min-w-[30px]`}>
                 {formatTime(duration)}
               </span>
             </div>
@@ -347,18 +375,18 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       {!isHost && (
         <div className="mt-4 w-full">
           <div className="flex items-center gap-1 mb-2">
-            <span className="text-xs font-mono text-red-500 min-w-[30px]">
+            <span className={`text-xs font-mono ${currentTheme.timerText} min-w-[30px]`}>
               {formatTime(currentTime)}
             </span>
             <div className="flex-1 relative min-w-0">
               <div
-                className="w-full h-3 bg-red-100/40 rounded-lg relative overflow-hidden"
+                className={`w-full h-3 ${currentTheme.seekBarBg} rounded-lg relative overflow-hidden`}
                 style={{
-                  background: `linear-gradient(to right, #f87171 0%, #f87171 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
+                  background: `linear-gradient(to right, ${currentTheme.seekBarColor} 0%, ${currentTheme.seekBarColor} ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
                 }}
               />
             </div>
-            <span className="text-xs font-mono text-red-500 min-w-[30px]">
+            <span className={`text-xs font-mono ${currentTheme.timerText} min-w-[30px]`}>
               {formatTime(duration)}
             </span>
           </div>
@@ -372,7 +400,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
           height: 16px;
           width: 16px;
           border-radius: 50%;
-          background: #f87171;
+          background: ${currentTheme.seekBarColor};
           cursor: pointer;
           border: 2px solid white;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -382,7 +410,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
           height: 16px;
           width: 16px;
           border-radius: 50%;
-          background: #f87171;
+          background: ${currentTheme.seekBarColor};
           cursor: pointer;
           border: 2px solid white;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -393,7 +421,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
         }
         
         .slider:focus::-webkit-slider-thumb {
-          box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.3);
+          box-shadow: 0 0 0 3px ${currentTheme.seekBarThumbShadow};
         }
       `}</style>
     </>
