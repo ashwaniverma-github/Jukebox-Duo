@@ -990,7 +990,7 @@ export default function RoomPage() {
                                     <CardContent className="p-3 sm:p-6">
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
-                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow transition-colors duration-500`}>
+                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500`}>
                                                     <Search className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                                 </div>
                                                 <div className={`absolute -top-1 -right-1 w-6 h-6 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
