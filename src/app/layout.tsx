@@ -91,6 +91,23 @@ export default function RootLayout({
       <head>
         {/* Google AdSense */}
         <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
+        
+        {/* Google Analytics */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-4JB3MF5MXZ"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-4JB3MF5MXZ');
+            `,
+          }}
+        />
+        
         {/* Structured Data for SEO */}
         <script
           type="application/ld+json"
