@@ -89,6 +89,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Google AdSense */}
+        <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
         {/* Structured Data for SEO */}
         <script
           type="application/ld+json"
@@ -142,6 +144,14 @@ export default function RootLayout({
           <Script
             src="https://www.feedinbox.com/widget.js"
             strategy="lazyOnload"
+          />
+
+          {/* Google AdSense Script */}
+          <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660595040751061"
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
           />
         </Providers>
         <Analytics />
