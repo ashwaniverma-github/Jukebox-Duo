@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share2 } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share2, LogOut } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSigningout , setIsSigningOut] = useState(false)
   const router = useRouter();
 
   useEffect(() => {
@@ -120,6 +122,16 @@ export default function Dashboard() {
     }
   };
 
+  const handleSignout = async()=>{
+    setIsSigningOut(true)
+    try{
+      await signOut({callbackUrl:"/signin"})
+    }catch(error){
+      console.error('Failed to signout ' , error)
+      setIsSigningOut(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-hidden">
       {/* Animated Background */}
@@ -133,15 +145,21 @@ export default function Dashboard() {
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
         {/* Navigation */}
-        <nav className="relative z-10 flex justify-between items-center p-6 lg:p-4">
-          <div className="flex items-center gap-3">
-            
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span>Live Sessions</span>
-          </div>
+        <nav className="relative z-10 flex justify-end items-center p-6 lg:p-4">
+
+          
+          <Button 
+            onClick={handleSignout}
+            className="h-10 px-4 justify-end bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200 flex  items-center gap-2"
+            disabled = {isSigningout}
+            >
+            <LogOut className="w-4 h-4" /> 
+            {isSigningout ? 'Signing out..' :' Sign Out'}
+          </Button>
+
         </nav>
+
+
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col lg:flex-row relative z-10">
