@@ -752,43 +752,6 @@ export default function RoomPage() {
                             </div>
                         )}
 
-                        {/* Theme Toggle */}
-                        <DropdownMenu.Root>
-                            <DropdownMenu.Trigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className={`p-2 rounded-full ${theme === 'love' ? 'bg-pink-500/20 text-pink-300' : 'bg-white/10 text-white'} hover:bg-white/20`}
-                                >
-                                    {theme === 'love' ? '❤' : '🎨'}
-                                </Button>
-                            </DropdownMenu.Trigger>
-                            <DropdownMenu.Portal>
-                                <DropdownMenu.Content
-                                    sideOffset={8}
-                                    align="end"
-                                    className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-                                >
-                                    <DropdownMenu.Item
-                                        onSelect={() => handleThemeChange('default')}
-                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2"
-                                    >
-                                        <div className="w-4 h-4 rounded-full bg-red-600"></div>
-                                        <span>Default Theme</span>
-                                        {theme === 'default' && <span className="ml-auto text-xs">✓</span>}
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Item
-                                        onSelect={() => handleThemeChange('love')}
-                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-pink-500/20 transition-colors cursor-pointer flex items-center gap-2"
-                                    >
-                                        <div className="w-4 h-4 rounded-full bg-pink-500"></div>
-                                        <span>Love Theme</span>
-                                        {theme === 'love' && <span className="ml-auto text-xs">✓</span>}
-                                        {!boughtThemes.includes('love') && <span className="text-[10px] bg-pink-500/20 px-1 rounded border border-pink-500/30">PRO</span>}
-                                    </DropdownMenu.Item>
-                                </DropdownMenu.Content>
-                            </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
-
                         <button
                             className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
                             onClick={() => {
