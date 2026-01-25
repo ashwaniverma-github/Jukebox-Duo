@@ -42,6 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'yearly',
             priority: 0.4,
         },
+        {
+            url: `${baseUrl}/tools/playlist-name-generator`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        },
     ];
 
     // Listen Together programmatic pages

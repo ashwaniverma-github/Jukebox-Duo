@@ -29,18 +29,39 @@ const Footer = () => (
           </div>
         </div>
 
-        {/* Column 2: Product (2 cols) */}
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="font-semibold text-white tracking-wide">Product</h3>
-          <ul className="space-y-3">
-            {['Features', 'About', 'Contact'].map((item) => (
-              <li key={item}>
-                <Link href={`/${item.toLowerCase()}`} className="text-sm text-gray-400 hover:text-red-400 transition-colors">
-                  {item}
+        {/* Column 2: Product & Tools (2 cols) */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          <div>
+            <h3 className="font-semibold text-white tracking-wide mb-6">Product</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/features" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  Features
                 </Link>
               </li>
-            ))}
-          </ul>
+              <li>
+                <Link href="/about" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-white tracking-wide mb-6">Tools</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/tools/playlist-name-generator" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  Playlist Name Generator
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Column 3: Listen Together (3 cols) */}
