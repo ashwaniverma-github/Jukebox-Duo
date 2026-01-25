@@ -13,9 +13,10 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogTrigger, DialogContent } from '../../../components/ui/dialog';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Search, Users, Music, X, Share2 } from 'lucide-react'
+import { Search, Users, Music, X, Share2, ListMusic } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DonationModal } from '../../../components/DonationModal';
+import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
 import { trackSupportButtonClick, trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
 import { ThemePurchaseModal } from '../../../components/ThemePurchaseModal';
 
@@ -46,6 +47,7 @@ export default function RoomPage() {
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { name?: string; email?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
+    const [importModalOpen, setImportModalOpen] = useState(false);
     // Share link includes ?sync=true to auto-enable sync for invited users
     const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}?sync=true` : '';
     const [copied, setCopied] = useState(false);
@@ -580,8 +582,31 @@ export default function RoomPage() {
         }
     };
 
+    const handlePlaylistImported = async () => {
+        await refreshQueue();
+        if (isSyncEnabled) {
+            const socket = getSocket();
+            if (socket) {
+                // We emit queue-updated with a dummy item to trigger refresh on other clients
+                // or ideally a new event type, but queue-updated works if we just want a refresh
+                // Actually, let's just use queue-updated with a special flag if needed, 
+                // OR relies on the fact that other clients might not auto-refresh unless they receive an event.
+                // Since our queue-updated handler just calls refreshQueue(), sending it (even with null item) works!
+                // Let's send a dummy event or better yet, just a generic signal.
+                // Looking at QueueList socket listener... it listens for 'queue-updated'.
+                socket.emit('queue-updated', { roomId, item: { videoId: 'bulk-import', title: 'Bulk Import', thumbnail: '' } });
+            }
+        }
+    };
+
     return (
         <div className={`min-h-screen w-full relative overflow-hidden transition-colors duration-1000 ${currentTheme.bg}`}>
+            <PlaylistImportModal
+                isOpen={importModalOpen}
+                onOpenChange={setImportModalOpen}
+                roomId={roomId}
+                onImportSuccess={handlePlaylistImported}
+            />
             <ThemePurchaseModal
                 open={showPurchaseModal}
                 onOpenChange={setShowPurchaseModal}
@@ -945,7 +970,7 @@ export default function RoomPage() {
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="mb-4 sm:mb-8"
+                        className="mb-4 sm:mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
                         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                             <DialogTrigger asChild>
@@ -1070,6 +1095,32 @@ export default function RoomPage() {
                                 </div>
                             </DialogContent>
                         </Dialog>
+
+                        {/* Import Playlist Card */}
+                        <Card
+                            onClick={() => setImportModalOpen(true)}
+                            className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group"
+                        >
+                            <CardContent className="p-3 sm:p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br  bg-white/10 backdrop-blur-md border-white/20 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500">
+                                            <ListMusic className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                        </div>
+
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Import Playlist</h3>
+                                        <p className={`text-sm sm:text-base ${currentTheme.text} opacity-90`}>Bulk add songs from YouTube</p>
+                                    </div>
+                                    <div className="hidden sm:block">
+                                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                            <ChevronDownIcon className="w-5 h-5 text-white -rotate-90" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </motion.div>
 
                     {/* Player and Queue Grid */}
