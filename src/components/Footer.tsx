@@ -33,7 +33,7 @@ const Footer = () => (
         <div className="lg:col-span-2 space-y-6">
           <h3 className="font-semibold text-white tracking-wide">Product</h3>
           <ul className="space-y-3">
-            {['Features', 'About', 'Contact', 'Pricing', 'Blog'].map((item) => (
+            {['Features', 'About', 'Contact'].map((item) => (
               <li key={item}>
                 <Link href={`/${item.toLowerCase()}`} className="text-sm text-gray-400 hover:text-red-400 transition-colors">
                   {item}
