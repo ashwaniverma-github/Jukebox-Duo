@@ -34,6 +34,21 @@ export async function POST(req: Request) {
   const userId = await getUserId(req)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Get session for user details (needed for upsert)
+  const session = await getServerSession(authOptions)
+
+  // Ensure user exists in database (handles deleted users)
+  await prisma.user.upsert({
+    where: { id: userId },
+    create: {
+      id: userId,
+      email: session?.user?.email ?? '',
+      name: session?.user?.name,
+      image: session?.user?.image,
+    },
+    update: {},
+  })
+
   const { name } = await req.json()
   const room = await prisma.room.create({
     data: { name, hostId: userId }
@@ -48,6 +63,16 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const userId = await getUserId(req)
   if (!userId) return NextResponse.json([], { status: 401 })
+
+  // Verify user exists in DB - if not, return 401 to force signout/re-login methods
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true }
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User record not found' }, { status: 401 })
+  }
 
   const rooms = await prisma.room.findMany({
     where: { hostId: userId },

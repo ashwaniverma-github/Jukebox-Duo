@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSigningout , setIsSigningOut] = useState(false)
+  const [isSigningout, setIsSigningOut] = useState(false)
   const router = useRouter();
 
   useEffect(() => {
@@ -51,7 +51,21 @@ export default function Dashboard() {
   async function loadRooms() {
     try {
       const res = await fetch("/api/rooms");
+
+      // If user doesn't exist in DB (deleted), sign them out
+      if (res.status === 401 || res.status === 403) {
+        await signOut({ callbackUrl: "/signin" });
+        return;
+      }
+
       const data = await res.json();
+
+      // Handle case where response has an error or rooms is not an array
+      if (data.error || !Array.isArray(data)) {
+        await signOut({ callbackUrl: "/signin" });
+        return;
+      }
+
       setRooms(data);
     } catch (error) {
       console.error("Failed to load rooms:", error);
@@ -122,12 +136,12 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignout = async()=>{
+  const handleSignout = async () => {
     setIsSigningOut(true)
-    try{
-      await signOut({callbackUrl:"/signin"})
-    }catch(error){
-      console.error('Failed to signout ' , error)
+    try {
+      await signOut({ callbackUrl: "/signin" })
+    } catch (error) {
+      console.error('Failed to signout ', error)
       setIsSigningOut(false)
     }
   }
@@ -147,14 +161,14 @@ export default function Dashboard() {
         {/* Navigation */}
         <nav className="relative z-10 flex justify-end items-center p-6 lg:p-4">
 
-          
-          <Button 
+
+          <Button
             onClick={handleSignout}
             className="h-10 px-4 justify-end bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200 flex  items-center gap-2"
-            disabled = {isSigningout}
-            >
-            <LogOut className="w-4 h-4" /> 
-            {isSigningout ? 'Signing out..' :' Sign Out'}
+            disabled={isSigningout}
+          >
+            <LogOut className="w-4 h-4" />
+            {isSigningout ? 'Signing out..' : ' Sign Out'}
           </Button>
 
         </nav>
@@ -173,10 +187,10 @@ export default function Dashboard() {
                 </span>
               </h1>
               <p className="text-lg sm:text-xl text-gray-300 mb-8 leading-relaxed">
-                Create synchronized music rooms where friends can listen to the same tracks at the exact same time. 
+                Create synchronized music rooms where friends can listen to the same tracks at the exact same time.
                 Share the moment, share the beat.
               </p>
-              
+
               {/* Stats */}
               <div className="flex flex-wrap gap-6 mb-8">
                 <div className="flex items-center gap-2 text-gray-400">
@@ -197,7 +211,7 @@ export default function Dashboard() {
               <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 lg:p-8 shadow-2xl">
                 <h3 className="text-2xl font-bold mb-2 text-white">Create Your Room</h3>
                 <p className="text-gray-400 mb-6">Start a new synchronized listening session</p>
-                
+
                 <form onSubmit={handleCreateRoom} className="space-y-4">
                   <div className="relative">
                     <Input
@@ -213,9 +227,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     disabled={isCreating || !name.trim()}
                     className="w-full h-14 bg-gradient-to-r from-red-700 via-red-500 to-gray-800 hover:from-red-800 hover:via-red-600 hover:to-black text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
@@ -320,27 +334,27 @@ export default function Dashboard() {
               Copy this link to invite others to your music room
             </DialogDescription>
           </DialogHeaderUI>
-          
+
           <div className="flex items-center gap-3 mt-6">
             <div className="flex-1 relative">
-              <Input 
-                type="text" 
-                value={shareLink} 
-                readOnly 
+              <Input
+                type="text"
+                value={shareLink}
+                readOnly
                 className="h-12 bg-white/10 border-white/20 text-white text-sm pr-12 rounded-xl backdrop-blur-sm"
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <ExternalLink className="w-4 h-4 text-gray-400" />
               </div>
             </div>
-            <Button 
-              onClick={copyToClipboard} 
+            <Button
+              onClick={copyToClipboard}
               className="h-12 px-4 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
             >
               <Copy className="w-4 h-4" />
             </Button>
           </div>
-          
+
           {copied && (
             <div className="flex items-center gap-2 text-green-400 text-sm font-semibold mt-3 animate-fadeIn">
               <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -349,16 +363,16 @@ export default function Dashboard() {
               Link copied successfully!
             </div>
           )}
-          
+
           <DialogFooter className="mt-6 flex gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowShareModal(false)}
               className="flex-1 h-11 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
             >
               Close
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setShowShareModal(false);
                 joinRoom(shareLink.split("/").pop() || "");

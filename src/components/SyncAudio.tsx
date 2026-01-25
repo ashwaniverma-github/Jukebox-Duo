@@ -222,8 +222,10 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     const interval = setInterval(() => {
       const player = playerRef.current;
       if (player && !isSeeking) {
-        const time = player.getCurrentTime();
-        const dur = player.getDuration();
+        // Safety check: ensure methods exist before calling
+        const time = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
+        const dur = typeof player.getDuration === 'function' ? player.getDuration() : 0;
+
         if (time > 0) setCurrentTime(time);
         if (dur > 0) setDuration(dur);
       }
@@ -286,8 +288,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p || !videoId) return console.error('Player not ready or no video');
+                  if (typeof p.playVideo !== 'function') return console.error('playVideo not available');
+
                   p.playVideo();
-                  sendCommand('play', p.getCurrentTime(), Date.now() + BUFFER);
+                  const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
+                  sendCommand('play', time, Date.now() + BUFFER);
                   setIsPlaying(true);
                 }}
                 aria-label="Play"
@@ -312,8 +317,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                 onClick={() => {
                   const p = playerRef.current;
                   if (!p) return console.error('Player not ready');
+                  if (typeof p.pauseVideo !== 'function') return console.error('pauseVideo not available');
+
                   p.pauseVideo();
-                  sendCommand('pause', p.getCurrentTime(), Date.now() + BUFFER);
+                  const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
+                  sendCommand('pause', time, Date.now() + BUFFER);
                   setIsPlaying(false);
                 }}
                 aria-label="Pause"

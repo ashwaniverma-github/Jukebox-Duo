@@ -26,20 +26,32 @@ export async function POST(
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
 
+  // Ensure user exists in database (handles new users from share links)
+  await prisma.user.upsert({
+    where: { id: session.user.id },
+    create: {
+      id: session.user.id,
+      email: session.user.email ?? '',
+      name: session.user.name,
+      image: session.user.image,
+    },
+    update: {},
+  })
+
   // Upsert membership
   await prisma.roomMember.upsert({
     where: {
       roomId_userId: {
-        roomId,                     // use awaited roomId
-        userId: session.user.id,    // now defined
+        roomId,
+        userId: session.user.id,
       },
     },
     create: {
-      roomId,                      // use awaited roomId
-      userId: session.user.id,     // now defined
+      roomId,
+      userId: session.user.id,
     },
     update: {},
   })
 
   return NextResponse.json({ ok: true })
-}
+} 

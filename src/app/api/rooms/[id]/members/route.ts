@@ -35,7 +35,7 @@ export async function GET(
     orderBy: { joinedAt: 'asc' },
   })
 
-  const participants = members.map((m) => m.user)
+  const participants = members.map((m: { user: { id: string; name: string | null; image: string | null } }) => m.user)
   return NextResponse.json({ members: participants })
 }
 

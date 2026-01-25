@@ -55,8 +55,43 @@ export async function GET(
     // Check authorization: user must be host or member
     const isHost = room.hostId === session.user.id
     const isMember = room.members.length > 0
+
+    // If user is neither host nor member, auto-join them (handles share links)
     if (!isHost && !isMember) {
-        return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+        try {
+            // Ensure user exists in database (handles new users from share links)
+            await prisma.user.upsert({
+                where: { id: session.user.id },
+                create: {
+                    id: session.user.id,
+                    email: session.user.email ?? '',
+                    name: session.user.name,
+                    image: session.user.image,
+                },
+                update: {},
+            })
+
+            // Create room membership (use upsert to handle race conditions)
+            await prisma.roomMember.upsert({
+                where: {
+                    roomId_userId: {
+                        roomId,
+                        userId: session.user.id,
+                    },
+                },
+                create: {
+                    roomId,
+                    userId: session.user.id,
+                },
+                update: {},
+            })
+        } catch (error) {
+            // Ignore unique constraint errors (P2002) - means user/membership already exists
+            // This handles race conditions with the join route
+            if (!(error instanceof Error) || !('code' in error) || (error as { code: string }).code !== 'P2002') {
+                throw error
+            }
+        }
     }
 
     // Return consolidated response
