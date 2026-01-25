@@ -4,47 +4,100 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 
 const Footer = () => (
-  <motion.footer
-    className="bg-black/80 text-white py-8 px-4 text-center text-base mt-12 border-t border-white/10 opacity-[0.98] font-[var(--font-inter)]"
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.3 }}
-    transition={{ duration: 0.7 }}
-  >
-    {/* Row with centered links and Contact Founder on right */}
-    <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4 mb-5 w-full relative">
-      {/* Centered Navigation links */}
-      <nav className="flex flex-wrap justify-center gap-4 md:gap-8 flex-1 md:absolute md:left-0 md:right-0 md:mx-auto w-full pointer-events-none">
-        <div className="pointer-events-auto flex gap-4 md:gap-8 flex-wrap justify-center">
-          <Link href="/features" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity">Features</Link>
-          <Link href="/about" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity">About</Link>
-          <Link href="/contact" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity">Contact</Link>
-          <Link href="/terms" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity">Terms</Link>
-          <Link href="/privacyPolicy" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity">Privacy Policy</Link>
+  <footer className="relative bg-black text-white pt-24 pb-12 overflow-hidden border-t border-white/10 font-[var(--font-inter)]">
+    <div className="container mx-auto px-6 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+        {/* Column 1: Brand & Social (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <Link href="/" className="inline-block">
+            <span className="font-bold text-2xl tracking-tight text-white">
+              Jukebox<span className="text-red-500">Duo</span>
+            </span>
+          </Link>
+          <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+            Experience music together, no matter the distance.
+            Synchronized listening for friends, couples, and music lovers worldwide.
+          </p>
+          <div className="flex gap-4 pt-2">
+            <Link href="https://x.com/ashwanivermax" target="_blank" rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            </Link>
+            <Link href="https://ashwaniv.me" target="_blank" rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+            </Link>
+          </div>
         </div>
-      </nav>
 
-      {/* Spacer for mobile layout */}
-      <div className="md:hidden w-full h-1"></div>
+        {/* Column 2: Product (2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
+          <h3 className="font-semibold text-white tracking-wide">Product</h3>
+          <ul className="space-y-3">
+            {['Features', 'About', 'Contact', 'Pricing', 'Blog'].map((item) => (
+              <li key={item}>
+                <Link href={`/${item.toLowerCase()}`} className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  {item}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Contact Founder - Right aligned */}
-      <div className="text-center md:text-left md:ml-auto z-10 relative md:pr-16">
-        <div className=" mb-1 opacity-95">Contact Founder</div>
-        <div className="flex gap-4 items-center justify-center md:justify-start">
-          <Link href="https://x.com/ashwanivermax" target="_blank" rel="noopener noreferrer" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity flex items-center gap-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-          </Link>
-          <Link href="https://ashwaniv.me" target="_blank" rel="noopener noreferrer" className="text-white no-underline opacity-85 hover:opacity-100 transition-opacity flex items-center gap-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-            Website
-          </Link>
+        {/* Column 3: Listen Together (3 cols) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h3 className="font-semibold text-white tracking-wide">Listen Together</h3>
+          <ul className="space-y-2">
+            {[
+              'taylor-swift', 'ed-sheeran', 'the-weeknd', 'drake', 'ariana-grande', 'bts',
+              'lo-fi-beats', 'study-music', 'workout-playlist', 'chill-vibes'
+            ].slice(0, 8).map((slug) => (
+              <li key={slug}>
+                <Link href={`/listen-together/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
+                  {slug.replace(/-/g, ' ')}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/listen-together" className="text-sm text-red-500 hover:text-red-400 font-medium inline-flex items-center gap-1 mt-1 group">
+                View All Categories
+                <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Column 4: Use Cases (3 cols) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h3 className="font-semibold text-white tracking-wide">Use Cases</h3>
+          <ul className="space-y-2">
+            {[
+              'long-distance-couples', 'best-friends', 'study-sessions',
+              'workout-buddies', 'road-trips', 'virtual-parties',
+              'movie-nights', 'family'
+            ].map((slug) => (
+              <li key={slug}>
+                <Link href={`/for/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors block py-0.5">
+                  For {slug.replace(/-/g, ' ')}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+        <p className="text-xs text-gray-500">
+          © {new Date().getFullYear()} JukeboxDuo. All rights reserved.
+        </p>
+        <div className="flex gap-6">
+          <Link href="/privacyPolicy" className="text-xs text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="text-xs text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
         </div>
       </div>
     </div>
-    <div className="text-white opacity-70 text-[0.95rem]">
-      © 2025 JukeboxDuo.
-    </div>
-  </motion.footer>
+  </footer>
 );
 
 export default Footer;

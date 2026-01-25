@@ -9,6 +9,7 @@ export interface ListenTogetherPage {
     heroTitle: string;
     heroSubtitle: string;
     category: 'artist' | 'genre' | 'mood';
+    benefits: string[];
 }
 
 export interface ForPage {
@@ -32,6 +33,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to Taylor Swift Together',
         heroSubtitle: 'Share the Eras Tour vibes with friends in perfect sync. Experience every song together, wherever you are.',
         category: 'artist',
+        benefits: [
+            'Sing along to every Era in perfect sync',
+            'Experience the bridge of "Cruel Summer" together',
+            'Perfect for album release listening parties',
+        ],
     },
     {
         slug: 'ed-sheeran',
@@ -41,6 +47,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to Ed Sheeran Together',
         heroSubtitle: 'Perfect for couples. Share his romantic ballads in perfect sync with your special someone.',
         category: 'artist',
+        benefits: [
+            'Harmonize with friends on acoustic tracks',
+            'Share romantic moments with "Perfect" sync',
+            'Great for chill evening listening sessions',
+        ],
     },
     {
         slug: 'the-weeknd',
@@ -50,6 +61,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to The Weeknd Together',
         heroSubtitle: 'After Hours vibes with your crew. Sync up and experience the sound together.',
         category: 'artist',
+        benefits: [
+            'Vibe to the synth-pop beats together',
+            'Perfect for late-night driving vibes remotely',
+            'Experience the cinematic production in sync',
+        ],
     },
     {
         slug: 'drake',
@@ -59,6 +75,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to Drake Together',
         heroSubtitle: 'God\'s Plan for listening parties. Share every bar with your squad in perfect sync.',
         category: 'artist',
+        benefits: [
+            'Rap along to every bar with your squad',
+            'Hype each other up with high-energy tracks',
+            'Debate the best tracks in real-time',
+        ],
     },
     {
         slug: 'ariana-grande',
@@ -68,6 +89,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to Ariana Grande Together',
         heroSubtitle: 'Thank U, Next-level listening experience. Sync with friends and hit those high notes together.',
         category: 'artist',
+        benefits: [
+            'Hit those high notes together (or try to)',
+            'Host the ultimate pop diva listening party',
+            'Sync up for "7 rings" style fun',
+        ],
     },
     {
         slug: 'bts',
@@ -77,6 +103,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Listen to BTS Together',
         heroSubtitle: 'ARMY unite! Experience every song together with fans worldwide in perfect sync.',
         category: 'artist',
+        benefits: [
+            'Perfect fanchants in sync across the world',
+            'Experience the choreography beats together',
+            'Connect with fellow ARMY friends instantly',
+        ],
     },
     // Genres & Moods
     {
@@ -87,6 +118,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Lo-Fi Beats to Study Together',
         heroSubtitle: 'Create a virtual study room with chill beats. Stay focused with friends, even miles apart.',
         category: 'mood',
+        benefits: [
+            'Focus deeper with shared background noise',
+            'Calm vibes for efficient group study',
+            'Stress-free environments for productivity',
+        ],
     },
     {
         slug: 'study-music',
@@ -96,6 +132,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Study Music Together',
         heroSubtitle: 'Keep each other motivated. Sync your study playlist and crush those goals together.',
         category: 'mood',
+        benefits: [
+            'Motivate each other to keep working',
+            'Timed study blocks with synchronized tracks',
+            'Create a distraction-free focus zone',
+        ],
     },
     {
         slug: 'workout-playlist',
@@ -105,6 +146,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Workout Playlist Together',
         heroSubtitle: 'Virtual gym buddy vibes. Sync your pump-up playlist and push each other to the limit.',
         category: 'mood',
+        benefits: [
+            'Sync your reps to the same beat',
+            'Keep the energy high for the whole crew',
+            'Virtual spotter motivation through music',
+        ],
     },
     {
         slug: 'chill-vibes',
@@ -114,6 +160,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Chill Vibes Together',
         heroSubtitle: 'Unwind with your people. Share the chill and decompress together, wherever you are.',
         category: 'mood',
+        benefits: [
+            'Decompress together after a long day',
+            'Slow down the pace and just listen',
+            'Perfect background for catching up',
+        ],
     },
     {
         slug: '80s-hits',
@@ -123,6 +174,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: '80s Hits Together',
         heroSubtitle: 'Take On Me... together! Blast throwback hits with friends and relive the golden era.',
         category: 'genre',
+        benefits: [
+            'Dance like it\'s 1985 in your living rooms',
+            'Sing along to timeless classics',
+            'Neon vibes party for everyone invited',
+        ],
     },
     {
         slug: '90s-nostalgia',
@@ -132,6 +188,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: '90s Nostalgia Together',
         heroSubtitle: 'Hit me baby one more time... with your crew! Sync up for the ultimate 90s throwback party.',
         category: 'genre',
+        benefits: [
+            'Relive the golden era of boy bands',
+            'Harmonize to grunge and pop classics',
+            'Unlock core memories with friends',
+        ],
     },
     {
         slug: 'bollywood-hits',
@@ -141,6 +202,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Bollywood Hits Together',
         heroSubtitle: 'From classic melodies to latest chartbusters. Share the magic of Bollywood with your loved ones.',
         category: 'genre',
+        benefits: [
+            'Thumka together to high energy beats',
+            'Antakshari vibes for the digital age',
+            'Feel the filmy magic with your squad',
+        ],
     },
     {
         slug: 'anime-ost',
@@ -150,6 +216,11 @@ export const listenTogetherPages: ListenTogetherPage[] = [
         heroTitle: 'Anime OST Together',
         heroSubtitle: 'From Naruto to Demon Slayer. Experience epic anime soundtracks with your nakama.',
         category: 'genre',
+        benefits: [
+            'Sing your favorite openings at top volume',
+            'Feel the emotional moments in sync',
+            'Epic battle music for gaming sessions',
+        ],
     },
 ];
 
