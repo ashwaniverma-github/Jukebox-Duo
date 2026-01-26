@@ -18,7 +18,7 @@ const CTABanner = () => (
           Ready to start listening?
         </h2>
         <p className="text-xl text-gray-400 mb-10">
-          Create a room in seconds. No account required for guests.
+          Create a room in seconds and start listening to your favorite songs.
         </p>
 
         <motion.a
