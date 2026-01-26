@@ -23,9 +23,10 @@ interface Props {
   removingQueueItemId?: string | null;
   setRemovingQueueItemId?: (id: string | null) => void;
   theme?: 'default' | 'love';
+  isLoading?: boolean;
 }
 
-export default function QueueList({ roomId, queue, onSelect, currentVideoId, onRemove, removingQueueItemId, setRemovingQueueItemId, theme = 'default' }: Props) {
+export default function QueueList({ roomId, queue, onSelect, currentVideoId, onRemove, removingQueueItemId, setRemovingQueueItemId, theme = 'default', isLoading = false }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   // Theme configuration for QueueList
@@ -120,7 +121,18 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
     <div className="h-full flex flex-col">
 
       {/* Queue Content */}
-      {queue.length === 0 ? (
+      {isLoading ? (
+        <motion.div
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className={`w-16 h-16 mx-auto mb-4 border-4 border-t-transparent rounded-full animate-spin ${theme === 'love' ? 'border-pink-500' : 'border-red-500'}`}></div>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">Loading queue...</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Please wait</p>
+        </motion.div>
+      ) : queue.length === 0 ? (
         <motion.div
           className="text-center py-12"
           initial={{ opacity: 0 }}

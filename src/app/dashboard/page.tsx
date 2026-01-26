@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSigningout, setIsSigningOut] = useState(false)
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const router = useRouter();
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function Dashboard() {
   }, [status]);
 
   async function loadRooms() {
+    setIsLoadingRooms(true);
     try {
       const res = await fetch("/api/rooms");
 
@@ -69,6 +71,8 @@ export default function Dashboard() {
       setRooms(data);
     } catch (error) {
       console.error("Failed to load rooms:", error);
+    } finally {
+      setIsLoadingRooms(false);
     }
   }
 
@@ -265,7 +269,12 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                {rooms.length === 0 ? (
+                {isLoadingRooms ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-10 h-10 border-3 border-white/20 border-t-red-500 rounded-full animate-spin mb-4" />
+                    <p className="text-gray-400 text-sm">Loading rooms...</p>
+                  </div>
+                ) : rooms.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <Music className="w-12 h-12 text-gray-500" />

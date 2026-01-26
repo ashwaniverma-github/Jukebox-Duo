@@ -53,6 +53,8 @@ export default function RoomPage() {
     const [copied, setCopied] = useState(false);
     const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
     const [playerMounted, setPlayerMounted] = useState(false);
+    const [isQueueLoading, setIsQueueLoading] = useState(true);
+    const [isPlayerLoading, setIsPlayerLoading] = useState(true);
     const [supportModalOpen, setSupportModalOpen] = useState(false);
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
@@ -107,6 +109,8 @@ export default function RoomPage() {
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
     useEffect(() => {
         if (status !== "authenticated") return;
+        setIsQueueLoading(true);
+        setIsPlayerLoading(true);
         fetch(`/api/rooms/${roomId}/init`)
             .then(r => r.json())
             .then((data) => {
@@ -127,8 +131,13 @@ export default function RoomPage() {
                     setCurrentSong(null);
                 }
 
+                // Queue loaded
+                setIsQueueLoading(false);
+
                 // Mount the player after initial data load
                 setPlayerMounted(true);
+                // Small delay to show player is loading
+                setTimeout(() => setIsPlayerLoading(false), 500);
 
                 // Track user and room join for PostHog analytics (active users)
                 if (session?.user?.id) {
@@ -141,6 +150,8 @@ export default function RoomPage() {
             })
             .catch(err => {
                 console.error('Failed to load room:', err);
+                setIsQueueLoading(false);
+                setIsPlayerLoading(false);
             });
 
         // Fetch user's bought themes
@@ -1148,50 +1159,60 @@ export default function RoomPage() {
 
                                 <CardContent className="relative z-10 p-5 sm:p-14">
                                     <div className="aspect-video sm:aspect-[21/9] pt-6 ">
-                                        {/* Mount once after initial data load; keep mounted thereafter */}
-                                        {playerMounted && (
-                                            <SyncAudio
-                                                roomId={roomId}
-                                                videoId={videoId}
-                                                isHost={true}
-                                                onPlayNext={handlePlayNext}
-                                                onPlayPrev={handlePlayPrev}
-                                                theme={theme}
-                                            />
-                                        )}
+                                        {/* Loading state for player */}
+                                        {isPlayerLoading ? (
+                                            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                                                <div className={`w-16 h-16 border-4 border-t-transparent rounded-full animate-spin ${theme === 'love' ? 'border-pink-500' : 'border-red-500'}`}></div>
+                                                <p className="text-white text-lg font-medium">Loading player...</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* Mount once after initial data load; keep mounted thereafter */}
+                                                {playerMounted && (
+                                                    <SyncAudio
+                                                        roomId={roomId}
+                                                        videoId={videoId}
+                                                        isHost={true}
+                                                        onPlayNext={handlePlayNext}
+                                                        onPlayPrev={handlePlayPrev}
+                                                        theme={theme}
+                                                    />
+                                                )}
 
-                                        {/* Now Playing card or Empty state */}
-                                        {currentSong ? (
-                                            <motion.div
-                                                initial={{ y: 20, opacity: 0 }}
-                                                animate={{ y: 0, opacity: 1 }}
-                                                className="mt-10 sm:mt-16"
-                                            >
-                                                <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20">
-                                                    <div className="flex items-center gap-2 sm:gap-3">
-                                                        <img
-                                                            src={currentSong.thumbnail}
-                                                            alt={currentSong.title}
-                                                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="font-bold text-white text-sm sm:text-lg truncate">{currentSong.title}</h3>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                                <span className="text-xs sm:text-sm text-green-300 font-medium">Now Playing</span>
+                                                {/* Now Playing card or Empty state */}
+                                                {currentSong ? (
+                                                    <motion.div
+                                                        initial={{ y: 20, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        className="mt-10 sm:mt-16"
+                                                    >
+                                                        <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20">
+                                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                                <img
+                                                                    src={currentSong.thumbnail}
+                                                                    alt={currentSong.title}
+                                                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
+                                                                />
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h3 className="font-bold text-white text-sm sm:text-lg truncate">{currentSong.title}</h3>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                        <span className="text-xs sm:text-sm text-green-300 font-medium">Now Playing</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                    </motion.div>
+                                                ) : (
+                                                    <div className="text-center">
+                                                        <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                            <Music className="w-10 h-10 text-white" />
+                                                        </div>
+                                                        <p className="text-white text-xl font-bold mb-2">No song playing</p>
+                                                        <p className={currentTheme.text}>Add some music to get started</p>
                                                     </div>
-                                                </div>
-                                            </motion.div>
-                                        ) : (
-                                            <div className="text-center">
-                                                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Music className="w-10 h-10 text-white" />
-                                                </div>
-                                                <p className="text-white text-xl font-bold mb-2">No song playing</p>
-                                                <p className={currentTheme.text}>Add some music to get started</p>
-                                            </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </CardContent>
@@ -1234,6 +1255,7 @@ export default function RoomPage() {
                                             roomId={roomId}
                                             queue={queue}
                                             theme={theme}
+                                            isLoading={isQueueLoading}
                                             onSelect={async (id) => {
                                                 const idx = queue.findIndex(item => item.id === id);
                                                 if (idx !== -1) {
