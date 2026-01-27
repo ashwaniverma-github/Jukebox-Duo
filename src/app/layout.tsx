@@ -89,13 +89,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-
-
-
         {/* Google AdSense */}
         <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
 
-
+        {/* Google Analytics */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-4JB3MF5MXZ"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-4JB3MF5MXZ');
+            `,
+          }}
+        />
 
         {/* Structured Data for SEO */}
         <script
@@ -137,43 +148,6 @@ export default function RootLayout({
         className={`${inter.variable} antialiased`}
       >
         <Providers>
-          {/* Ezoic Privacy Scripts */}
-          <Script
-            src="https://cmp.gatekeeperconsent.com/min.js"
-            strategy="beforeInteractive"
-            data-cfasync="false"
-          />
-          <Script
-            src="https://the.gatekeeperconsent.com/cmp.min.js"
-            strategy="beforeInteractive"
-            data-cfasync="false"
-          />
-          {/* Ezoic Header Scripts */}
-          <Script
-            src="//www.ezojs.com/ezoic/sa.min.js"
-            strategy="beforeInteractive"
-          />
-          <Script id="ezoic-config" strategy="beforeInteractive">
-            {`
-              window.ezstandalone = window.ezstandalone || {};
-              ezstandalone.cmd = ezstandalone.cmd || [];
-            `}
-          </Script>
-
-          {/* Google Analytics */}
-          <Script
-            src="https://www.googletagmanager.com/gtag/js?id=G-4JB3MF5MXZ"
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-4JB3MF5MXZ');
-            `}
-          </Script>
-
           {children}
           <Script id="feedinbox-config" strategy="afterInteractive">
             {`
