@@ -89,9 +89,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Ezoic Privacy Scripts */}
+        <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js" />
+        <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js" />
+
+        {/* Ezoic Header Scripts */}
+        <script async src="//www.ezojs.com/ezoic/sa.min.js" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.ezstandalone = window.ezstandalone || {};
+              ezstandalone.cmd = ezstandalone.cmd || [];
+            `,
+          }}
+        />
+
+
         {/* Google AdSense */}
         <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
-        
+
         {/* Google Analytics */}
         <script
           async
@@ -107,7 +123,7 @@ export default function RootLayout({
             `,
           }}
         />
-        
+
         {/* Structured Data for SEO */}
         <script
           type="application/ld+json"
