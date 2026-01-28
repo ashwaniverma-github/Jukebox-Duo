@@ -48,12 +48,7 @@ export const trackPayPalClick = () => {
     })
 }
 
-// Track Buy Me a Coffee button click
-export const trackBuyMeCoffeeClick = () => {
-    trackEvent('buymeacoffee_clicked', {
-        location: 'donation_modal',
-    })
-}
+
 
 // Identify user for active user tracking
 export const identifyUser = (userId: string, properties?: Record<string, unknown>) => {

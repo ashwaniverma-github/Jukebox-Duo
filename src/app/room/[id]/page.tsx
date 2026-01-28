@@ -10,7 +10,7 @@ import QueueList from './QueueList'
 import JoinRoom from './JoinRoom'
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
-import { Dialog, DialogTrigger, DialogContent } from '../../../components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, VisuallyHidden } from '../../../components/ui/dialog';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, X, Share2, ListMusic } from 'lucide-react'
@@ -806,6 +806,9 @@ export default function RoomPage() {
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
+                                <VisuallyHidden>
+                                    <DialogTitle>Invite to Room</DialogTitle>
+                                </VisuallyHidden>
                                 <div className="flex items-center gap-3 mb-4">
                                     <Share2 className="w-6 h-6 text-red-400" />
                                     <h2 className="text-lg font-bold">Invite to Room</h2>
@@ -999,6 +1002,9 @@ export default function RoomPage() {
                                 </Card>
                             </DialogTrigger>
                             <DialogContent className="w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 bg-[#1a0d2e] border-white/20 text-white p-2 sm:p-6 rounded-xl">
+                                <VisuallyHidden>
+                                    <DialogTitle>Search Music Library</DialogTitle>
+                                </VisuallyHidden>
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center transition-colors duration-500`}>

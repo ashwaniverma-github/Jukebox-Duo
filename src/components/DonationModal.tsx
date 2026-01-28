@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
-import { trackPayPalClick, trackBuyMeCoffeeClick } from './PostHogProvider'
+import { trackPayPalClick } from './PostHogProvider'
 
 interface DonationModalProps {
   open?: boolean
@@ -54,10 +54,7 @@ export function DonationModal({ open, onOpenChange }: DonationModalProps) {
     trackPayPalClick()
   }
 
-  const handleBuyMeCoffeeClick = () => {
-    trackBuyMeCoffeeClick()
-    window.open('https://www.buymeacoffee.com/ashwanivermax', '_blank')
-  }
+
 
   return (
     <Dialog open={actualOpen} onOpenChange={handleOpenChange}>
@@ -116,14 +113,7 @@ export function DonationModal({ open, onOpenChange }: DonationModalProps) {
               </button>
             </form>
 
-            {/* Buy Me a Coffee Button */}
-            <button
-              type="button"
-              onClick={handleBuyMeCoffeeClick}
-              className="w-full cursor-pointer bg-[#FFDD00] hover:bg-[#ffeb3b] text-black font-bold rounded-2xl p-4 text-lg transition-all duration-500 hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-            >
-              ☕ Buy me a coffee
-            </button>
+
           </div>
 
           <p className="text-xs text-center text-gray-400">
