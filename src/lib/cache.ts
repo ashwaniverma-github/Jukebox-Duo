@@ -23,10 +23,8 @@ interface YouTubeSearchResult {
 
 class CacheService {
   private redis: Redis.Redis | null = null;
-  private isConnected = false;
   private readonly CACHE_TTL = 24 * 60 * 60; // 24 hours
   private readonly SEARCH_CACHE_PREFIX = 'youtube_search:';
-  // Suggestions are removed
 
   constructor() {
     console.log('🔍 CacheService constructor - checking env vars:');
@@ -38,7 +36,7 @@ class CacheService {
       console.log('REDIS_PASSWORD:', process.env.REDIS_PASSWORD ? '***' : 'undefined');
       console.log('REDIS_TLS:', process.env.REDIS_TLS);
     }
-    
+
     this.initializeRedis();
   }
 
@@ -69,7 +67,6 @@ class CacheService {
 
       this.redis.on('connect', () => {
         console.log('✅ Redis connected successfully!');
-        this.isConnected = true;
       });
 
       this.redis.on('ready', () => {
@@ -80,12 +77,10 @@ class CacheService {
         console.error('❌ Redis connection error:', error.message);
         console.error('❌ Error details:', error);
         console.error('❌ Error stack:', error.stack);
-        this.isConnected = false;
       });
 
       this.redis.on('close', () => {
         console.log('🔌 Redis connection closed');
-        this.isConnected = false;
       });
 
       this.redis.on('reconnecting', () => {
@@ -93,7 +88,6 @@ class CacheService {
       });
     } catch (error) {
       console.error('Redis init failed:', error);
-      this.isConnected = false;
     }
   }
 
@@ -114,39 +108,10 @@ class CacheService {
 
       await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(cachedData));
       console.log(`💾 Cached: "${query}"`);
-
-      // Suggestions removed
     } catch (error) {
       console.error('Cache failed:', error);
     }
   }
-
-  async getCachedSearchResults(query: string): Promise<YouTubeSearchResult[] | null> {
-    if (!this.redis) {
-      console.log('❌ Redis not initialized, skipping cache check');
-      return null;
-    }
-
-    try {
-      const cacheKey = this.SEARCH_CACHE_PREFIX + this.normalizeQuery(query);
-      const cachedData = await this.redis.get(cacheKey);
-
-      if (cachedData) {
-        const parsed: CachedSearchResult = JSON.parse(cachedData);
-        if (Date.now() < parsed.expiresAt) {
-          console.log(`🎯 Cache hit: "${query}"`);
-          return parsed.results;
-        }
-        await this.redis.del(cacheKey);
-      }
-      return null;
-    } catch (error) {
-      console.error('Get cache failed:', error);
-      return null;
-    }
-  }
-
-  // Suggestions removed
 
   // Returns cached results with metadata for SWR logic
   async getCachedSearchResultsWithMeta(query: string): Promise<{ results: YouTubeSearchResult[]; timestamp: number; expiresAt: number } | null> {
@@ -176,16 +141,6 @@ class CacheService {
 
   private normalizeQuery(query: string): string {
     return query.toLowerCase().trim().replace(/\s+/g, ' ');
-  }
-
-  async healthCheck(): Promise<boolean> {
-    if (!this.redis) return false;
-    try {
-      await this.redis.ping();
-      return true;
-    } catch {
-      return false;
-    }
   }
 }
 

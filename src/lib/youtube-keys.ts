@@ -53,7 +53,7 @@ class YouTubeKeyManager {
   // Get next available API key
   getNextKey(): string | null {
     const now = Date.now();
-    
+
     // Reset quota if 24 hours have passed
     this.apiKeys.forEach(apiKey => {
       if (now - apiKey.lastUsed > this.quotaResetTime) {
@@ -63,7 +63,7 @@ class YouTubeKeyManager {
     });
 
     // Find active key with lowest quota usage
-    const availableKeys = this.apiKeys.filter(apiKey => 
+    const availableKeys = this.apiKeys.filter(apiKey =>
       apiKey.isActive && apiKey.quotaUsed < apiKey.dailyQuota
     );
 
@@ -124,8 +124,8 @@ class YouTubeKeyManager {
     if (!apiKey) return { isQuotaError: false, shouldRetry: false };
 
     // Check for quota-related errors
-    const isQuotaError = response.status === 403 && errorData?.error?.errors?.some((err) => 
-      err.reason === 'quotaExceeded' || 
+    const isQuotaError = response.status === 403 && errorData?.error?.errors?.some((err) =>
+      err.reason === 'quotaExceeded' ||
       err.reason === 'dailyLimitExceeded' ||
       err.reason === 'rateLimitExceeded'
     );
@@ -140,10 +140,10 @@ class YouTubeKeyManager {
     // Handle other errors (bad request, forbidden but not quota, etc.)
     if (response.status >= 400) {
       console.error(`API key ${this.apiKeys.indexOf(apiKey) + 1} error (${response.status}):`, errorData?.error?.message || 'Unknown error');
-      
+
       // For non-quota errors, add minimal usage but don't disable the key
       this.updateQuotaUsage(key, 10);
-      
+
       // Only retry if we have other keys and it's not a client error (4xx)
       const shouldRetry = response.status >= 500 && this.hasAvailableKeys();
       return { isQuotaError: false, shouldRetry };
@@ -176,16 +176,6 @@ class YouTubeKeyManager {
     return availableKeys.map(k => k.key);
   }
 
-  // Get total available quota across all keys
-  getTotalAvailableQuota(): number {
-    const now = Date.now();
-    return this.apiKeys.reduce((total, apiKey) => {
-      const isReset = now - apiKey.lastUsed > this.quotaResetTime;
-      const availableQuota = isReset ? apiKey.dailyQuota : Math.max(0, apiKey.dailyQuota - apiKey.quotaUsed);
-      return total + availableQuota;
-    }, 0);
-  }
-
   // Check if any keys are available
   hasAvailableKeys(): boolean {
     const now = Date.now();
@@ -200,9 +190,9 @@ class YouTubeKeyManager {
     const quotaStatus = this.getQuotaStatus();
     const earliestResetTime = Math.min(...quotaStatus.map(s => s.timeUntilReset));
     const hoursUntilReset = Math.ceil(earliestResetTime / (1000 * 60 * 60));
-    
+
     const message = `All YouTube API keys have exceeded their daily quota. Search functionality will be restored in approximately ${hoursUntilReset} hour${hoursUntilReset !== 1 ? 's' : ''}.`;
-    
+
     return { message, estimatedResetHours: hoursUntilReset };
   }
 }
