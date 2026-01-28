@@ -98,7 +98,10 @@ export default function RoomPage() {
 
     useEffect(() => {
         if (status === "unauthenticated") {
-            const callbackUrl = typeof window !== 'undefined' ? window.location.pathname : '/dashboard';
+            // Include both pathname and search params to preserve ?sync=true in callback
+            const callbackUrl = typeof window !== 'undefined'
+                ? window.location.pathname + window.location.search
+                : '/dashboard';
             router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
     }, [status, router]);
