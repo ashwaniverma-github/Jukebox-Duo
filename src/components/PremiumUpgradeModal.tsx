@@ -64,9 +64,9 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 overflow-hidden shadow-2xl">
+            <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[90vh] overflow-y-auto">
                 {/* Header Section */}
-                <div className="relative p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
+                <div className="relative p-4 sm:p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
                     <div className="flex flex-col items-center text-center space-y-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full" />
@@ -98,7 +98,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Features List */}
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                     {features.map((feature, i) => (
                         <div key={i} className="flex items-start gap-3 group">
                             <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:border-zinc-700 transition-colors">
@@ -114,7 +114,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Footer Section */}
-                <div className="p-6 pt-2 bg-zinc-950/50">
+                <div className="p-4 sm:p-6 pt-2 bg-zinc-950/50">
                     <Button
                         onClick={handlePurchase}
                         disabled={loading}
