@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { Loader2, Crown, Check, Sparkles, Music, Users, Heart } from 'lucide-react'
+import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
 
 interface PremiumUpgradeModalProps {
     open: boolean
@@ -84,9 +84,15 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             </DialogDescription>
                         </div>
 
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-bold text-white">$5.99</span>
-                            <span className="text-sm font-medium text-zinc-500">one-time</span>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm line-through text-zinc-500 font-medium">$12.99</span>
+                                <span className="text-3xl font-bold text-white">$5.99</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+                                <Sparkles className="w-3 h-3 text-rose-500" />
+                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -123,11 +129,23 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             "Get Lifetime Access"
                         )}
                     </Button>
+
+                    <div className="mt-4 flex flex-col items-center space-y-2">
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+                            <Lock className="w-3 h-3" />
+                            Secure Checkout
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500/80 uppercase tracking-widest font-bold">
+                            <ShieldCheck className="w-3 h-3" />
+                            100% Satisfaction Guarantee
+                        </div>
+                    </div>
+
                     {error && <p className="mt-2 text-xs text-red-400 text-center">{error}</p>}
 
                     <button
                         onClick={() => onOpenChange(false)}
-                        className="w-full mt-3 text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+                        className="w-full mt-4 text-xs text-zinc-500 hover:text-zinc-600 transition-colors"
                     >
                         No thanks, maybe later
                     </button>

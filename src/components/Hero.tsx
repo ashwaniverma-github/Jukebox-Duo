@@ -169,24 +169,29 @@ const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+          className="flex flex-col items-center gap-4 mb-20"
         >
-          <button
-            onClick={() => router.push("/signin")}
-            className="group relative px-8 py-4 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-full font-semibold transition-all hover:shadow-[0_0_40px_-10px_rgba(225,29,72,0.5)] flex items-center gap-2"
-          >
-            Start Listening
-            <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
-          </button>
-          <button
-            onClick={() => {
-              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 rounded-full font-semibold transition-all flex items-center gap-2 backdrop-blur-sm"
-          >
-            How it works
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => router.push("/signin")}
+              className="group relative px-8 py-4 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-full font-semibold transition-all hover:shadow-[0_0_40px_-10px_rgba(225,29,72,0.5)] flex items-center gap-2"
+            >
+              Start Listening
+              <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
+            </button>
+            <button
+              onClick={() => {
+                document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 rounded-full font-semibold transition-all flex items-center gap-2 backdrop-blur-sm"
+            >
+              How it works
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-medium">
+            Limited Time: Get <span className="text-zinc-300">Lifetime Access</span> for just $5.99
+          </p>
         </motion.div>
 
         {/* Visualizer Demo */}
