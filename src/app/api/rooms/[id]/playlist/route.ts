@@ -23,6 +23,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
+    // Check if user is premium - playlist import is a premium feature
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { isPremium: true }
+    })
+
+    if (!user?.isPremium) {
+        return NextResponse.json({
+            error: 'Playlist import is a premium feature',
+            isPremiumRequired: true
+        }, { status: 403 })
+    }
+
     const { playlistUrl } = await req.json()
 
     if (!playlistUrl || typeof playlistUrl !== 'string') {

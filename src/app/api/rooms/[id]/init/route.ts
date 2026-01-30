@@ -29,7 +29,7 @@ export async function GET(
             currentQueueIndex: true,
             createdAt: true,
             host: {
-                select: { id: true, name: true, email: true }
+                select: { id: true, name: true, email: true, isPremium: true }
             },
             queueItems: {
                 orderBy: { order: 'asc' },
@@ -94,6 +94,12 @@ export async function GET(
         }
     }
 
+    // Get current user's premium status
+    const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { isPremium: true }
+    })
+
     // Return consolidated response
     return NextResponse.json({
         // Room details
@@ -103,9 +109,12 @@ export async function GET(
         host: room.host ? {
             id: room.host.id,
             name: room.host.name,
-            email: room.host.email
+            email: room.host.email,
+            isPremium: room.host.isPremium
         } : null,
         isHost,
+        isPremium: currentUser?.isPremium ?? false,
+        isHostPremium: room.host?.isPremium ?? false,
 
         // Queue data
         queue: room.queueItems,

@@ -13,12 +13,11 @@ const Navbar = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-md bg-black/20 border-b border-white/5"
+      className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-xl bg-zinc-950/70 border-b border-white/5 supports-[backdrop-filter]:bg-zinc-950/50"
     >
       <div className="flex items-center gap-2">
-
-        <Link href="/" className="font-bold text-xl tracking-tight text-white">
-          Jukebox<span className="text-red-500">Duo</span>
+        <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-2">
+          Jukebox<span className="text-rose-500">Duo</span>
         </Link>
       </div>
 
@@ -28,7 +27,7 @@ const Navbar = () => {
           <Link
             key={item}
             href={`/${item.toLowerCase()}`}
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
           >
             {item}
           </Link>
@@ -39,13 +38,13 @@ const Navbar = () => {
       <div className="hidden md:flex items-center gap-4">
         <button
           onClick={() => router.push("/signin")}
-          className="text-sm font-medium text-white hover:text-red-400 transition-colors"
+          className="text-sm font-medium text-white hover:text-rose-300 transition-colors"
         >
           Sign In
         </button>
         <button
           onClick={() => router.push("/signin")}
-          className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors"
+          className="bg-white text-zinc-950 px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-colors"
         >
           Get Started
         </button>
@@ -53,10 +52,10 @@ const Navbar = () => {
 
       {/* Mobile Menu Toggle */}
       <button
-        className="md:hidden text-white p-2"
+        className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        {menuOpen ? <X /> : <Menu />}
+        {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Mobile Menu */}
@@ -64,13 +63,13 @@ const Navbar = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 w-full bg-black/95 backdrop-blur-xl border-b border-white/10 p-6 flex flex-col gap-4 md:hidden"
+          className="absolute top-full left-0 w-full bg-zinc-950/95 backdrop-blur-2xl border-b border-white/10 p-6 flex flex-col gap-4 md:hidden shadow-2xl"
         >
           {["Features", "About", "Contact"].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}
-              className="text-lg font-medium text-gray-300 hover:text-white"
+              className="text-lg font-medium text-zinc-400 hover:text-white transition-colors py-2"
               onClick={() => setMenuOpen(false)}
             >
               {item}
@@ -79,7 +78,7 @@ const Navbar = () => {
           <div className="h-px bg-white/10 my-2" />
           <button
             onClick={() => router.push("/signin")}
-            className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold"
+            className="w-full py-3 bg-gradient-to-r from-rose-600 to-rose-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-rose-500/20 transition-all font-medium"
           >
             Sign In
           </button>
@@ -91,11 +90,11 @@ const Navbar = () => {
 
 const AudioVisualizer = () => {
   return (
-    <div className="flex items-center justify-center gap-1 h-16 md:h-24">
-      {[...Array(12)].map((_, i) => (
+    <div className="flex items-center justify-center gap-1.5 h-16 md:h-24 px-4">
+      {[...Array(16)].map((_, i) => (
         <motion.div
           key={i}
-          className="w-2 md:w-3 bg-gradient-to-t from-red-600 to-red-400 rounded-full"
+          className="w-1.5 md:w-2 bg-gradient-to-t from-rose-500 via-rose-400 to-rose-300/50 rounded-full"
           animate={{
             height: ["20%", "80%", "40%", "100%", "30%"],
           }}
@@ -104,10 +103,10 @@ const AudioVisualizer = () => {
             repeat: Infinity,
             repeatType: "mirror",
             ease: "easeInOut",
-            delay: i * 0.1,
+            delay: i * 0.08,
           }}
           style={{
-            opacity: 0.8,
+            opacity: 0.9,
           }}
         />
       ))}
@@ -124,7 +123,7 @@ const Hero = () => {
 
       {/* Clean Background - Removed heavy blobs */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900/50 via-black to-black" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-rose-500/5 via-zinc-950 to-zinc-950" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10 text-center">
@@ -134,12 +133,12 @@ const Hero = () => {
           transition={{ duration: 0.6 }}
           className="mb-8 flex justify-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl shadow-rose-500/10 hover:border-white/20 transition-all cursor-default group">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
             </span>
-            <span className="text-sm text-gray-300 font-medium">
+            <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
               Vibe together in real-time
             </span>
           </div>
@@ -149,10 +148,10 @@ const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6"
+          className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-tight"
         >
           Music is better <br />
-          <span className="text-white">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600">
             when shared.
           </span>
         </motion.h1>
@@ -161,52 +160,55 @@ const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
         >
-          Create a room, invite your partner or friends, and vibe to music in perfect sync. Built for couples and friends who want to share every beat in real-time .
+          Create a room, invite your partner or friends, and vibe to music in perfect sync. Built for simple, seamless listening experiences.
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
         >
           <button
             onClick={() => router.push("/signin")}
-            className="group relative px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+            className="group relative px-8 py-4 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-full font-semibold transition-all hover:shadow-[0_0_40px_-10px_rgba(225,29,72,0.5)] flex items-center gap-2"
           >
             Start Listening
-            <Play className="w-4 h-4 fill-current" />
-            <div className="absolute inset-0 rounded-full ring-4 ring-red-600/20 group-hover:ring-red-600/40 transition-all" />
+            <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
           </button>
           <button
             onClick={() => {
               document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full font-semibold transition-all hover:scale-105 flex items-center gap-2"
+            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 rounded-full font-semibold transition-all flex items-center gap-2 backdrop-blur-sm"
           >
             How it works
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
 
         {/* Visualizer Demo */}
+        {/* Visualizer Demo */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           className="relative max-w-4xl mx-auto"
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
-          <div className=" backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-2xl">
+          {/* Glow effect behind visualizer */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-rose-500/20 blur-[100px] rounded-full opacity-30 pointer-events-none" />
+
+          <div className="relative bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-[3rem] p-8 md:p-12">
             <div className="flex flex-col items-center gap-6">
               <AudioVisualizer />
-              <div className="text-center mt-4">
-                <p className="text-sm text-gray-500 font-mono uppercase tracking-widest">
+              <div className="text-center mt-4 space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs text-rose-300/80 font-mono uppercase tracking-widest bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                   Now Playing
-                </p>
-                <p className="text-white font-medium mt-1">
+                </div>
+                <p className="text-white font-medium text-lg tracking-tight">
                   Lo-Fi Beats to Study/Relax To
                 </p>
               </div>

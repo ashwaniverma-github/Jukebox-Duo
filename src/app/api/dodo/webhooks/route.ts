@@ -12,7 +12,7 @@ export const POST = Webhooks({
             const md = data?.metadata ?? {};
             const userId: string | undefined =
                 md.user_id || md.userId || md.uid || md.user || undefined;
-            const theme: string = md.theme || 'love';
+            const purchaseType: string = md.type || 'premium';
 
             if (!userId) {
                 console.warn('Webhook payment.succeeded missing userId in metadata');
@@ -21,7 +21,7 @@ export const POST = Webhooks({
 
             const user = await prisma.user.findUnique({
                 where: { id: userId },
-                select: { boughtThemes: true },
+                select: { boughtThemes: true, isPremium: true },
             });
 
             if (!user) {
@@ -29,17 +29,30 @@ export const POST = Webhooks({
                 return;
             }
 
-            if (user.boughtThemes.includes(theme)) {
-                // already unlocked, no-op (idempotent)
-                return;
-            }
+            // Handle premium purchase
+            if (purchaseType === 'premium') {
+                // Already premium - idempotent check
+                if (user.isPremium) {
+                    console.log('User already premium, skipping update', { userId });
+                    return;
+                }
 
-            await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    boughtThemes: { set: [...user.boughtThemes, theme] },
-                },
-            });
+                // Add love theme if not already owned
+                const newBoughtThemes = user.boughtThemes.includes('love')
+                    ? user.boughtThemes
+                    : [...user.boughtThemes, 'love'];
+
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: {
+                        isPremium: true,
+                        premiumPurchasedAt: new Date(),
+                        boughtThemes: { set: newBoughtThemes },
+                    },
+                });
+
+                console.log('Successfully activated premium for user', { userId });
+            }
         } catch (err) {
             console.error('Error handling onPaymentSucceeded:', err);
         }

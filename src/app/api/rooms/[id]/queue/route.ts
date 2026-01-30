@@ -31,7 +31,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (thumbnail && typeof thumbnail !== 'string') {
     return NextResponse.json({ error: 'Invalid thumbnail' }, { status: 400 })
   }
-  const count = await prisma.queueItem.count({ where: { roomId: roomId } })
+
+  // Check queue limit for free users (max 5 songs)
+  const FREE_QUEUE_LIMIT = 5
+  const [user, count] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isPremium: true }
+    }),
+    prisma.queueItem.count({ where: { roomId: roomId } })
+  ])
+
+  if (!user?.isPremium && count >= FREE_QUEUE_LIMIT) {
+    return NextResponse.json({
+      error: 'Queue limit reached',
+      isPremiumRequired: true,
+      limit: FREE_QUEUE_LIMIT
+    }, { status: 403 })
+  }
+
   const item = await prisma.queueItem.create({
     data: {
       roomId: roomId,

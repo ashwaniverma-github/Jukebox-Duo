@@ -11,18 +11,16 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json().catch(() => ({}));
-        const theme = body?.theme ?? 'love';
 
-        const bearerToken =
-            process.env.DODO_PAYMENTS_API_KEY
+        const bearerToken = process.env.DODO_PAYMENTS_API_KEY;
 
         if (!bearerToken) {
             return NextResponse.json({ error: 'Missing DODO_PAYMENTS_API_KEY' }, { status: 500 });
         }
 
-        const productId = process.env.DODO_PRODUCT_ID;
+        const productId = process.env.DODO_PREMIUM_PRODUCT_ID;
         if (!productId) {
-            return NextResponse.json({ error: 'Missing DODO_PRODUCT_ID' }, { status: 500 });
+            return NextResponse.json({ error: 'Missing DODO_PREMIUM_PRODUCT_ID' }, { status: 500 });
         }
 
         const environment =
@@ -38,10 +36,10 @@ export async function POST(req: Request) {
         if (returnUrl) {
             // Append success params to client provided URL
             const separator = returnUrl.includes('?') ? '&' : '?';
-            returnUrl = `${returnUrl}${separator}purchase=success&theme=${encodeURIComponent(theme)}`;
+            returnUrl = `${returnUrl}${separator}purchase=success&type=premium`;
         } else {
             // Fallback to default base
-            returnUrl = `${returnBase}?purchase=success&theme=${encodeURIComponent(theme)}`;
+            returnUrl = `${returnBase}?purchase=success&type=premium`;
         }
 
         const client = new DodoPayments({
@@ -59,7 +57,7 @@ export async function POST(req: Request) {
             return_url: returnUrl,
             metadata: {
                 user_id: session.user.id,
-                theme,
+                type: 'premium',
                 source: 'music-duo',
             },
         };

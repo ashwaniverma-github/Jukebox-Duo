@@ -13,12 +13,11 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, VisuallyHidden } from '../../../components/ui/dialog';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Search, Users, Music, X, Share2, ListMusic } from 'lucide-react'
+import { Search, Users, Music, X, Share2, ListMusic, Crown } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { DonationModal } from '../../../components/DonationModal';
 import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
-import { trackSupportButtonClick, trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
-import { ThemePurchaseModal } from '../../../components/ThemePurchaseModal';
+import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
+import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
 
 export default function RoomPage() {
     const { id: roomId } = useParams() as { id: string };
@@ -45,7 +44,7 @@ export default function RoomPage() {
     const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
     // Debounce timer for search
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { name?: string; email?: string } } | null>(null);
+    const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [importModalOpen, setImportModalOpen] = useState(false);
     // Share link includes ?sync=true to auto-enable sync for invited users
@@ -53,7 +52,6 @@ export default function RoomPage() {
     const [copied, setCopied] = useState(false);
     const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
     const [playerMounted, setPlayerMounted] = useState(false);
-    const [supportModalOpen, setSupportModalOpen] = useState(false);
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
@@ -61,7 +59,12 @@ export default function RoomPage() {
     // Theme State
     const [theme, setTheme] = useState<'default' | 'love'>('default');
     const [boughtThemes, setBoughtThemes] = useState<string[]>(['default']);
-    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+    // Premium State
+    const [isPremium, setIsPremium] = useState(false);
+    const [isHostPremium, setIsHostPremium] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'general'>('general');
 
     const themeStyles = {
         default: {
@@ -130,6 +133,10 @@ export default function RoomPage() {
                     setCurrentSong(null);
                 }
 
+                // Set premium status
+                setIsPremium(data.isPremium ?? false);
+                setIsHostPremium(data.isHostPremium ?? false);
+
                 // Mount the player after initial data load
                 setPlayerMounted(true);
 
@@ -184,6 +191,13 @@ export default function RoomPage() {
     const handleEnableSync = useCallback(() => {
         if (isSyncEnabled) return; // Already enabled
 
+        // Free users cannot use sync
+        if (!isPremium) {
+            setPremiumTrigger('sync_limit');
+            setShowPremiumModal(true);
+            return;
+        }
+
         console.log('[Sync] Enabling room sync...');
         const socket = connectSocket();
         socket.emit('join-room', roomId);
@@ -202,7 +216,7 @@ export default function RoomPage() {
 
         setIsSyncEnabled(true);
         console.log('[Sync] Room sync enabled!');
-    }, [roomId, session, isSyncEnabled]);
+    }, [roomId, session, isSyncEnabled, isPremium]);
 
     // Connect WebSocket when sync is enabled (either manually or via URL param)
     useEffect(() => {
@@ -333,6 +347,17 @@ export default function RoomPage() {
                     thumbnail: item.thumbnail
                 })
             });
+
+            // Check for queue limit error (403 with isPremiumRequired)
+            if (res.status === 403) {
+                const errorData = await res.json();
+                if (errorData.isPremiumRequired) {
+                    setPremiumTrigger('queue_limit');
+                    setShowPremiumModal(true);
+                    return;
+                }
+            }
+
             if (!res.ok) throw new Error('Add failed');
             // Refresh to get canonical DB IDs/order
             await refreshQueue();
@@ -354,8 +379,6 @@ export default function RoomPage() {
             }
         } catch {
             console.error('Failed to add to queue');
-        } finally {
-            // no-op
         }
     };
 
@@ -578,10 +601,12 @@ export default function RoomPage() {
             return;
         }
 
-        if (boughtThemes.includes(newTheme)) {
+        // Premium users always have access to love theme
+        if (isPremium || boughtThemes.includes(newTheme)) {
             updateTheme();
         } else {
-            setShowPurchaseModal(true);
+            setPremiumTrigger('general');
+            setShowPremiumModal(true);
         }
     };
 
@@ -609,23 +634,18 @@ export default function RoomPage() {
                 onOpenChange={setImportModalOpen}
                 roomId={roomId}
                 onImportSuccess={handlePlaylistImported}
+                onPremiumRequired={() => {
+                    setPremiumTrigger('general');
+                    setShowPremiumModal(true);
+                }}
             />
-            <ThemePurchaseModal
-                open={showPurchaseModal}
-                onOpenChange={setShowPurchaseModal}
+            <PremiumUpgradeModal
+                open={showPremiumModal}
+                onOpenChange={setShowPremiumModal}
+                trigger={premiumTrigger}
                 onSuccess={() => {
-                    setBoughtThemes(prev => [...prev, 'love']);
-                    setTheme('love');
-                    localStorage.setItem('selectedTheme', 'love');
-
-                    // If host bought it, sync it immediately
-                    const isHost = session?.user?.email && roomDetails?.host?.email && session.user.email === roomDetails.host.email;
-                    if (isHost && isSyncEnabled) {
-                        const socket = getSocket();
-                        if (socket) {
-                            socket.emit('theme-changed', { roomId, theme: 'love' });
-                        }
-                    }
+                    setIsPremium(true);
+                    setBoughtThemes(prev => prev.includes('love') ? prev : [...prev, 'love']);
                 }}
             />
             {/* Persist membership and join socket room on mount */}
@@ -736,7 +756,15 @@ export default function RoomPage() {
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                             </div>
                             <div className="min-w-0">
-                                <h1 className="text-lg sm:text-2xl font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-lg sm:text-2xl font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
+                                    {isHostPremium && (
+                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-xs font-bold text-black">
+                                            <Crown className="w-3 h-3" />
+                                            <span className="hidden sm:inline">PRO</span>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${currentTheme.text}`}>
                                     <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                     <span className="truncate max-w-[80px] sm:max-w-[150px]">Hosted by {roomDetails?.host?.name || 'Unknown'}</span>
@@ -748,15 +776,29 @@ export default function RoomPage() {
                     <div className="flex items-center gap-2 sm:gap-4">
                         {/* Participants (avatars) */}
                         <div className="hidden sm:flex -space-x-2">
-                            {members.slice(0, 5).map((m) => (
-                                m.image ? (
-                                    <img key={m.id} src={m.image} alt={m.name || 'User'} className="w-8 h-8 rounded-full border-2 border-white/30 object-cover" />
-                                ) : (
-                                    <div key={m.id} className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
-                                        {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            {members.slice(0, 5).map((m) => {
+                                const isHost = m.id === roomDetails?.host?.id;
+                                const isCurrentUser = m.id === session?.user?.id;
+                                // Show crown on host if host is premium, or on current user if they're premium
+                                const showCrown = (isHost && isHostPremium) || (isCurrentUser && isPremium);
+
+                                return (
+                                    <div key={m.id} className="relative">
+                                        {m.image ? (
+                                            <img src={m.image} alt={m.name || 'User'} className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} object-cover`} />
+                                        ) : (
+                                            <div className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} bg-white/10 flex items-center justify-center text-white text-xs font-bold`}>
+                                                {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
+                                        {showCrown && (
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                                                <Crown className="w-2.5 h-2.5 text-white" />
+                                            </div>
+                                        )}
                                     </div>
-                                )
-                            ))}
+                                );
+                            })}
                             {members.length > 5 && (
                                 <div className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
                                     +{members.length - 5}
@@ -780,23 +822,20 @@ export default function RoomPage() {
                             </div>
                         )}
 
-                        <button
-                            className='cursor-pointer bg-yellow-300 text-black font-semibold rounded-xl p-2 text-sm'
-                            onClick={() => {
-                                trackSupportButtonClick()
-                                setSupportModalOpen(true)
-                            }} >
-                            <span className="sm:hidden">💛</span>
-                            <span className="hidden sm:inline">Support</span>
-                        </button>
-
                         {/* Invite Button */}
                         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                             <DialogTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        // Block share for free users
+                                        if (!isPremium) {
+                                            e.preventDefault();
+                                            setPremiumTrigger('sync_limit');
+                                            setShowPremiumModal(true);
+                                            return;
+                                        }
                                         // Auto-enable sync when sharing - you want to sync with invited users
                                         if (!isSyncEnabled) {
                                             handleEnableSync();
@@ -1294,12 +1333,6 @@ export default function RoomPage() {
           background: ${theme === 'love' ? 'rgba(236, 72, 153, 0.7)' : 'rgba(239, 68, 68, 0.7)'};
         }
       `}</style>
-
-            {/* Donation Modal - shows on first visit */}
-            <DonationModal />
-
-            {/* Support Modal - controlled by button click */}
-            <DonationModal open={supportModalOpen} onOpenChange={setSupportModalOpen} />
         </div>
     );
 }

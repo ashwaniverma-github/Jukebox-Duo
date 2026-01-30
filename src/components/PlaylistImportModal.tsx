@@ -9,9 +9,10 @@ interface Props {
     onOpenChange: (open: boolean) => void
     roomId: string
     onImportSuccess: () => void
+    onPremiumRequired?: () => void
 }
 
-export function PlaylistImportModal({ isOpen, onOpenChange, roomId, onImportSuccess }: Props) {
+export function PlaylistImportModal({ isOpen, onOpenChange, roomId, onImportSuccess, onPremiumRequired }: Props) {
     const [url, setUrl] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
@@ -34,6 +35,12 @@ export function PlaylistImportModal({ isOpen, onOpenChange, roomId, onImportSucc
             const data = await res.json()
 
             if (!res.ok) {
+                // Check if premium is required
+                if (data.isPremiumRequired) {
+                    onOpenChange(false)
+                    onPremiumRequired?.()
+                    return
+                }
                 throw new Error(data.error || 'Failed to import playlist')
             }
 

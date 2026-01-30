@@ -17,6 +17,8 @@ model User {
   memberships RoomMember[]
   queueItems QueueItem[] @relation("QueueItemAddedBy")
   boughtThemes String[]   @default(["default"]) 
+  isPremium  Boolean     @default(false)
+  premiumPurchasedAt DateTime?
   createdAt  DateTime    @default(now())
 }
 
