@@ -66,12 +66,12 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[90vh] overflow-y-auto">
                 {/* Header Section */}
-                <div className="relative p-4 sm:p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
-                    <div className="flex flex-col items-center text-center space-y-4">
+                <div className="relative p-3 sm:p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
+                    <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full" />
-                            <div className="relative w-16 h-16 bg-zinc-900 rounded-2xl border border-zinc-700 flex items-center justify-center shadow-inner">
-                                <Crown className="w-8 h-8 text-yellow-500" />
+                            <div className="relative w-12 sm:w-16 h-12 sm:h-16 bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-700 flex items-center justify-center shadow-inner">
+                                <Crown className="w-6 sm:w-8 h-6 sm:h-8 text-yellow-500" />
                             </div>
                         </div>
 
@@ -98,7 +98,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Features List */}
-                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="p-3 sm:p-6 space-y-2.5 sm:space-y-4">
                     {features.map((feature, i) => (
                         <div key={i} className="flex items-start gap-3 group">
                             <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:border-zinc-700 transition-colors">
@@ -114,7 +114,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Footer Section */}
-                <div className="p-4 sm:p-6 pt-2 bg-zinc-950/50">
+                <div className="p-3 sm:p-6 pt-2 bg-zinc-950/50">
                     <Button
                         onClick={handlePurchase}
                         disabled={loading}
@@ -130,7 +130,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         )}
                     </Button>
 
-                    <div className="mt-4 flex flex-col items-center space-y-2">
+                    <div className="mt-3 sm:mt-4 flex flex-col items-center space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
                             <Lock className="w-3 h-3" />
                             Secure Checkout
