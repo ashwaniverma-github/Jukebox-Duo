@@ -86,7 +86,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
                         <div className="flex flex-col items-center gap-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm line-through text-zinc-500 font-medium">$12.99</span>
+                                <span className="text-sm line-through text-zinc-500 font-medium">$29.99</span>
                                 <span className="text-3xl font-bold text-white">$5.99</span>
                             </div>
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
