@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Menu, X, ArrowRight } from "lucide-react";
+import { CONFIG } from "@/lib/config";
 
 const Navbar = () => {
   const router = useRouter();
@@ -13,7 +14,7 @@ const Navbar = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-xl bg-zinc-950/70 border-b border-white/5 supports-[backdrop-filter]:bg-zinc-950/50"
+      className={`fixed ${CONFIG.MAINTENANCE_MODE ? 'top-10' : 'top-0'} left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-xl bg-zinc-950/70 border-b border-white/5 supports-[backdrop-filter]:bg-zinc-950/50`}
     >
       <div className="flex items-center gap-2">
         <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-2">

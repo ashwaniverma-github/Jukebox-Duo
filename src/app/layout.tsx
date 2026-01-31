@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./Providers";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -148,6 +149,7 @@ export default function RootLayout({
         className={`${inter.variable} antialiased`}
       >
         <Providers>
+          <MaintenanceBanner />
           {children}
           <Script id="feedinbox-config" strategy="afterInteractive">
             {`
