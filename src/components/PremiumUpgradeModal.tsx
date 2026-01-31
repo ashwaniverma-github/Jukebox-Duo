@@ -89,9 +89,14 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 <span className="text-sm line-through text-zinc-500 font-medium">$29.99</span>
                                 <span className="text-3xl font-bold text-white">$5.99</span>
                             </div>
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
-                                <Sparkles className="w-3 h-3 text-rose-500" />
-                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+                                    <Sparkles className="w-3 h-3 text-rose-500" />
+                                    <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
+                                    <span>🔥 Only 9 spots remaining!</span>
+                                </div>
                             </div>
                         </div>
                     </div>
