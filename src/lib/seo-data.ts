@@ -53,14 +53,14 @@ export const listenTogetherPages: ListenTogetherPage[] = [
     {
         slug: 'taylor-swift',
         title: 'Listen to Taylor Swift Together | Jukebox Duo',
-        description: 'Enjoy Taylor Swift songs with friends in real-time. Create a synced listening room and share the Swiftie experience together, no matter the distance.',
+        description: 'Enjoy Taylor Swift songs with friends in real-time. Create a synced listening room in your browser for the best desktop experience and share the Swiftie vibe.',
         keywords: ['taylor swift listen together', 'taylor swift with friends', 'swiftie music party', 'taylor swift synced'],
         heroTitle: 'Listen to Taylor Swift Together',
-        heroSubtitle: 'Share the Eras Tour vibes with friends in perfect sync. Experience every song together, wherever you are.',
+        heroSubtitle: 'Share the Eras Tour vibes with friends in perfect sync. Optimized for the best experience on desktop and browsers.',
         category: 'artist',
         benefits: [
             'Sing along to every Era in perfect sync',
-            'Experience the bridge of "Cruel Summer" together',
+            'Full support for desktop and browser listening',
             'Perfect for album release listening parties',
         ],
     },
@@ -254,13 +254,13 @@ export const forPages: ForPage[] = [
     {
         slug: 'long-distance-couples',
         title: 'Music App for Long Distance Couples | Jukebox Duo',
-        description: 'Stay connected with your partner through music. Listen to songs together in real-time, even when miles apart. Perfect for LDR couples.',
-        keywords: ['long distance relationship music', 'ldr couples app', 'listen together couples', 'music for long distance'],
+        description: 'Stay connected with your partner through music. The best browser-based sync for long-distance couples, optimized for desktop and web.',
+        keywords: ['long distance relationship music', 'ldr couples app', 'listen together browser', 'music for long distance'],
         heroTitle: 'For Long Distance Couples',
-        heroSubtitle: 'Distance means nothing when you\'re sharing the same song. Stay connected through music.',
+        heroSubtitle: 'Distance means nothing when you\'re sharing the same song. High-performance sync for the best desktop experience.',
         benefits: [
             'Listen to "your song" together in perfect sync',
-            'Create shared playlists for date nights',
+            'Optimized for desktop and browser listening',
             'Feel closer even when miles apart',
         ],
     },
@@ -280,14 +280,14 @@ export const forPages: ForPage[] = [
     {
         slug: 'study-sessions',
         title: 'Music App for Study Sessions | Jukebox Duo',
-        description: 'Focus together with synchronized study music. Create virtual study rooms with friends and stay motivated.',
-        keywords: ['study music app', 'study together online', 'focus music friends', 'virtual study room'],
+        description: 'Focus together with synchronized study music. Create virtual study rooms in your browser, optimized for the best desktop experience.',
+        keywords: ['study music app', 'study together online browser', 'focus music desktop', 'virtual study room sync'],
         heroTitle: 'For Study Sessions',
-        heroSubtitle: 'Stay focused together. Sync your study playlist and crush your goals as a team.',
+        heroSubtitle: 'Stay focused together. Sync your study playlist in your browser for a seamless desktop experience.',
         benefits: [
             'Create virtual study rooms with friends',
+            'Best performance on desktop and browser',
             'Stay motivated with synchronized music',
-            'Take breaks together with upbeat tracks',
         ],
     },
     {
@@ -362,15 +362,15 @@ export const alternativePages: AlternativePage[] = [
     {
         slug: 'spotify',
         title: 'Best Ad-Free Spotify Alternative | Jukebox Duo',
-        description: 'Looking for a Spotify alternative? Experience ad-free synchronized music with friends. Better features, cheaper price, and perfect sync.',
-        keywords: ['spotify alternative', 'ad-free music app', 'cheap spotify alternative', 'listen together spotify'],
+        description: 'Looking for a Spotify alternative? Experience ad-free synchronized music in your browser, optimized for the best desktop experience.',
+        keywords: ['spotify alternative browser', 'ad-free music app', 'listen together spotify', 'spotify group session'],
         heroTitle: 'The Social Alternative to Spotify',
-        heroSubtitle: 'Tired of ads and limited social features? Switch to Jukebox Duo for a truly synchronized social listening experience.',
+        heroSubtitle: 'Lightweight and browser-based. Switch to Jukebox Duo for the best synchronized listening on desktop.',
         benefits: [
             '100% Ad-free listening experience',
             'Perfectly synchronized rooms for groups',
-            'No premium requirement for your friends',
-            'Cheaper lifetime deals available',
+            'Best experience on desktop and browser',
+            'Free for all participants',
         ],
         comparisonPoints: [
             {

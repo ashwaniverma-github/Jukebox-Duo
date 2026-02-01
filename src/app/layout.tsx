@@ -13,8 +13,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Jukebox Duo - Listen Together, No Matter Where You Are",
-  description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time. Perfect for long-distance relationships, virtual hangouts, and shared music experiences.",
-  keywords: ["music sharing", "synchronized music", "YouTube music", "virtual hangouts", "music rooms", "collaborative playlists", "real-time music", "social music app"],
+  description: "Create synchronized music listening rooms directly in your browser. Optimized for the best experience on desktop and browser. Share YouTube music in perfect sync with friends, no extensions required.",
+  keywords: ["music sharing", "synchronized music", "YouTube music", "browser music party", "desktop music sync", "collaborative playlists", "real-time music"],
   authors: [{ name: "Jukebox Duo Team" }],
   creator: "Jukebox Duo",
   publisher: "Jukebox Duo",
