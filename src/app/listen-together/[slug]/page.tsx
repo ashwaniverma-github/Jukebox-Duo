@@ -154,6 +154,63 @@ export default async function ListenTogetherPage({
                 </div>
             </section>
 
+            {/* Deep Dive Content Section */}
+            <section className="relative py-24 px-4 bg-white/[0.02]">
+                <div className="container mx-auto max-w-4xl">
+                    <div className="prose prose-invert prose-p:text-gray-400 prose-headings:text-white max-w-none">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-8">
+                            Experience {page.heroTitle} Like Never Before
+                        </h2>
+
+                        <div className="space-y-12">
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">Perfect Real-Time Synchronization</h3>
+                                <p className="text-lg leading-relaxed">
+                                    Nothing brings people together like music. Jukebox Duo is built on a proprietary synchronization engine that ensures
+                                    every participant in your room hears the exact same beat at the exact same millisecond. Whether you&apos;re listening to
+                                    {page.slug.replace(/-/g, ' ')} or your favorite lo-fi beats, the experience is seamless and lag-free. No more
+                                    &quot;one-two-three-play&quot; countdowns—just pure, synchronized musical bliss.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">Built for {page.category === 'artist' ? 'Fans' : 'Your Vibe'}</h3>
+                                <p className="text-lg leading-relaxed">
+                                    {page.category === 'artist'
+                                        ? `Calling all fans! Our platform is the ultimate destination for virtual listening parties. Share your favorite tracks, 
+                                           discuss lyrics in real-time, and experience the full emotional range of the artist&apos;s work with your friends. 
+                                           It&apos;s like being at a private concert, but from the comfort of your own homes.`
+                                        : `Whether you're looking for concentration, relaxation, or high-energy motivation, our synchronized rooms 
+                                           provide the perfect environment. Sharing a mood through music is a powerful way to connect, and we've 
+                                           made it easier than ever to invite others into your world.`
+                                    }
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">No Downloads, No Hassle</h3>
+                                <p className="text-lg leading-relaxed">
+                                    Jukebox Duo runs entirely in your web browser. There&apos;s no bulky software to download or complicated setup
+                                    procedures. Simply create a room, share the unique link with your friends (or partner), and start adding
+                                    songs from our extensive library. We&apos;ve optimized the platform for both desktop and mobile, so the party
+                                    never has to stop.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">Collaborative Listening Redefined</h3>
+                                <p className="text-lg leading-relaxed">
+                                    Our collaborative queue feature allows everyone in the room to have a voice. Add tracks, vote on what&apos;s next,
+                                    and discover new music through the tastes of your friends. It&apos;s not just about listening—it&apos;s about
+                                    creating a unique musical journey together, one track at a time.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
             {/* CTA Section */}
             <section className="relative py-20 px-4">
                 <div className="container mx-auto max-w-3xl text-center">

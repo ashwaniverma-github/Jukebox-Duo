@@ -183,6 +183,62 @@ export default async function ForPage({
                 </div>
             </section>
 
+            {/* Deep Dive Content Section */}
+            <section className="relative py-24 px-4 bg-white/[0.02]">
+                <div className="container mx-auto max-w-4xl">
+                    <div className="prose prose-invert prose-p:text-gray-400 prose-headings:text-white max-w-none">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-8">
+                            Why Jukebox Duo is the Perfect {page.heroTitle}
+                        </h2>
+
+                        <div className="space-y-12">
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">Bridging the Gap Through Sound</h3>
+                                <p className="text-lg leading-relaxed">
+                                    When you&apos;re apart, it&apos;s the little things that matter most. Sharing a song is a powerful way to bridge
+                                    the gap between locations. Jukebox Duo was designed specifically for {page.slug.replace(/-/g, ' ')} to
+                                    provide a shared space where the distance disappears. Our ultra-low latency synchronization means
+                                    that when the beat drops, it drops for everyone simultaneously, no matter if you&apos;re in the next room
+                                    or on a different continent.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">More Than Just a Music Player</h3>
+                                <p className="text-lg leading-relaxed">
+                                    Traditional streaming apps focus on solo listening, but Jukebox Duo is a social platform first.
+                                    We&apos;ve stripped away the complexity to focus on what matters: the human connection. Our
+                                    synchronized queue allows everyone to contribute to the vibe, making it a collaborative
+                                    experience rather than just one person playing DJ. It&apos;s the digital equivalent of sitting on a
+                                    couch together, sharing a pair of headphones.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">Designed for Ease of Use</h3>
+                                <p className="text-lg leading-relaxed">
+                                    We believe that technology should be invisible. That&apos;s why Jukebox Duo requires no downloads and
+                                    no complicated installation. It works directly in your browser on both desktop and mobile devices.
+                                    This ease of access makes it perfect for quickly jumping into a session with friends or loved ones
+                                    without any technical friction. Just one link, and you&apos;re in sync.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-500 mb-4">The Power of Shared Moments</h3>
+                                <p className="text-lg leading-relaxed">
+                                    Music has the unique ability to anchor memories. By listening together in real-time, you&apos;re
+                                    creating shared experiences that strengthen bonds. Whether it&apos;s a calm study session, a
+                                    high-energy workout, or a romantic evening, the synchronized soundtrack of Jukebox Duo
+                                    turns a solitary activity into a collective memory.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
             {/* CTA Section */}
             <section className="relative py-20 px-4">
                 <div className="container mx-auto max-w-3xl text-center">

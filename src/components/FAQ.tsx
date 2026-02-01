@@ -7,29 +7,38 @@ import Link from "next/link";
 const faqs = [
     {
         question: "What is Jukebox Duo?",
-        answer: "Jukebox Duo is a synchronized music listening platform that allows you to listen to music with friends or partners in real-time, no matter where you are. Shared rooms, shared control, perfect sync."
+        answer: "Jukebox Duo is a premier synchronized music listening platform designed to bring people together regardless of physical distance. Whether you're in a long-distance relationship, hanging out with friends remotely, or hosting a virtual study session, our platform allows you to create private rooms where music is played in perfect synchronization across all connected devices. Everyone in the room hears the same beat at the same time, creating a shared auditory experience that feels just like sitting in the same room."
     },
     {
         question: "Is Jukebox Duo really free?",
-        answer: "Yes! Our core synchronized listening features are free and ad-free for everyone. We offer a premium lifetime deal for users who want extra customization and features like premium badges and more."
+        answer: "Yes, Jukebox Duo is committed to keeping social music listening accessible. Our core features—including synchronized playback, room creation, and YouTube integration—are entirely free and ad-free for everyone. We don't believe in charging a 'social tax' for you to enjoy music with your friends. For power users who want to support the project, we offer a low-cost lifetime premium deal that unlocks exclusive customization options, premium badges, and unique synchronized themes like our popular 'Love Theme'."
     },
     {
         question: "Do my friends need a paid subscription to join?",
-        answer: "No! Unlike other platforms, your friends don't need to pay for a premium subscription to join your room and listen together. It's completely free for all participants."
+        answer: "Absolutely not! This is one of the key advantages of Jukebox Duo compared to other major music platforms. Your friends, family, or partners can join your room instantly without any paid subscription or even a registered account in some cases. As long as they have the unique room link, they can join the party and experience synchronized music without any cost or interruptive ads. It's truly open and accessible for everyone invited."
     },
     {
         question: "How do I invite someone to my room?",
-        answer: "Simply create a room and copy the unique invite link from the header. Share it with your friends via WhatsApp, Discord, or any other messaging app, and they can join instantly."
+        answer: "Inviting someone is as simple as sharing a link. Once you've created or joined a room, look for the 'Share' or 'Invite' icon in the header. Clicking this will copy a unique URL to your clipboard. You can then send this link via WhatsApp, Discord, Slack, Telegram, or any other messaging platform. When your friend clicks the link, they'll be brought directly into your synchronized session. If they're not signed in, they'll be prompted to do a quick Google sign-in to join the presence list."
     },
     {
         question: "Does it support YouTube Music playlists?",
-        answer: "Yes! We support bulk YouTube Music playlist imports. You can easily move your library over and enjoy your favorite tracks ad-free with your crew."
+        answer: "Yes! We have built a robust playlist import system that supports bulk importing from YouTube and YouTube Music. If you have a curated collection of songs or a favorite workout playlist, you can move it over to Jukebox Duo in seconds. Simply copy the playlist URL, paste it into our import tool, and we'll automatically add the tracks to your room's queue. This allows you to leverage your existing music library while enjoying the superior social features of our platform."
+    },
+    {
+        question: "How does the synchronization work?",
+        answer: "Our synchronization engine utilizes low-latency WebSocket communication to ensure that every client in a room is aware of the current playback state. When the host plays, pauses, or skips a track, the command is broadcasted to all other participants within milliseconds. We also implement periodic sync checks that account for minor network jitters, ensuring that even on varying connection speeds, everyone stays on the same beat. It's a professional-grade solution for the most demanding audiophiles."
+    },
+    {
+        question: "Is my privacy protected on Jukebox Duo?",
+        answer: "We take your privacy very seriously. Jukebox Duo uses secure Google OAuth for authentication, ensuring we never handle your passwords directly. Your listening rooms are private by default, and only those with the unique link can join. We don't sell your listening data to advertisers, and we don't track you across the web. Our goal is to provide a safe, respectful space for you and your friends to enjoy music together."
     },
     {
         question: "Is there a mobile app?",
-        answer: "Jukebox Duo is a Progressive Web App (PWA) optimized for mobile. You can add it to your home screen for an app-like experience on both iOS and Android without needing to download anything from an app store."
+        answer: "Jukebox Duo is built as a highly optimized Progressive Web App (PWA). This means you get a full, app-like experience on both iOS and Android without needing to download large files from an app store. You can easily add Jukebox Duo to your home screen by using the 'Add to Home Screen' option in your mobile browser. This provides you with a dedicated icon, full-screen playback, and faster load times, making it the perfect companion for mobile listening sessions."
     }
 ];
+
 
 const FAQItem = ({ question, answer, isOpen, onClick }: { question: string; answer: string; isOpen: boolean; onClick: () => void }) => {
     return (
