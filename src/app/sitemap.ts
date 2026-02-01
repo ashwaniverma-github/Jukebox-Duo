@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getListenTogetherSlugs, getForSlugs } from '@/lib/seo-data';
+import { getListenTogetherSlugs, getForSlugs, getAlternativeSlugs } from '@/lib/seo-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://jukeboxduo.com';
@@ -48,6 +48,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'monthly',
             priority: 0.8,
         },
+        {
+            url: `${baseUrl}/alternatives`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
     ];
 
     // Listen Together programmatic pages
@@ -68,5 +74,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.8,
     }));
 
-    return [...staticPages, ...listenTogetherPages, ...forPages];
+    // Alternative programmatic pages
+    const alternativePages: MetadataRoute.Sitemap = getAlternativeSlugs().map((slug) => ({
+        url: `${baseUrl}/alternatives/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.8,
+    }));
+
+    return [...staticPages, ...listenTogetherPages, ...forPages, ...alternativePages];
 }

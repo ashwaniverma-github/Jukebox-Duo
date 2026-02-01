@@ -94,20 +94,18 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
 
         {/* Google Analytics */}
-        <script
-          async
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-4JB3MF5MXZ"
+          strategy="afterInteractive"
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-4JB3MF5MXZ');
-            `,
-          }}
-        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-4JB3MF5MXZ');
+          `}
+        </Script>
 
         {/* Structured Data for SEO */}
         <script

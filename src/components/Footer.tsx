@@ -10,7 +10,7 @@ const Footer = () => (
         <div className="lg:col-span-4 space-y-6">
           <Link href="/" className="inline-block">
             <span className="font-bold text-2xl tracking-tight text-white">
-              Jukebox<span className="text-red-500">Duo</span>
+              Jukebox<span className="text-red-500 ml-1">Duo</span>
             </span>
           </Link>
           <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
@@ -87,21 +87,43 @@ const Footer = () => (
           </ul>
         </div>
 
-        {/* Column 4: Use Cases (3 cols) */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Column 4: Use Cases (2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
           <h3 className="font-semibold text-white tracking-wide">Use Cases</h3>
           <ul className="space-y-2">
             {[
               'long-distance-couples', 'best-friends', 'study-sessions',
               'workout-buddies', 'road-trips', 'virtual-parties',
               'movie-nights', 'family'
-            ].map((slug) => (
+            ].slice(0, 6).map((slug) => (
               <li key={slug}>
                 <Link href={`/for/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors block py-0.5">
                   For {slug.replace(/-/g, ' ')}
                 </Link>
               </li>
             ))}
+          </ul>
+        </div>
+
+        {/* Column 5: Alternatives (2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
+          <h3 className="font-semibold text-white tracking-wide">Alternatives</h3>
+          <ul className="space-y-2">
+            {[
+              'spotify', 'youtube-music'
+            ].map((slug) => (
+              <li key={slug}>
+                <Link href={`/alternatives/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
+                  {slug.replace(/-/g, ' ')} Alternative
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/alternatives" className="text-sm text-red-500 hover:text-red-400 font-medium inline-flex items-center gap-1 mt-1 group">
+                View All
+                <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

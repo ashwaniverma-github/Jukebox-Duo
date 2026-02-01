@@ -67,7 +67,7 @@ export default async function ForPage({
             {/* Navbar */}
             <nav className={`fixed ${CONFIG.MAINTENANCE_MODE ? 'top-10' : 'top-0'} left-0 w-full flex items-center justify-between px-6 py-4 z-50 backdrop-blur-md bg-black/20 border-b border-white/5`}>
                 <Link href="/" className="font-bold text-xl tracking-tight text-white">
-                    Jukebox<span className="text-red-500">Duo</span>
+                    Jukebox<span className="text-red-500 ml-1">Duo</span>
                 </Link>
                 <div className="hidden md:flex items-center gap-8">
                     <Link href="/features" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">

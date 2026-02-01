@@ -18,7 +18,7 @@ const Navbar = () => {
     >
       <div className="flex items-center gap-2">
         <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-2">
-          Jukebox<span className="text-rose-500">Duo</span>
+          Jukebox<span className="text-rose-500 ml-1">Duo</span>
         </Link>
       </div>
 

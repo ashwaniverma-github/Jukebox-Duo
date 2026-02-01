@@ -22,6 +22,31 @@ export interface ForPage {
     benefits: string[];
 }
 
+export interface AlternativePage {
+    slug: string;
+    title: string;
+    description: string;
+    keywords: string[];
+    heroTitle: string;
+    heroSubtitle: string;
+    benefits: string[];
+    comparisonPoints: {
+        feature: string;
+        spotify?: string;
+        ytMusic?: string;
+        jukeboxDuo: string;
+    }[];
+    faqs?: {
+        q: string;
+        a: string;
+    }[];
+    highlights?: {
+        title: string;
+        desc: string;
+        icon: string;
+    }[];
+}
+
 // Listen Together Pages - Target searches like "listen to [artist] together online"
 export const listenTogetherPages: ListenTogetherPage[] = [
     // Artists
@@ -332,6 +357,148 @@ export const forPages: ForPage[] = [
     },
 ];
 
+// Alternative Pages - Target searches like "[Service] alternative"
+export const alternativePages: AlternativePage[] = [
+    {
+        slug: 'spotify',
+        title: 'Best Ad-Free Spotify Alternative | Jukebox Duo',
+        description: 'Looking for a Spotify alternative? Experience ad-free synchronized music with friends. Better features, cheaper price, and perfect sync.',
+        keywords: ['spotify alternative', 'ad-free music app', 'cheap spotify alternative', 'listen together spotify'],
+        heroTitle: 'The Social Alternative to Spotify',
+        heroSubtitle: 'Tired of ads and limited social features? Switch to Jukebox Duo for a truly synchronized social listening experience.',
+        benefits: [
+            '100% Ad-free listening experience',
+            'Perfectly synchronized rooms for groups',
+            'No premium requirement for your friends',
+            'Cheaper lifetime deals available',
+        ],
+        comparisonPoints: [
+            {
+                feature: 'Ads',
+                spotify: 'Interruptive Ads',
+                jukeboxDuo: 'Crystal Clear & Ad-Free',
+            },
+            {
+                feature: 'Group Sessions',
+                spotify: 'Requires Premium for all',
+                jukeboxDuo: 'Free for all participants',
+            },
+            {
+                feature: 'Sync Quality',
+                spotify: 'Occasional drift',
+                jukeboxDuo: 'Ultra-low latency sync',
+            },
+            {
+                feature: 'Pricing',
+                spotify: 'Subscription only',
+                jukeboxDuo: 'Affordable Lifetime Deal',
+            },
+        ],
+        highlights: [
+            {
+                title: 'No Social Premium Tax',
+                desc: 'Unlike Spotify, your friends don\'t need to pay for premium just to join your listening party.',
+                icon: 'group',
+            },
+            {
+                title: 'Unmatched Sync Engine',
+                desc: 'Our proprietary engine ensures everyone hears the exact same millisecond of the track.',
+                icon: 'sync',
+            },
+            {
+                title: 'Privacy Focused',
+                desc: 'We don\'t track your every move or sell your listening data to advertisers.',
+                icon: 'shield',
+            },
+        ],
+        faqs: [
+            {
+                q: 'Is Jukebox Duo really a free Spotify alternative?',
+                a: 'Yes! While we offer a premium lifetime deal for extra features, our core synchronized listening is free and ad-free for everyone.',
+            },
+            {
+                q: 'Do my friends need an account to listen together?',
+                a: 'They can join as guests or create a quick account. Unlike Spotify, they never need a paid subscription to join a room.',
+            },
+            {
+                q: 'Can I import my Spotify or YouTube Music playlists?',
+                a: 'Yes! We support seamless YouTube Music playlist imports. You can add songs in bulk, import your favorites, and enjoy them ad-free with friends.',
+            },
+            {
+                q: 'How is it better than Spotify Jam?',
+                a: 'Spotify Jam often has sync issues and requires everyone to have Premium. Jukebox Duo is built for zero-latency and works for everyone, regardless of their status.',
+            },
+        ],
+    },
+    {
+        slug: 'youtube-music',
+        title: 'YouTube Music Alternative for Social Listening | Jukebox Duo',
+        description: 'Best YouTube Music alternative for listening with friends. Ad-free, high quality, and perfectly synced musical experiences.',
+        keywords: ['youtube music alternative', 'yt music alternative', 'listen together yt music', 'ad free music'],
+        heroTitle: 'Better Social Listening than YT Music',
+        heroSubtitle: 'Upgrade your group listening. Jukebox Duo offers better sync and a more social way to enjoy music together.',
+        benefits: [
+            'Seamless ad-free music playback',
+            'Superior real-time synchronization',
+            'Dedicated social listening features',
+            'One-time payment options',
+        ],
+        comparisonPoints: [
+            {
+                feature: 'Social Experience',
+                ytMusic: 'Basic sharing',
+                jukeboxDuo: 'Interactive synced rooms',
+            },
+            {
+                feature: 'Audio Visuals',
+                ytMusic: 'Static UI',
+                jukeboxDuo: 'Dynamic & immersive design',
+            },
+            {
+                feature: 'Cost',
+                ytMusic: 'Monthly subscription',
+                jukeboxDuo: 'Cheap lifetime access',
+            },
+            {
+                feature: 'Ads',
+                ytMusic: 'Heavy on ads (Free)',
+                jukeboxDuo: 'Always ad-free experience',
+            },
+        ],
+        highlights: [
+            {
+                title: 'Seamless Room Transitions',
+                desc: 'Switch between tracks and room settings without ever losing sync with your friends.',
+                icon: 'zap',
+            },
+            {
+                title: 'Visual Music Experience',
+                desc: 'Our UI reacts to the music, creating a more immersive experience than YT Music\'s standard player.',
+                icon: 'view',
+            },
+            {
+                title: 'Global Accessibility',
+                desc: 'Listen together with friends from any country without region lock issues found in other apps.',
+                icon: 'globe',
+            },
+        ],
+        faqs: [
+            {
+                q: 'Is Jukebox Duo better than YouTube Music for parties?',
+                a: 'Absolutely. While YT Music is good for solo listening, Jukebox Duo is built specifically for group synchronization and shared control.',
+            },
+            {
+                q: 'Can I import my YouTube Music playlists?',
+                a: 'Yes! Jukebox Duo supports bulk importing for YouTube Music playlists. Move your entire library over in seconds and enjoy an ad-free group experience.',
+            },
+            {
+                q: 'Can I use Jukebox Duo alongside YouTube Music?',
+                a: 'Yes! You can use us for your social listening sessions and keep your personal playlists on YT Music.',
+            },
+        ],
+    },
+];
+
 // Helper to get all slugs for static generation
 export function getListenTogetherSlugs(): string[] {
     return listenTogetherPages.map(page => page.slug);
@@ -341,6 +508,10 @@ export function getForSlugs(): string[] {
     return forPages.map(page => page.slug);
 }
 
+export function getAlternativeSlugs(): string[] {
+    return alternativePages.map(page => page.slug);
+}
+
 // Helper to find page data by slug
 export function getListenTogetherPage(slug: string): ListenTogetherPage | undefined {
     return listenTogetherPages.find(page => page.slug === slug);
@@ -348,4 +519,8 @@ export function getListenTogetherPage(slug: string): ListenTogetherPage | undefi
 
 export function getForPage(slug: string): ForPage | undefined {
     return forPages.find(page => page.slug === slug);
+}
+
+export function getAlternativePage(slug: string): AlternativePage | undefined {
+    return alternativePages.find(page => page.slug === slug);
 }

@@ -4,6 +4,7 @@ import HowItWorks from "../components/HowItWorks";
 import Features from "../components/Features";
 import Testimonials from "../components/Testimonials";
 import CTABanner from "../components/CTABanner";
+import FAQ from "../components/FAQ";
 import Footer from "../components/Footer";
 
 export default function Home() {
@@ -21,6 +22,7 @@ export default function Home() {
         <Features />
         <HowItWorks />
         <Testimonials />
+        <FAQ />
         <CTABanner />
         <Footer />
       </div>
