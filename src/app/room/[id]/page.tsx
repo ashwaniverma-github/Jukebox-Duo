@@ -1176,7 +1176,7 @@ export default function RoomPage() {
                     </motion.div>
 
                     {/* Ad Placement 1 */}
-                    <div className="mb-8">
+                    <div className="">
                         <AdBanner slot="7429084095" />
                     </div>
 

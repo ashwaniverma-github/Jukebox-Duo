@@ -20,7 +20,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ slot, format = 'auto', className = 
     }, []);
 
     return (
-        <div className={`ad-container my-8 flex justify-center w-full min-h-[100px] overflow-hidden ${className}`}>
+        <div className={`ad-container flex justify-center w-full min-h-[80px] overflow-hidden ${className}`}>
             {/* Google AdSense Placeholder */}
             <ins
                 className="adsbygoogle"
