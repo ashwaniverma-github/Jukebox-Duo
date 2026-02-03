@@ -111,7 +111,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       console.log('▶️ Creating YT Player instance');
       playerRef.current = new window.YT.Player('audio-player', {
         videoId,
-        playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0 },
+        playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0, playsinline: 1 },
         events: {
           onReady: () => {
             console.log('🛠️ YouTube Player Ready');
@@ -353,7 +353,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
         src="https://github.com/anars/blank-audio/blob/master/1-second-of-silence.mp3?raw=true"
         loop
         playsInline
-        className="hidden"
+        className="fixed opacity-0 pointer-events-none top-0 left-0"
       />
 
       {/* Host controls */}
@@ -376,6 +376,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                   const p = playerRef.current;
                   if (!p || !videoId) return console.error('Player not ready or no video');
                   if (typeof p.playVideo !== 'function') return console.error('playVideo not available');
+
+                  // Ensure silent audio plays on direct user interaction
+                  if (audioRef.current) {
+                    audioRef.current.play().catch(e => console.error("Silent audio play rejected:", e));
+                  }
 
                   p.playVideo();
                   const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
