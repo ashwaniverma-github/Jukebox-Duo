@@ -59,7 +59,9 @@ const formatTime = (seconds: number): string => {
 };
 
 export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }: Props) {
+  /* eslint-disable jsx-a11y/media-has-caption */
   const playerRef = useRef<YT.Player | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Silent audio ref
   const socket = getSocket(); // May be null if sync not enabled
   const { offset, sendCommand } = useSyncPlayer(roomId);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -237,37 +239,51 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   }, [isSeeking]);
 
   // 6) Media Session API (Background PWA support)
+  // 6) Media Session API (Background PWA support)
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !videoId) return;
+    if (!('mediaSession' in navigator)) return;
 
-    // Update metadata
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: songTitle || 'Music Duo Session',
-      artist: 'Jukebox Duo', // Or channel name if available
-      artwork: [
-        { src: thumbnailUrl || '/icons.svg', sizes: '96x96', type: 'image/png' },
-        { src: thumbnailUrl || '/icons.svg', sizes: '128x128', type: 'image/png' },
-        { src: thumbnailUrl || '/icons.svg', sizes: '192x192', type: 'image/png' },
-        { src: thumbnailUrl || '/icons.svg', sizes: '256x256', type: 'image/png' },
-        { src: thumbnailUrl || '/icons.svg', sizes: '384x384', type: 'image/png' },
-        { src: thumbnailUrl || '/icons.svg', sizes: '512x512', type: 'image/png' },
-      ]
-    });
+    // Use a separate function or effect for metadata to avoid dependency cycles if needed,
+    // but here we just update it whenever song details change.
+    const updateMetadata = () => {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: songTitle || 'Music Duo Session',
+        artist: 'Jukebox Duo',
+        artwork: [
+          { src: thumbnailUrl || '/icons.svg', sizes: '96x96', type: 'image/png' },
+          { src: thumbnailUrl || '/icons.svg', sizes: '128x128', type: 'image/png' },
+          { src: thumbnailUrl || '/icons.svg', sizes: '192x192', type: 'image/png' },
+          { src: thumbnailUrl || '/icons.svg', sizes: '256x256', type: 'image/png' },
+          { src: thumbnailUrl || '/icons.svg', sizes: '384x384', type: 'image/png' },
+          { src: thumbnailUrl || '/icons.svg', sizes: '512x512', type: 'image/png' },
+        ]
+      });
+    };
+
+    updateMetadata();
 
     // Action handlers for host
     if (isHost && playerRef.current) {
       navigator.mediaSession.setActionHandler('play', () => {
+        console.log('[MediaSession] Play clicked');
+        // Play both silent audio and YouTube
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.error('Silent audio play failed', e));
+        }
         const p = playerRef.current;
         if (p && typeof p.playVideo === 'function') {
           p.playVideo();
-          // Sync command will be sent via onStateChange
         }
       });
       navigator.mediaSession.setActionHandler('pause', () => {
+        console.log('[MediaSession] Pause clicked');
+        // Pause both
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
         const p = playerRef.current;
         if (p && typeof p.pauseVideo === 'function') {
           p.pauseVideo();
-          // Sync command will be sent via onStateChange
         }
       });
       if (onPlayPrev) navigator.mediaSession.setActionHandler('previoustrack', onPlayPrev);
@@ -275,7 +291,6 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     }
 
     return () => {
-      // Cleanup handlers? Usually overwriting them is enough, but setting null is cleaner
       if (isHost) {
         navigator.mediaSession.setActionHandler('play', null);
         navigator.mediaSession.setActionHandler('pause', null);
@@ -283,7 +298,19 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
         navigator.mediaSession.setActionHandler('nexttrack', null);
       }
     };
-  }, [videoId, songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev]);
+  }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev]);
+
+  // Sync silent audio state with React state (driven by YouTube state updates)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play().catch(e => console.error("Silent audio play err:", e));
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
 
   // Handle seek bar change
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,6 +346,15 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
       {/* Hidden YouTube iframe */}
       <div id="audio-player" className="w-0 h-0 overflow-hidden" />
+
+      {/* Silent Audio Hack for Background Play */}
+      <audio
+        ref={audioRef}
+        src="https://github.com/anars/blank-audio/blob/master/1-second-of-silence.mp3?raw=true"
+        loop
+        playsInline
+        className="hidden"
+      />
 
       {/* Host controls */}
       {isHost && (
