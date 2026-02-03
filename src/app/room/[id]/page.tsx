@@ -1213,6 +1213,8 @@ export default function RoomPage() {
                                                 isHost={true}
                                                 onPlayNext={handlePlayNext}
                                                 onPlayPrev={handlePlayPrev}
+                                                songTitle={currentSong?.title}
+                                                thumbnailUrl={currentSong?.thumbnail}
                                                 theme={theme}
                                             />
                                         )}

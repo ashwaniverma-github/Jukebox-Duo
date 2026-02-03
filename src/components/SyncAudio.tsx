@@ -44,6 +44,8 @@ interface Props {
   isHost: boolean;
   onPlayNext?: () => void;
   onPlayPrev?: () => void;
+  songTitle?: string;
+  thumbnailUrl?: string;
   theme?: 'default' | 'love';
 }
 
@@ -56,7 +58,7 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, theme = 'default' }: Props) {
+export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }: Props) {
   const playerRef = useRef<YT.Player | null>(null);
   const socket = getSocket(); // May be null if sync not enabled
   const { offset, sendCommand } = useSyncPlayer(roomId);
@@ -233,6 +235,55 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
     return () => clearInterval(interval);
   }, [isSeeking]);
+
+  // 6) Media Session API (Background PWA support)
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !videoId) return;
+
+    // Update metadata
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: songTitle || 'Music Duo Session',
+      artist: 'Jukebox Duo', // Or channel name if available
+      artwork: [
+        { src: thumbnailUrl || '/icons.svg', sizes: '96x96', type: 'image/png' },
+        { src: thumbnailUrl || '/icons.svg', sizes: '128x128', type: 'image/png' },
+        { src: thumbnailUrl || '/icons.svg', sizes: '192x192', type: 'image/png' },
+        { src: thumbnailUrl || '/icons.svg', sizes: '256x256', type: 'image/png' },
+        { src: thumbnailUrl || '/icons.svg', sizes: '384x384', type: 'image/png' },
+        { src: thumbnailUrl || '/icons.svg', sizes: '512x512', type: 'image/png' },
+      ]
+    });
+
+    // Action handlers for host
+    if (isHost && playerRef.current) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        const p = playerRef.current;
+        if (p && typeof p.playVideo === 'function') {
+          p.playVideo();
+          // Sync command will be sent via onStateChange
+        }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        const p = playerRef.current;
+        if (p && typeof p.pauseVideo === 'function') {
+          p.pauseVideo();
+          // Sync command will be sent via onStateChange
+        }
+      });
+      if (onPlayPrev) navigator.mediaSession.setActionHandler('previoustrack', onPlayPrev);
+      if (onPlayNext) navigator.mediaSession.setActionHandler('nexttrack', onPlayNext);
+    }
+
+    return () => {
+      // Cleanup handlers? Usually overwriting them is enough, but setting null is cleaner
+      if (isHost) {
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      }
+    };
+  }, [videoId, songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev]);
 
   // Handle seek bar change
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
