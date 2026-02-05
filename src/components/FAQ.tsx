@@ -11,7 +11,7 @@ const faqs = [
     },
     {
         question: "Is Jukebox Duo really free?",
-        answer: "Yes, Jukebox Duo is committed to keeping social music listening accessible. Our core features—including synchronized playback, room creation, and YouTube integration—are entirely free and ad-free for everyone. We don't believe in charging a 'social tax' for you to enjoy music with your friends. For power users who want to support the project, we offer a low-cost lifetime premium deal that unlocks exclusive customization options, premium badges, and unique synchronized themes like our popular 'Love Theme'."
+        answer: "Yes, Jukebox Duo is committed to keeping social music listening accessible. One of our core features—including room playlist sharing, room creation, and YouTube integration—are entirely free and ad-free for everyone. We don't believe in charging a 'social tax' for you to enjoy music with your friends. For power users who want to support the project, we offer a low-cost lifetime premium deal that unlocks exclusive customization options, premium badges, and unique synchronized themes like our popular 'Love Theme'."
     },
     {
         question: "Do my friends need a paid subscription to join?",
