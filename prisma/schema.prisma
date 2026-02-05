@@ -32,6 +32,8 @@ model Room {
   createdAt  DateTime      @default(now())
   members    RoomMember[]
   queueItems QueueItem[]
+
+  @@index([hostId])
 }
 
 model RoomMember {
@@ -43,6 +45,8 @@ model RoomMember {
   joinedAt  DateTime @default(now())
 
   @@unique([roomId, userId]) // ✅ This makes the combo unique
+  @@index([roomId])
+  @@index([userId])
 }
 
 model QueueItem {
@@ -56,6 +60,8 @@ model QueueItem {
   addedById  String
   order      Int      @default(0)
   createdAt  DateTime @default(now())
+
+  @@index([roomId])
 }
 
 
