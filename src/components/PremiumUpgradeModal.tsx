@@ -10,7 +10,6 @@ interface PremiumUpgradeModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     trigger?: 'queue_limit' | 'sync_limit' | 'general'
-    onSuccess?: () => void
 }
 
 export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }: PremiumUpgradeModalProps) {
@@ -121,24 +120,27 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         <div className="flex items-center gap-3 p-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
                             <button
                                 onClick={() => setPlan('monthly')}
+                                disabled={isProcessing}
                                 className={cn(
                                     "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
-                                    plan === 'monthly' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                                    plan === 'monthly' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300",
+                                    isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
                             >
                                 Monthly
                             </button>
                             <button
                                 onClick={() => setPlan('lifetime')}
+                                disabled={isProcessing}
                                 className={cn(
                                     "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
-                                    plan === 'lifetime' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                                    plan === 'lifetime' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300",
+                                    isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
                             >
                                 Lifetime
                             </button>
                         </div>
-
                         <div className="flex flex-col items-center gap-1">
                             <div className="flex items-center gap-2">
                                 {plan === 'lifetime' ? (

@@ -644,10 +644,6 @@ export default function RoomPage() {
                 open={showPremiumModal}
                 onOpenChange={setShowPremiumModal}
                 trigger={premiumTrigger}
-                onSuccess={() => {
-                    setIsPremium(true);
-                    setBoughtThemes(prev => prev.includes('love') ? prev : [...prev, 'love']);
-                }}
             />
             {/* Persist membership and join socket room on mount */}
             <JoinRoom roomId={roomId} />

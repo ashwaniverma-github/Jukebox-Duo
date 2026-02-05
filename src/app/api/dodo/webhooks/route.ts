@@ -3,6 +3,12 @@ export const runtime = 'nodejs';
 import { Webhooks } from '@dodopayments/nextjs';
 import prisma from '@/lib/prisma';
 
+// Validate webhook key at startup
+const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
+if (!webhookKey) {
+    console.error('CRITICAL: DODO_PAYMENTS_WEBHOOK_KEY is not set!');
+}
+
 // Helper utilities for subscription events
 
 
@@ -73,11 +79,12 @@ function parseCurrentPeriodEnd(data: Record<string, unknown>): Date | undefined 
         data['nextBillingDate'];
 
     if (raw == null) return undefined;
-    if (typeof raw === 'number') return new Date(raw * 1000);
-    if (typeof raw === 'string') return new Date(raw);
+    let date: Date | undefined;
+    if (typeof raw === 'number') date = new Date(raw * 1000);
+    else if (typeof raw === 'string') date = new Date(raw);
+    if (date && !isNaN(date.getTime())) return date;
     return undefined;
 }
-
 function extractSubscriptionId(data: Record<string, unknown>): string | undefined {
     return (
         getString(data, 'subscription_id') ??
@@ -118,7 +125,7 @@ function getEventType(payload: unknown): string | undefined {
 
 
 export const POST = Webhooks({
-    webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_KEY!,
+    webhookKey: webhookKey || '',
     onPaymentSucceeded: async (payload) => {
         try {
             const data = getPayloadData(payload);
@@ -179,7 +186,11 @@ export const POST = Webhooks({
                 return;
             }
             const data = getPayloadData(payload);
-            const subscriptionId = extractSubscriptionId(data) ?? `${userId}-${Date.now()}`;
+            const subscriptionId = extractSubscriptionId(data);
+            if (!subscriptionId) {
+                console.warn('Webhook subscription.active missing subscriptionId', { userId });
+                return;
+            }
             const productId = extractProductId(data) ?? 'unknown';
             const currentPeriodEnd = parseCurrentPeriodEnd(data);
 
@@ -234,7 +245,11 @@ export const POST = Webhooks({
             if (!userId) return;
 
             const data = getPayloadData(payload);
-            const subscriptionId = extractSubscriptionId(data) ?? `${userId}-${Date.now()}`;
+            const subscriptionId = extractSubscriptionId(data);
+            if (!subscriptionId) {
+                console.warn('Webhook subscription.renewed missing subscriptionId', { userId });
+                return;
+            }
             const productId = extractProductId(data) ?? 'unknown';
             const currentPeriodEnd = parseCurrentPeriodEnd(data);
 
@@ -289,7 +304,11 @@ export const POST = Webhooks({
             if (!userId) return;
 
             const data = getPayloadData(payload);
-            const subscriptionId = extractSubscriptionId(data) ?? `${userId}-${Date.now()}`;
+            const subscriptionId = extractSubscriptionId(data);
+            if (!subscriptionId) {
+                console.warn('Webhook subscription.cancelled missing subscriptionId', { userId });
+                return;
+            }
             const productId = extractProductId(data) ?? 'unknown';
             const currentPeriodEnd = parseCurrentPeriodEnd(data);
 
@@ -339,7 +358,11 @@ export const POST = Webhooks({
             if (!userId) return;
 
             const data = getPayloadData(payload);
-            const subscriptionId = extractSubscriptionId(data) ?? `${userId}-${Date.now()}`;
+            const subscriptionId = extractSubscriptionId(data);
+            if (!subscriptionId) {
+                console.warn('Webhook subscription.on_hold missing subscriptionId', { userId });
+                return;
+            }
             const productId = extractProductId(data) ?? 'unknown';
             const currentPeriodEnd = parseCurrentPeriodEnd(data);
 
@@ -377,7 +400,11 @@ export const POST = Webhooks({
             if (!userId) return;
 
             const data = getPayloadData(payload);
-            const subscriptionId = extractSubscriptionId(data) ?? `${userId}-${Date.now()}`;
+            const subscriptionId = extractSubscriptionId(data);
+            if (!subscriptionId) {
+                console.warn('Webhook subscription.expired missing subscriptionId', { userId });
+                return;
+            }
             const productId = extractProductId(data) ?? 'unknown';
             const currentPeriodEnd = parseCurrentPeriodEnd(data);
 

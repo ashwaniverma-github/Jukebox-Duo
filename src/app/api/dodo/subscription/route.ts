@@ -33,6 +33,20 @@ export async function POST(req: Request) {
         let returnUrl = body?.returnUrl;
 
         if (returnUrl) {
+            // Validate return URL to prevent open redirect attacks
+            try {
+                const parsedUrl = new URL(returnUrl);
+                const allowedHosts = new Set([
+                    new URL(returnBase).host,
+                    'jukeboxduo.com',
+                    'www.jukeboxduo.com',
+                ]);
+                if (!allowedHosts.has(parsedUrl.host)) {
+                    return NextResponse.json({ error: 'Invalid return URL' }, { status: 400 });
+                }
+            } catch {
+                return NextResponse.json({ error: 'Invalid return URL format' }, { status: 400 });
+            }
             const separator = returnUrl.includes('?') ? '&' : '?';
             returnUrl = `${returnUrl}${separator}purchase=success&type=subscription`;
         } else {
