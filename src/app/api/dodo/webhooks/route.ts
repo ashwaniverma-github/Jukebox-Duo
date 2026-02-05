@@ -6,9 +6,8 @@ import prisma from '@/lib/prisma';
 // Validate webhook key at startup
 const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 if (!webhookKey) {
-    console.error('CRITICAL: DODO_PAYMENTS_WEBHOOK_KEY is not set!');
+    throw new Error('CRITICAL: DODO_PAYMENTS_WEBHOOK_KEY is not set!');
 }
-
 // Helper utilities for subscription events
 
 
@@ -125,7 +124,7 @@ function getEventType(payload: unknown): string | undefined {
 
 
 export const POST = Webhooks({
-    webhookKey: webhookKey || '',
+    webhookKey: webhookKey!, // Safe - startup validation throws if missing
     onPaymentSucceeded: async (payload) => {
         try {
             const data = getPayloadData(payload);
