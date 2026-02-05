@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
+import { cn } from '../lib/utils'
 
 interface PremiumUpgradeModalProps {
     open: boolean
@@ -14,7 +15,9 @@ interface PremiumUpgradeModalProps {
 
 export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }: PremiumUpgradeModalProps) {
     const [loading, setLoading] = useState(false)
+    const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
+    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
     const handlePurchase = async () => {
         setLoading(true)
@@ -43,6 +46,36 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
         }
     }
 
+    const handleSubscribe = async () => {
+        setSubLoading(true)
+        setError('')
+        try {
+            const res = await fetch('/api/dodo/subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    returnUrl: window.location.href
+                })
+            })
+
+            if (!res.ok) throw new Error('Failed to create subscription checkout')
+
+            const data = await res.json()
+            if (!data?.checkout_url) throw new Error('Missing checkout URL')
+
+            onOpenChange(false)
+            window.location.href = data.checkout_url
+        } catch (err) {
+            setError('Something went wrong. Please try again.')
+            console.error(err)
+        } finally {
+            setSubLoading(false)
+        }
+    }
+
+    const action = plan === 'lifetime' ? handlePurchase : handleSubscribe
+    const isProcessing = loading || subLoading
+
     const getTriggerMessage = () => {
         switch (trigger) {
             case 'queue_limit':
@@ -64,7 +97,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Header Section */}
                 <div className="relative p-3 sm:p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
                     <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
@@ -84,20 +117,50 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             </DialogDescription>
                         </div>
 
+                        {/* Plan Toggle */}
+                        <div className="flex items-center gap-3 p-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
+                            <button
+                                onClick={() => setPlan('monthly')}
+                                className={cn(
+                                    "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    plan === 'monthly' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setPlan('lifetime')}
+                                className={cn(
+                                    "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    plan === 'lifetime' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                Lifetime
+                            </button>
+                        </div>
+
                         <div className="flex flex-col items-center gap-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm line-through text-zinc-500 font-medium">$29.99</span>
-                                <span className="text-3xl font-bold text-white">$5.99</span>
+                                {plan === 'lifetime' ? (
+                                    <>
+                                        <span className="text-sm line-through text-zinc-500 font-medium">$49.99</span>
+                                        <span className="text-3xl font-bold text-white">$29.99</span>
+                                    </>
+                                ) : (
+                                    <span className="text-3xl font-bold text-white">$3.99<span className="text-sm font-normal text-zinc-400">/mo</span></span>
+                                )}
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
-                                    <Sparkles className="w-3 h-3 text-rose-500" />
-                                    <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
+                            {plan === 'lifetime' && (
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+
+                                        <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
+                                    </div>
+                                    {/* <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
+                                        <span>🔥 Only 5 spots remaining!</span>
+                                    </div> */}
                                 </div>
-                                <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
-                                    <span>🔥 Only 5 spots remaining!</span>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -120,20 +183,22 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
                 {/* Footer Section */}
                 <div className="p-3 sm:p-6 pt-2 bg-zinc-950/50">
-                    <Button
-                        onClick={handlePurchase}
-                        disabled={loading}
-                        className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            "Get Lifetime Access"
-                        )}
-                    </Button>
+                    <div className="space-y-2">
+                        <Button
+                            onClick={action}
+                            disabled={isProcessing}
+                            className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium transition-all"
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                plan === 'lifetime' ? "Get Lifetime Access" : "Get Monthly Access"
+                            )}
+                        </Button>
+                    </div>
 
                     <div className="mt-3 sm:mt-4 flex flex-col items-center space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">

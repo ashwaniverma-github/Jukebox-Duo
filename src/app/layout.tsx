@@ -29,9 +29,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: "YOUR_GOOGLE_VERIFICATION_CODE", // Add your Google Search Console verification code
-  },
   alternates: {
     canonical: "https://jukeboxduo.com",
   },
@@ -70,7 +67,7 @@ export const metadata: Metadata = {
     title: "Jukebox Duo - Listen Together, No Matter Where You Are",
     description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
     images: ["/og-image.png"],
-    creator: "@jukeboxduo", // Add your Twitter handle if you have one
+    creator: "@ashwanivermax", // Add your Twitter handle if you have one
   },
 
   // Additional metadata for better SEO
@@ -169,13 +166,7 @@ export default function RootLayout({
             strategy="lazyOnload"
           />
 
-          {/* Google AdSense Script */}
-          <Script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660595040751061"
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
+
         </Providers>
         <Analytics />
       </body>

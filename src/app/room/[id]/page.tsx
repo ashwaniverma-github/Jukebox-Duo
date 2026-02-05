@@ -18,8 +18,6 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
 import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
 import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
-import AdBanner from '../../../components/AdBanner';
-import SEOContent from '../../../components/SEOContent';
 
 
 export default function RoomPage() {
@@ -60,7 +58,6 @@ export default function RoomPage() {
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
 
     // Theme State
-    const [showSEOContent, setShowSEOContent] = useState(true);
     const [theme, setTheme] = useState<'default' | 'love'>('default');
     const [boughtThemes, setBoughtThemes] = useState<string[]>(['default']);
 
@@ -1175,10 +1172,7 @@ export default function RoomPage() {
                         </Card>
                     </motion.div>
 
-                    {/* Ad Placement 1 */}
-                    <div className="">
-                        <AdBanner slot="7429084095" />
-                    </div>
+
 
                     {/* Player and Queue Grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
@@ -1344,16 +1338,6 @@ export default function RoomPage() {
           background: ${theme === 'love' ? 'rgba(236, 72, 153, 0.7)' : 'rgba(239, 68, 68, 0.7)'};
         }
       `}</style>
-
-            {/* SEO Content Section - Dismissible Component */}
-            {showSEOContent && (
-                <SEOContent
-                    currentTheme={currentTheme}
-                    onClose={() => setShowSEOContent(false)}
-                />
-            )}
         </div>
-
-
     );
 }

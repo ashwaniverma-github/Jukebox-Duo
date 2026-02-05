@@ -350,7 +350,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       {/* Silent Audio Hack for Background Play */}
       <audio
         ref={audioRef}
-        src="https://github.com/anars/blank-audio/blob/master/1-second-of-silence.mp3?raw=true"
+        src="https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3"
         loop
         playsInline
         className="fixed opacity-0 pointer-events-none top-0 left-0"
