@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { trackPremiumModalOpen, trackPremiumPurchaseClick } from './PostHogProvider'
 
 interface PremiumUpgradeModalProps {
     open: boolean
@@ -18,9 +19,17 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [error, setError] = useState('')
     const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
+    // Track when modal opens
+    useEffect(() => {
+        if (open) {
+            trackPremiumModalOpen(trigger, 'room')
+        }
+    }, [open, trigger])
+
     const handlePurchase = async () => {
         setLoading(true)
         setError('')
+        trackPremiumPurchaseClick('lifetime', trigger)
         try {
             const res = await fetch('/api/dodo', {
                 method: 'POST',
@@ -48,6 +57,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const handleSubscribe = async () => {
         setSubLoading(true)
         setError('')
+        trackPremiumPurchaseClick('monthly', trigger)
         try {
             const res = await fetch('/api/dodo/subscription', {
                 method: 'POST',

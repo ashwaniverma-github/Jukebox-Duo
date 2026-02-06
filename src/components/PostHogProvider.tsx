@@ -34,21 +34,22 @@ export const trackEvent = (eventName: string, properties?: Record<string, unknow
     }
 }
 
-// Track Support button click
-export const trackSupportButtonClick = () => {
-    trackEvent('support_button_clicked', {
-        location: 'room_header',
+// Track Premium Upgrade Modal opening
+export const trackPremiumModalOpen = (trigger: 'queue_limit' | 'sync_limit' | 'general', location: string = 'room') => {
+    trackEvent('premium_modal_opened', {
+        trigger,
+        location,
     })
 }
 
-// Track PayPal donation button click
-export const trackPayPalClick = () => {
-    trackEvent('paypal_donation_clicked', {
-        location: 'donation_modal',
+// Track Premium Purchase Button Click
+export const trackPremiumPurchaseClick = (plan: 'monthly' | 'lifetime', trigger: 'queue_limit' | 'sync_limit' | 'general') => {
+    trackEvent('premium_purchase_clicked', {
+        plan,
+        trigger,
+        location: 'room',
     })
 }
-
-
 
 // Identify user for active user tracking
 export const identifyUser = (userId: string, properties?: Record<string, unknown>) => {
