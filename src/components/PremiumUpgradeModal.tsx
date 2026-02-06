@@ -166,7 +166,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                         <div className="flex items-center gap-2">
                                             <span className="text-3xl font-bold text-white">$0</span>
                                             <span className="text-sm font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
-                                                First 24h Free
+                                                Free for 1 day
                                             </span>
                                         </div>
                                         <span className="text-xs text-zinc-500 font-medium">Then $3.99/mo • Cancel anytime</span>
