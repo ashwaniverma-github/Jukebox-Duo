@@ -132,19 +132,22 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 onClick={() => setPlan('monthly')}
                                 disabled={isProcessing}
                                 className={cn(
-                                    "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
-                                    plan === 'monthly' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300",
+                                    "relative px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    plan === 'monthly' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
                                     isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
                             >
                                 Monthly
+                                <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-emerald-500 text-[8px] text-white font-bold tracking-tighter shadow-xl ring-2 ring-zinc-950">
+                                    TRY FREE
+                                </span>
                             </button>
                             <button
                                 onClick={() => setPlan('lifetime')}
                                 disabled={isProcessing}
                                 className={cn(
                                     "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
-                                    plan === 'lifetime' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300",
+                                    plan === 'lifetime' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
                                     isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
                             >
@@ -159,7 +162,15 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                         <span className="text-3xl font-bold text-white">$29.99</span>
                                     </>
                                 ) : (
-                                    <span className="text-3xl font-bold text-white">$3.99<span className="text-sm font-normal text-zinc-400">/mo</span></span>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-3xl font-bold text-white">$0</span>
+                                            <span className="text-sm font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
+                                                First 24h Free
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-zinc-500 font-medium">Then $3.99/mo • Cancel anytime</span>
+                                    </div>
                                 )}
                             </div>
                             {plan === 'lifetime' && (
@@ -207,7 +218,13 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                     Processing...
                                 </>
                             ) : (
-                                plan === 'lifetime' ? "Get Lifetime Access" : "Get Monthly Access"
+                                plan === 'lifetime' ? (
+                                    "Get Lifetime Access"
+                                ) : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        Start 1-Day Free Trial
+                                    </span>
+                                )
                             )}
                         </Button>
                     </div>

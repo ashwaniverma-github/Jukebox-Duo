@@ -71,6 +71,9 @@ export async function POST(req: Request) {
                 type: 'subscription',
                 source: 'music-duo',
             },
+            subscription_data: {
+                trial_period_days: 1,
+            },
         };
 
         if (email) {
