@@ -44,13 +44,8 @@ export default function PrivacyPolicyPage() {
             className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-8"
           >
             <p className="text-gray-300 text-center">
-              <strong>Last updated:</strong> {new Date().toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </motion.div>
+              <strong>Last updated:</strong> February 8, 2026
+            </p>          </motion.div>
 
           {/* Information We Collect */}
           <motion.div
@@ -228,9 +223,9 @@ export default function PrivacyPolicyPage() {
               <p>If you have questions about this Privacy Policy, please contact us:</p>
               <div className="flex items-center gap-2">
                 <span>• X (Twitter):</span>
-                <a 
-                  href="https://x.com/ashwanivermax" 
-                  target="_blank" 
+                <a
+                  href="https://x.com/ashwanivermax"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-red-400 hover:text-red-300 underline"
                 >

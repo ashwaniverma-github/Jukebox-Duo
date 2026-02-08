@@ -17,12 +17,21 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
 
     useEffect(() => {
         if (!isPremium) return
-        const hasShown = localStorage.getItem(SESSION_KEY)
+        let hasShown: string | null = null
+        try {
+            hasShown = localStorage.getItem(SESSION_KEY)
+        } catch {
+            // localStorage unavailable (private mode, etc.)
+        }
         if (hasShown) return
 
         const timer = setTimeout(() => {
             setOpen(true)
-            localStorage.setItem(SESSION_KEY, 'true')
+            try {
+                localStorage.setItem(SESSION_KEY, 'true')
+            } catch {
+                // Ignore storage failures
+            }
         }, 1500)
 
         return () => clearTimeout(timer)
