@@ -127,8 +127,8 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
                             >
-                                <DialogTitle className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
-                                    Welcome to Jukebox Premium
+                                <DialogTitle className="text-2xl sm:text-2xl font-black tracking-tight bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
+                                    Welcome to Jukebox Duo Premium
                                 </DialogTitle>
                             </motion.div>
 
