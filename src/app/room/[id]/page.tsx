@@ -18,6 +18,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
 import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
 import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
+import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
 
 
 export default function RoomPage() {
@@ -645,6 +646,7 @@ export default function RoomPage() {
                 onOpenChange={setShowPremiumModal}
                 trigger={premiumTrigger}
             />
+            <PremiumWelcomeModal isPremium={isPremium} />
             {/* Persist membership and join socket room on mount */}
             <JoinRoom roomId={roomId} />
             {/* Animated background elements */}
