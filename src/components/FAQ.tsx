@@ -15,7 +15,7 @@ const faqs = [
     },
     {
         question: "Do my friends need a paid subscription to join?",
-        answer: "Absolutely not! This is one of the key advantages of Jukebox Duo compared to other major music platforms. Your friends, family, or partners can join your room instantly without any paid subscription or even a registered account in some cases. As long as they have the unique room link, they can join the party and experience synchronized music without any cost or interruptive ads. It's truly open and accessible for everyone invited."
+        answer: "Absolutely not! This is one of the biggest advantages of Jukebox Duo over Spotify Jam. Unlike Spotify Jam which requires BOTH users to have a paid Spotify Premium subscription, Jukebox Duo only needs ONE person (the host) to have premium. We even offer an affordable lifetime deal so you never have to worry about recurring payments! Your friends can join instantly without any paid subscription or downloads. It runs entirely in your browser, so there's nothing to install or configure. They simply click your unique room link and start enjoying synchronized music together. No monthly fees for your friends, no app downloads, no barriers—just pure shared musical bliss that's truly accessible for everyone."
     },
     {
         question: "How do I invite someone to my room?",
