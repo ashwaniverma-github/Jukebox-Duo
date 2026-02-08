@@ -45,7 +45,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="relative w-full bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] overflow-hidden"
+                    className="relative w-full max-h-[90vh] overflow-y-auto bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]"
                 >
                     {/* Premium Mesh Background */}
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -57,7 +57,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         <div className="absolute inset-0 opacity-[0.03] bg-[url('/noise.svg')] brightness-100 contrast-150" />
                     </div>
 
-                    <div className="relative z-10 p-8 sm:p-10 flex flex-col items-center">
+                    <div className="relative z-10 p-5 sm:p-10 flex flex-col items-center">
                         {/* Floating Decorative Elements */}
                         <div className="absolute inset-0 pointer-events-none">
                             {[...Array(6)].map((_, i) => (
@@ -94,7 +94,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ type: "spring", damping: 12, delay: 0.2 }}
-                            className="mb-8"
+                            className="mb-4 sm:mb-8"
                         >
                             <div className="relative group">
                                 <motion.div
@@ -103,9 +103,9 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                         scale: [1, 1.05, 1]
                                     }}
                                     transition={{ duration: 6, repeat: Infinity }}
-                                    className="relative w-24 h-24 bg-gradient-to-br from-zinc-900 to-black rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
+                                    className="relative w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-zinc-900 to-black rounded-[1.5rem] sm:rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
                                 >
-                                    <Crown className="w-12 h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+                                    <Crown className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
 
                                     {/* Rotating Ring */}
                                     <div className="absolute -inset-2 border border-yellow-500/20 rounded-[2.2rem] animate-[spin_10s_linear_infinite]" />
@@ -121,7 +121,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         </motion.div>
 
                         {/* Text Content */}
-                        <div className="text-center space-y-3 mb-8">
+                        <div className="text-center space-y-2 sm:space-y-3 mb-4 sm:mb-8">
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -149,25 +149,25 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
                         >
                             <div className="flex items-start gap-4">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-lg">Hey there!</span>
+                                <div className="space-y-2 sm:space-y-4">
+                                    <div className="flex items-center gap-1.5 sm:gap-2">
+                                        <span className="text-base sm:text-lg">Hey there!</span>
                                         <motion.span
                                             animate={{ rotate: [0, 20, 0, 20, 0] }}
                                             transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
-                                            className="text-xl origin-bottom-right"
+                                            className="text-lg sm:text-xl origin-bottom-right"
                                         >
                                             👋
                                         </motion.span>
                                     </div>
 
-                                    <p className="text-zinc-300 text-sm sm:text-base leading-relaxed text-left">
+                                    <p className="text-zinc-300 text-xs sm:text-base leading-relaxed text-left">
                                         It&apos;s <span className="text-white font-semibold">Ashwani</span> here, the builder of Jukebox Duo.
                                         I&apos;m constantly working to make your music sessions more magical.
-                                        <span className="block mt-4 text-zinc-300 font-medium italic">Thanks for fueling the dream!</span>
+                                        <span className="block mt-2 sm:mt-4 text-zinc-300 font-medium italic">Thanks for fueling the dream!</span>
                                     </p>
 
 
@@ -176,7 +176,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         </motion.div>
 
                         {/* Footer / CTA UI */}
-                        <div className="w-full mt-8 space-y-4">
+                        <div className="w-full mt-4 sm:mt-8 space-y-3 sm:space-y-4">
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -198,7 +198,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             >
                                 <Button
                                     onClick={() => setOpen(false)}
-                                    className="relative w-full h-14 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold text-base transition-all group overflow-hidden"
+                                    className="relative w-full h-11 sm:h-14 bg-white text-black hover:bg-zinc-200 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base transition-all group overflow-hidden"
                                 >
                                     {/* Shimmer Effect */}
                                     <motion.div
