@@ -57,6 +57,7 @@ export default function RoomPage() {
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
+    const [isSyncConnecting, setIsSyncConnecting] = useState(false);
 
     // Theme State
     const [theme, setTheme] = useState<'default' | 'love'>('default');
@@ -191,7 +192,7 @@ export default function RoomPage() {
 
     // Handle WebSocket connection when sync is enabled
     const handleEnableSync = useCallback(() => {
-        if (isSyncEnabled) return; // Already enabled
+        if (isSyncEnabled || isSyncConnecting) return; // Already enabled or connecting
 
         // Free users cannot use sync
         if (!isPremium) {
@@ -201,6 +202,7 @@ export default function RoomPage() {
         }
 
         console.log('[Sync] Enabling room sync...');
+        setIsSyncConnecting(true); // Show loading spinner
         const socket = connectSocket();
         socket.emit('join-room', roomId);
 
@@ -218,7 +220,7 @@ export default function RoomPage() {
 
         setIsSyncEnabled(true);
         console.log('[Sync] Room sync enabled!');
-    }, [roomId, session, isSyncEnabled, isPremium]);
+    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium]);
 
     // Connect WebSocket when sync is enabled (either manually or via URL param)
     useEffect(() => {
@@ -262,12 +264,20 @@ export default function RoomPage() {
 
         const onPresence = (list: { id: string; name?: string; image?: string }[]) => {
             setMembers(list);
+            // Stop showing connecting spinner once we receive presence with current user
+            if (isSyncConnecting && session?.user?.id) {
+                const userInPresence = list.some(m => m.id === session.user?.id);
+                if (userInPresence) {
+                    setIsSyncConnecting(false);
+                    console.log('[Sync] Connection confirmed - presence received');
+                }
+            }
         };
         socket.on('room-presence', onPresence);
         return () => {
             socket.off('room-presence', onPresence);
         };
-    }, [roomId, status, isSyncEnabled]);
+    }, [roomId, status, isSyncEnabled, isSyncConnecting, session]);
 
 
     // When queue or currentQueueIndex changes, update currentSong and videoId
@@ -805,8 +815,8 @@ export default function RoomPage() {
                             )}
                         </div>
 
-                        {/* Enable Sync Button / Live Indicator */}
-                        {!isSyncEnabled ? (
+                        {/* Enable Sync Button / Connecting Spinner / Live Indicator */}
+                        {!isSyncEnabled && !isSyncConnecting ? (
                             <Button
                                 onClick={handleEnableSync}
                                 className="bg-white/10 hover:bg-white/20 text-white font-medium px-2 sm:px-3 py-2 rounded-xl shadow-lg transition-all duration-200 text-sm"
@@ -814,6 +824,11 @@ export default function RoomPage() {
                                 <span>🔗</span>
                                 <span className="hidden sm:inline ml-1.5">Enable Sync</span>
                             </Button>
+                        ) : isSyncConnecting ? (
+                            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-yellow-500/20 border border-yellow-500/40 rounded-xl">
+                                <div className="w-4 h-4 border-2 border-yellow-300/30 border-t-yellow-300 rounded-full animate-spin" />
+                                <span className="hidden sm:inline text-yellow-300 text-sm font-medium">Connecting...</span>
+                            </div>
                         ) : (
                             <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
