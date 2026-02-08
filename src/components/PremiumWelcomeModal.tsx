@@ -45,7 +45,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         <div className="absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] bg-rose-500/10 blur-[80px] rounded-full" style={{ animationDelay: '2s' }} />
 
                         {/* Noise Texture Overlays */}
-                        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+                        <div className="absolute inset-0 opacity-[0.03] bg-[url('/noise.svg')] brightness-100 contrast-150" />
                     </div>
 
                     <div className="relative z-10 p-8 sm:p-10 flex flex-col items-center">

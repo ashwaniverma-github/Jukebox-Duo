@@ -18,9 +18,6 @@ module.exports = {
         ],
       },
     ],
-    additionalSitemaps: [
-      'https://jukeboxduo.com/sitemap.xml',
-    ],
   },
   // Custom sitemap configuration
   exclude: [
@@ -32,7 +29,7 @@ module.exports = {
   // Add custom pages with specific priorities
   additionalPaths: async (config) => {
     const currentDate = new Date().toISOString();
-    
+
     return [
       {
         loc: '/',
@@ -59,7 +56,7 @@ module.exports = {
         lastmod: currentDate,
       },
       {
-        loc: '/privacyPolicy',
+        loc: '/privacy-policy',
         changefreq: 'yearly',
         priority: 0.3,
         lastmod: currentDate,

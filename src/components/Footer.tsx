@@ -134,7 +134,7 @@ const Footer = () => (
           © {new Date().getFullYear()} JukeboxDuo. All rights reserved.
         </p>
         <div className="flex gap-6">
-          <Link href="/privacyPolicy" className="text-xs text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
+          <Link href="/privacy-policy" className="text-xs text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
           <Link href="/terms" className="text-xs text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
         </div>
       </div>
