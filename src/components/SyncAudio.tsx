@@ -69,7 +69,6 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
-  const [hasInteracted, setHasInteracted] = useState(false); // Track if user has clicked play at least once
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
 
   const themeStyles = {
@@ -488,9 +487,6 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                   const p = playerRef.current;
                   if (!p || !videoId) return console.error('Player not ready or no video');
                   if (typeof p.playVideo !== 'function') return console.error('playVideo not available');
-
-                  // Mark that user has interacted - enables auto-play for queue selections
-                  setHasInteracted(true);
 
                   // Ensure silent audio plays on direct user interaction
                   if (audioRef.current) {
