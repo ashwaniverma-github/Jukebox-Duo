@@ -270,6 +270,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       const p = playerRef.current;
       if (p && typeof p.playVideo === 'function') {
         p.playVideo();
+        // Host broadcasts sync command to other participants
+        if (isHost) {
+          const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
+          sendCommand('play', time, Date.now() + BUFFER);
+        }
       }
     });
 
@@ -282,6 +287,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       const p = playerRef.current;
       if (p && typeof p.pauseVideo === 'function') {
         p.pauseVideo();
+        // Host broadcasts sync command to other participants
+        if (isHost) {
+          const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
+          sendCommand('pause', time, Date.now() + BUFFER);
+        }
       }
     });
 
@@ -291,39 +301,54 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       if (onPlayNext) navigator.mediaSession.setActionHandler('nexttrack', onPlayNext);
     }
 
-    // Seek to specific time handler (for lock screen progress scrubbing)
-    navigator.mediaSession.setActionHandler('seekto', (details) => {
-      console.log('[MediaSession] Seek to:', details.seekTime);
-      const p = playerRef.current;
-      if (details.seekTime !== undefined && p && typeof p.seekTo === 'function') {
-        p.seekTo(details.seekTime, true);
-        setCurrentTime(details.seekTime);
-      }
-    });
+    // Seek handlers (host only - to maintain sync with other participants)
+    if (isHost) {
+      // Seek to specific time handler (for lock screen progress scrubbing)
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        console.log('[MediaSession] Seek to:', details.seekTime);
+        const p = playerRef.current;
+        if (details.seekTime !== undefined && p && typeof p.seekTo === 'function') {
+          p.seekTo(details.seekTime, true);
+          setCurrentTime(details.seekTime);
+          // Broadcast sync command to keep other participants in sync
+          if (isPlaying) {
+            sendCommand('play', details.seekTime, Date.now() + BUFFER);
+          }
+        }
+      });
 
-    // Seek forward handler (typically +10 seconds)
-    navigator.mediaSession.setActionHandler('seekforward', (details) => {
-      console.log('[MediaSession] Seek forward:', details.seekOffset);
-      const p = playerRef.current;
-      if (p && typeof p.getCurrentTime === 'function' && typeof p.getDuration === 'function') {
-        const skipTime = details.seekOffset || 10;
-        const newTime = Math.min(p.getCurrentTime() + skipTime, p.getDuration());
-        p.seekTo(newTime, true);
-        setCurrentTime(newTime);
-      }
-    });
+      // Seek forward handler (typically +10 seconds)
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        console.log('[MediaSession] Seek forward:', details.seekOffset);
+        const p = playerRef.current;
+        if (p && typeof p.getCurrentTime === 'function' && typeof p.getDuration === 'function') {
+          const skipTime = details.seekOffset || 10;
+          const newTime = Math.min(p.getCurrentTime() + skipTime, p.getDuration());
+          p.seekTo(newTime, true);
+          setCurrentTime(newTime);
+          // Broadcast sync command to keep other participants in sync
+          if (isPlaying) {
+            sendCommand('play', newTime, Date.now() + BUFFER);
+          }
+        }
+      });
 
-    // Seek backward handler (typically -10 seconds)
-    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-      console.log('[MediaSession] Seek backward:', details.seekOffset);
-      const p = playerRef.current;
-      if (p && typeof p.getCurrentTime === 'function') {
-        const skipTime = details.seekOffset || 10;
-        const newTime = Math.max(p.getCurrentTime() - skipTime, 0);
-        p.seekTo(newTime, true);
-        setCurrentTime(newTime);
-      }
-    });
+      // Seek backward handler (typically -10 seconds)
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        console.log('[MediaSession] Seek backward:', details.seekOffset);
+        const p = playerRef.current;
+        if (p && typeof p.getCurrentTime === 'function') {
+          const skipTime = details.seekOffset || 10;
+          const newTime = Math.max(p.getCurrentTime() - skipTime, 0);
+          p.seekTo(newTime, true);
+          setCurrentTime(newTime);
+          // Broadcast sync command to keep other participants in sync
+          if (isPlaying) {
+            sendCommand('play', newTime, Date.now() + BUFFER);
+          }
+        }
+      });
+    }
 
     return () => {
       // Clean up all handlers
@@ -335,7 +360,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       navigator.mediaSession.setActionHandler('seekforward', null);
       navigator.mediaSession.setActionHandler('seekbackward', null);
     };
-  }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev]);
+  }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev, sendCommand]);
 
   // 7) Update Media Session playback state (playing/paused indicator on lock screen)
   useEffect(() => {
