@@ -69,6 +69,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
+  const [hasStartedPlayback, setHasStartedPlayback] = useState(false); // Track if user has started playback
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
 
   const themeStyles = {
@@ -497,6 +498,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                   const time = typeof p.getCurrentTime === 'function' ? p.getCurrentTime() : 0;
                   sendCommand('play', time, Date.now() + BUFFER);
                   setIsPlaying(true);
+                  setHasStartedPlayback(true); // Mark that playback has started
                 }}
                 aria-label="Play"
                 type="button"
@@ -552,6 +554,13 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
               <SkipForward size={36} />
             </button>
           </div>
+
+          {/* Mobile hint - shows only on mobile and before first playback */}
+          {!hasStartedPlayback && !isPlaying && (
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 md:hidden mt-2 animate-pulse">
+              ▶️ Tap the play button to start
+            </p>
+          )}
 
           {/* Timer and Seek Bar */}
           <div className="w-full">
