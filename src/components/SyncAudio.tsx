@@ -69,6 +69,8 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
+  const [hasInteracted, setHasInteracted] = useState(false); // Track if user has clicked play at least once
+  const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
 
   const themeStyles = {
     default: {
@@ -137,6 +139,15 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
             if (e.data === window.YT.PlayerState.ENDED && isHost && onPlayNext) {
               onPlayNext();
             }
+            // Auto-play on mobile after video loads (for queue selection)
+            if (e.data === window.YT.PlayerState.CUED && pendingAutoPlayRef.current) {
+              console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
+              pendingAutoPlayRef.current = false;
+              const p = playerRef.current;
+              if (p && typeof p.playVideo === 'function') {
+                setTimeout(() => p.playVideo(), 100); // Small delay for mobile
+              }
+            }
           },
           onError: (e: unknown) => {
             console.error('YouTube Player Error', e);
@@ -167,11 +178,24 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     };
   }, []);
 
-  // 2) React to local videoId prop changes (host only)
+  // 2) React to local videoId prop changes
+  // Track when videoId changes for auto-play logic
+  const prevVideoIdRef = useRef(videoId);
   useEffect(() => {
     if (!playerRef.current || typeof playerRef.current.loadVideoById !== 'function') return;
-    console.log('🔄 videoId prop changed:', videoId);
+
+    const isVideoChange = prevVideoIdRef.current !== videoId;
+    prevVideoIdRef.current = videoId;
+
+    console.log('🔄 videoId prop changed:', videoId, 'isVideoChange:', isVideoChange);
     console.log('[SyncAudio] Loading video by ID:', videoId);
+
+    // Always set pending auto-play when video changes (enables queue click on mobile)
+    // This works because clicking queue item IS a user gesture, and we call playVideo after load
+    if (isVideoChange) {
+      pendingAutoPlayRef.current = true;
+    }
+
     playerRef.current.loadVideoById(videoId);
     setCurrentTime(0);
     setDuration(0);
@@ -464,6 +488,9 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
                   const p = playerRef.current;
                   if (!p || !videoId) return console.error('Player not ready or no video');
                   if (typeof p.playVideo !== 'function') return console.error('playVideo not available');
+
+                  // Mark that user has interacted - enables auto-play for queue selections
+                  setHasInteracted(true);
 
                   // Ensure silent audio plays on direct user interaction
                   if (audioRef.current) {
