@@ -238,13 +238,11 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     return () => clearInterval(interval);
   }, [isSeeking]);
 
-  // 6) Media Session API (Background PWA support)
-  // 6) Media Session API (Background PWA support)
+  // 6) Media Session API (Background PWA support) - Enhanced for mobile lock screen controls
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    // Use a separate function or effect for metadata to avoid dependency cycles if needed,
-    // but here we just update it whenever song details change.
+    // Update metadata whenever song details change
     const updateMetadata = () => {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: songTitle || 'Music Duo Session',
@@ -262,43 +260,108 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
 
     updateMetadata();
 
-    // Action handlers for host
-    if (isHost && playerRef.current) {
-      navigator.mediaSession.setActionHandler('play', () => {
-        console.log('[MediaSession] Play clicked');
-        // Play both silent audio and YouTube
-        if (audioRef.current) {
-          audioRef.current.play().catch(e => console.error('Silent audio play failed', e));
-        }
-        const p = playerRef.current;
-        if (p && typeof p.playVideo === 'function') {
-          p.playVideo();
-        }
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        console.log('[MediaSession] Pause clicked');
-        // Pause both
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        const p = playerRef.current;
-        if (p && typeof p.pauseVideo === 'function') {
-          p.pauseVideo();
-        }
-      });
+    // Action handlers for ALL users (controls their local playback from lock screen)
+    // Play handler
+    navigator.mediaSession.setActionHandler('play', () => {
+      console.log('[MediaSession] Play clicked');
+      if (audioRef.current) {
+        audioRef.current.play().catch(e => console.error('Silent audio play failed', e));
+      }
+      const p = playerRef.current;
+      if (p && typeof p.playVideo === 'function') {
+        p.playVideo();
+      }
+    });
+
+    // Pause handler
+    navigator.mediaSession.setActionHandler('pause', () => {
+      console.log('[MediaSession] Pause clicked');
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      const p = playerRef.current;
+      if (p && typeof p.pauseVideo === 'function') {
+        p.pauseVideo();
+      }
+    });
+
+    // Previous/Next track handlers (only for host who can change queue)
+    if (isHost) {
       if (onPlayPrev) navigator.mediaSession.setActionHandler('previoustrack', onPlayPrev);
       if (onPlayNext) navigator.mediaSession.setActionHandler('nexttrack', onPlayNext);
     }
 
-    return () => {
-      if (isHost) {
-        navigator.mediaSession.setActionHandler('play', null);
-        navigator.mediaSession.setActionHandler('pause', null);
-        navigator.mediaSession.setActionHandler('previoustrack', null);
-        navigator.mediaSession.setActionHandler('nexttrack', null);
+    // Seek to specific time handler (for lock screen progress scrubbing)
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      console.log('[MediaSession] Seek to:', details.seekTime);
+      const p = playerRef.current;
+      if (details.seekTime !== undefined && p && typeof p.seekTo === 'function') {
+        p.seekTo(details.seekTime, true);
+        setCurrentTime(details.seekTime);
       }
+    });
+
+    // Seek forward handler (typically +10 seconds)
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      console.log('[MediaSession] Seek forward:', details.seekOffset);
+      const p = playerRef.current;
+      if (p && typeof p.getCurrentTime === 'function' && typeof p.getDuration === 'function') {
+        const skipTime = details.seekOffset || 10;
+        const newTime = Math.min(p.getCurrentTime() + skipTime, p.getDuration());
+        p.seekTo(newTime, true);
+        setCurrentTime(newTime);
+      }
+    });
+
+    // Seek backward handler (typically -10 seconds)
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      console.log('[MediaSession] Seek backward:', details.seekOffset);
+      const p = playerRef.current;
+      if (p && typeof p.getCurrentTime === 'function') {
+        const skipTime = details.seekOffset || 10;
+        const newTime = Math.max(p.getCurrentTime() - skipTime, 0);
+        p.seekTo(newTime, true);
+        setCurrentTime(newTime);
+      }
+    });
+
+    return () => {
+      // Clean up all handlers
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+      navigator.mediaSession.setActionHandler('seekbackward', null);
     };
   }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev]);
+
+  // 7) Update Media Session playback state (playing/paused indicator on lock screen)
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
+
+  // 8) Update Media Session position state (progress bar on lock screen)
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (!('setPositionState' in navigator.mediaSession)) return;
+
+    // Only update if we have valid duration
+    if (duration > 0 && currentTime >= 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: 1,
+          position: Math.min(currentTime, duration) // Ensure position doesn't exceed duration
+        });
+      } catch (e) {
+        // Position state can throw if values are invalid
+        console.error('[MediaSession] Position state error:', e);
+      }
+    }
+  }, [currentTime, duration]);
 
   // Sync silent audio state with React state (driven by YouTube state updates)
   useEffect(() => {
