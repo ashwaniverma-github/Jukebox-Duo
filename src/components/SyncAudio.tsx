@@ -360,7 +360,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       navigator.mediaSession.setActionHandler('seekforward', null);
       navigator.mediaSession.setActionHandler('seekbackward', null);
     };
-  }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev, sendCommand]);
+  }, [songTitle, thumbnailUrl, isHost, onPlayNext, onPlayPrev, sendCommand, isPlaying]);
 
   // 7) Update Media Session playback state (playing/paused indicator on lock screen)
   useEffect(() => {
