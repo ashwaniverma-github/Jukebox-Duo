@@ -8,27 +8,15 @@
   "theme_color": "#dc2626",
   "icons": [
     {
-      "src": "/jukebox-duo-trp.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/jukebox-duo-trp.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/jukebox-duo-trp.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/jukebox-duo-trp.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
