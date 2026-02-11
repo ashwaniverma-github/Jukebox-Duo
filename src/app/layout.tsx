@@ -93,9 +93,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google AdSense */}
-        <meta name="google-adsense-account" content="ca-pub-6660595040751061" />
-
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-4JB3MF5MXZ"
