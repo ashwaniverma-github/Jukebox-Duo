@@ -33,7 +33,8 @@ export async function POST() {
 
         const bearerToken = process.env.DODO_PAYMENTS_API_KEY;
         if (!bearerToken) {
-            return NextResponse.json({ error: 'Missing DODO_PAYMENTS_API_KEY' }, { status: 500 });
+            console.error('Missing DODO_PAYMENTS_API_KEY environment variable');
+            return NextResponse.json({ error: 'Payment service configuration error' }, { status: 500 });
         }
 
         const environment =

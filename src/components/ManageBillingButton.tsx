@@ -20,6 +20,10 @@ export function ManageBillingButton({ isPremium }: ManageBillingButtonProps) {
                 setPortalLoading(true);
                 try {
                     const res = await fetch('/api/dodo/customer-portal', { method: 'POST' });
+                    if (!res.ok) {
+                        console.error('Customer portal request failed:', res.status);
+                        return;
+                    }
                     const data = await res.json();
                     if (data.link) {
                         window.open(data.link, '_blank');
