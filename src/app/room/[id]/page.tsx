@@ -19,6 +19,7 @@ import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
 import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
 import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
 import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
+import { ManageBillingButton } from '../../../components/ManageBillingButton';
 
 
 export default function RoomPage() {
@@ -950,6 +951,7 @@ export default function RoomPage() {
                                     >
                                         My Dashboard
                                     </DropdownMenu.Item>
+                                    <ManageBillingButton isPremium={isPremium} />
                                     <DropdownMenu.Item
                                         onSelect={() => signOut({ callbackUrl: '/' })}
                                         className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
