@@ -191,7 +191,7 @@ const Hero = () => {
             </button>
           </div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-medium">
-            Limited Time: Get <span className="text-zinc-300">Lifetime Access</span> for just $29.99
+            Limited Time: Get <span className="text-zinc-300">Lifetime Access</span> for just $19.99
           </p>
         </motion.div>
 
