@@ -31,9 +31,9 @@ export default function ContactPage() {
               Get in
               <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent"> Touch</span>
             </h1>
-                         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-               Have questions, feedback, or just want to say hello? I&apos;d love to hear from you!
-             </p>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Have questions, feedback, or just want to say hello? I&apos;d love to hear from you!
+            </p>
           </motion.div>
 
           {/* Contact Methods */}
@@ -49,9 +49,9 @@ export default function ContactPage() {
                 <Twitter className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">Follow on X (Twitter)</h3>
-                             <p className="text-gray-300 mb-6">
-                 Stay updated with the latest features, announcements, and music-related content. I&apos;m most active here!
-               </p>
+              <p className="text-gray-300 mb-6">
+                Stay updated with the latest features, announcements, and music-related content. I&apos;m most active here!
+              </p>
               <a
                 href="https://x.com/ashwanivermax"
                 target="_blank"
@@ -63,7 +63,7 @@ export default function ContactPage() {
               </a>
             </motion.div>
 
-            {/* General Contact */}
+            {/* Support & Inquiries */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -71,21 +71,28 @@ export default function ContactPage() {
               className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
             >
               <div className="w-16 h-16 bg-gradient-to-br from-red-700 to-red-500 rounded-2xl flex items-center justify-center mb-6">
-                <MessageCircle className="w-8 h-8 text-white" />
+                <Mail className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">General Inquiries</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Support & Inquiries</h3>
               <p className="text-gray-300 mb-6">
-                For general questions, feedback, or support, reach out to me on X. I typically respond within 24 hours.
+                For support, billing questions, feedback, or anything else — drop us an email. We typically respond within 24 hours.
               </p>
-              <div className="space-y-3">
-                                 <div className="flex items-center gap-3 text-gray-300">
-                   <Mail className="w-5 h-5 text-red-400" />
-                   <span>DM me on X for fastest response</span>
-                 </div>
-                 <div className="flex items-center gap-3 text-gray-300">
-                   <MessageCircle className="w-5 h-5 text-red-400" />
-                   <span>I love hearing from the community</span>
-                 </div>
+              <a
+                href="mailto:jukeboxduo.com@gmail.com"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                <Mail className="w-5 h-5" />
+                jukeboxduo.com@gmail.com
+              </a>
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center gap-3 text-gray-300">
+                  <MessageCircle className="w-5 h-5 text-red-400" />
+                  <span>Or DM me on X for fastest response</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <Heart className="w-5 h-5 text-red-400" />
+                  <span>I love hearing from the community</span>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -97,7 +104,7 @@ export default function ContactPage() {
             transition={{ delay: 0.3 }}
             className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
           >
-                         <h2 className="text-3xl font-bold text-white mb-6">What I&apos;d Love to Hear</h2>
+            <h2 className="text-3xl font-bold text-white mb-6">What I&apos;d Love to Hear</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">Feedback & Suggestions</h3>
@@ -133,9 +140,9 @@ export default function ContactPage() {
               </div>
               <h3 className="text-2xl font-bold text-white">Response Time</h3>
             </div>
-                         <p className="text-gray-300">
-               I&apos;m a passionate individual builder dedicated to making Jukebox Duo the best it can be. I typically respond to messages within 24 hours, and I read every single message I receive. Your feedback helps me improve and grow!
-             </p>
+            <p className="text-gray-300">
+              I&apos;m a passionate individual builder dedicated to making Jukebox Duo the best it can be. I typically respond to messages within 24 hours, and I read every single message I receive. Your feedback helps me improve and grow!
+            </p>
           </motion.div>
 
           {/* CTA Section */}
