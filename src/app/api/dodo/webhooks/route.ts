@@ -100,6 +100,16 @@ function extractProductId(data: Record<string, unknown>): string | undefined {
     return pid ?? undefined;
 }
 
+function extractCustomerId(data: Record<string, unknown>): string | undefined {
+    const direct = getString(data, 'customer_id');
+    if (direct) return direct;
+    const customer = data['customer'];
+    if (isRecord(customer)) {
+        return getString(customer as Record<string, unknown>, 'customer_id');
+    }
+    return undefined;
+}
+
 function isLifetimeProduct(data: Record<string, unknown>): boolean {
     const md = getMetadata(data);
     const productId = extractProductId(data);
@@ -160,16 +170,20 @@ export const POST = Webhooks({
                     ? user.boughtThemes
                     : [...user.boughtThemes, 'love'];
 
+                const customerId = extractCustomerId(data);
+
                 await prisma.user.update({
                     where: { id: userId },
                     data: {
                         isPremium: true,
                         premiumPurchasedAt: new Date(),
+                        premiumType: 'lifetime',
                         boughtThemes: { set: newBoughtThemes },
+                        ...(customerId ? { dodoCustomerId: customerId } : {}),
                     },
                 });
 
-                console.log('Successfully activated lifetime premium for user', { userId });
+                console.log('Successfully activated lifetime premium for user', { userId, customerId });
             }
         } catch (err) {
             console.error('Error handling onPaymentSucceeded:', err);
@@ -225,11 +239,15 @@ export const POST = Webhooks({
                     ? userThemes.boughtThemes
                     : [...(userThemes?.boughtThemes ?? []), 'love'];
 
+            const customerId = extractCustomerId(data);
+
             await prisma.user.update({
                 where: { id: userId },
                 data: {
                     isPremium: true,
+                    premiumType: 'subscription',
                     boughtThemes: { set: updatedThemes },
+                    ...(customerId ? { dodoCustomerId: customerId } : {}),
                 },
             });
 
@@ -284,11 +302,15 @@ export const POST = Webhooks({
                     ? userThemes.boughtThemes
                     : [...(userThemes?.boughtThemes ?? []), 'love'];
 
+            const customerId = extractCustomerId(data);
+
             await prisma.user.update({
                 where: { id: userId },
                 data: {
                     isPremium: true,
+                    premiumType: 'subscription',
                     boughtThemes: { set: updatedThemes },
+                    ...(customerId ? { dodoCustomerId: customerId } : {}),
                 },
             });
 
