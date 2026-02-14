@@ -94,11 +94,17 @@ export async function GET(
         }
     }
 
-    // Get current user's premium status
+    // Get current user's premium status + themes in one query
     const currentUser = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { isPremium: true }
+        select: { isPremium: true, boughtThemes: true }
     })
+
+    // Apply same logic as /api/user/themes GET
+    let boughtThemes = currentUser?.boughtThemes || ['default'];
+    if (currentUser?.isPremium && !boughtThemes.includes('love')) {
+        boughtThemes = [...boughtThemes, 'love'];
+    }
 
     // Return consolidated response
     return NextResponse.json({
@@ -115,6 +121,9 @@ export async function GET(
         isHost,
         isPremium: currentUser?.isPremium ?? false,
         isHostPremium: room.host?.isPremium ?? false,
+
+        // User themes
+        boughtThemes,
 
         // Queue data
         queue: room.queueItems,

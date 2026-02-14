@@ -7,7 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import SyncAudio from '../../../components/SyncAudio'
 import { getSocket, connectSocket, disconnectSocket, isSocketConnected } from '../../../lib/socket'
 import QueueList from './QueueList'
-import JoinRoom from './JoinRoom'
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, VisuallyHidden } from '../../../components/ui/dialog';
@@ -141,6 +141,9 @@ export default function RoomPage() {
                 setIsPremium(data.isPremium ?? false);
                 setIsHostPremium(data.isHostPremium ?? false);
 
+                // Set bought themes (merged from /api/user/themes)
+                setBoughtThemes(data.boughtThemes ?? ['default']);
+
                 // Mount the player after initial data load
                 setPlayerMounted(true);
 
@@ -156,16 +159,6 @@ export default function RoomPage() {
             .catch(err => {
                 console.error('Failed to load room:', err);
             });
-
-        // Fetch user's bought themes
-        fetch('/api/user/themes')
-            .then(r => r.json())
-            .then(data => {
-                if (data.boughtThemes) {
-                    setBoughtThemes(data.boughtThemes);
-                }
-            })
-            .catch(err => console.error('Failed to load themes', err));
 
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
@@ -590,7 +583,16 @@ export default function RoomPage() {
     }, [isSyncEnabled]);
 
     if (status === "loading" || status === "unauthenticated") {
-        return null;
+        return (
+            <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center animate-pulse">
+                        <Music className="w-6 h-6 text-red-500/50" />
+                    </div>
+                    <div className="text-zinc-500 text-sm">Loading room...</div>
+                </div>
+            </div>
+        );
     }
 
     const handleThemeChange = (newTheme: 'default' | 'love') => {
@@ -658,8 +660,7 @@ export default function RoomPage() {
                 trigger={premiumTrigger}
             />
             <PremiumWelcomeModal isPremium={isPremium} />
-            {/* Persist membership and join socket room on mount */}
-            <JoinRoom roomId={roomId} />
+
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {theme === 'default' ? (
