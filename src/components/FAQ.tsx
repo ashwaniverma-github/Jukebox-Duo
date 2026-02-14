@@ -7,35 +7,35 @@ import Link from "next/link";
 const faqs = [
     {
         question: "What is Jukebox Duo?",
-        answer: "Jukebox Duo is a premier synchronized music listening platform designed to bring people together regardless of physical distance. Whether you're in a long-distance relationship, hanging out with friends remotely, or hosting a virtual study session, our platform allows you to create private rooms where music is played in perfect synchronization across all connected devices. Everyone in the room hears the same beat at the same time, creating a shared auditory experience that feels just like sitting in the same room."
+        answer: "A platform that lets you listen to music in perfect sync with friends in real-time. Create a private room, invite anyone, and hear the same beat at the same time — no matter the distance."
     },
     {
-        question: "Is Jukebox Duo really free?",
-        answer: "Yes, Jukebox Duo is committed to keeping social music listening accessible. One of our core features—including room playlist sharing, room creation, and YouTube integration—are entirely free and ad-free for everyone. We don't believe in charging a 'social tax' for you to enjoy music with your friends. For power users who want to support the project, we offer a low-cost lifetime premium deal that unlocks exclusive customization options, premium badges, and unique synchronized themes like our popular 'Love Theme'."
+        question: "Is it free?",
+        answer: "Yes! Room creation, playlist sharing, and YouTube integration are completely free and ad-free. We also offer a low-cost lifetime premium for extras like custom themes and badges."
     },
     {
-        question: "Do my friends need a paid subscription to join?",
-        answer: "Absolutely not! This is one of the biggest advantages of Jukebox Duo over Spotify Jam. Unlike Spotify Jam which requires BOTH users to have a paid Spotify Premium subscription, Jukebox Duo only needs ONE person (the host) to have premium. We even offer an affordable lifetime deal so you never have to worry about recurring payments! Your friends can join instantly without any paid subscription or downloads. It runs entirely in your browser, so there's nothing to install or configure. They simply click your unique room link and start enjoying synchronized music together. No monthly fees for your friends, no app downloads, no barriers—just pure shared musical bliss that's truly accessible for everyone."
+        question: "Do my friends need to pay?",
+        answer: "No. Unlike Spotify Jam which requires everyone to have Premium, only the host needs a premium on Jukebox Duo. Friends just click the room link — no downloads, no fees."
     },
     {
-        question: "How do I invite someone to my room?",
-        answer: "Inviting someone is as simple as sharing a link. Once you've created or joined a room, look for the 'Share' or 'Invite' icon in the header. Clicking this will copy a unique URL to your clipboard. You can then send this link via WhatsApp, Discord, Slack, Telegram, or any other messaging platform. When your friend clicks the link, they'll be brought directly into your synchronized session. If they're not signed in, they'll be prompted to do a quick Google sign-in to join the presence list."
+        question: "How do I invite someone?",
+        answer: "Hit the Share icon in your room to copy a unique link. Send it via WhatsApp, Discord, or any messenger — your friend clicks it and joins instantly."
     },
     {
-        question: "Does it support YouTube Music playlists?",
-        answer: "Yes! We have built a robust playlist import system that supports bulk importing from YouTube and YouTube Music. If you have a curated collection of songs or a favorite workout playlist, you can move it over to Jukebox Duo in seconds. Simply copy the playlist URL, paste it into our import tool, and we'll automatically add the tracks to your room's queue. This allows you to leverage your existing music library while enjoying the superior social features of our platform."
+        question: "Can I import playlists?",
+        answer: "Yes! Paste any YouTube or YouTube Music playlist URL into our import tool and all tracks are added to your room queue in seconds."
     },
     {
-        question: "How does the synchronization work?",
-        answer: "Our synchronization engine utilizes low-latency WebSocket communication to ensure that every client in a room is aware of the current playback state. When the host plays, pauses, or skips a track, the command is broadcasted to all other participants within milliseconds. We also implement periodic sync checks that account for minor network jitters, ensuring that even on varying connection speeds, everyone stays on the same beat. It's a professional-grade solution for the most demanding audiophiles."
+        question: "How does sync work?",
+        answer: "We use low-latency WebSockets to broadcast play, pause, and skip actions to all participants within milliseconds, with periodic checks to keep everyone on the same beat."
     },
     {
-        question: "Is my privacy protected on Jukebox Duo?",
-        answer: "We take your privacy very seriously. Jukebox Duo uses secure Google OAuth for authentication, ensuring we never handle your passwords directly. Your listening rooms are private by default, and only those with the unique link can join. We don't sell your listening data to advertisers, and we don't track you across the web. Our goal is to provide a safe, respectful space for you and your friends to enjoy music together."
+        question: "Is my data private?",
+        answer: "Absolutely. We use Google OAuth so we never touch your passwords. Rooms are private by default, and we never sell your data or track you across the web."
     },
     {
         question: "Is there a mobile app?",
-        answer: "Jukebox Duo is built as a highly optimized Progressive Web App (PWA). This means you get a full, app-like experience on both iOS and Android without needing to download large files from an app store. You can easily add Jukebox Duo to your home screen by using the 'Add to Home Screen' option in your mobile browser. This provides you with a dedicated icon, full-screen playback, and faster load times, making it the perfect companion for mobile listening sessions."
+        answer: "Jukebox Duo is a Progressive Web App — just tap 'Add to Home Screen' in your browser for a full app-like experience on iOS and Android, no app store needed."
     }
 ];
 
