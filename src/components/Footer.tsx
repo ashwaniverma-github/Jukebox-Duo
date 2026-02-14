@@ -1,7 +1,7 @@
 "use client"
 import React from "react";
 import Link from "next/link";
-
+import { Github } from "lucide-react";
 const Footer = () => (
   <footer className="relative bg-black text-white pt-24 pb-12 overflow-hidden border-t border-white/10 font-[var(--font-inter)]">
     <div className="container mx-auto px-6 relative z-10">
@@ -25,6 +25,10 @@ const Footer = () => (
             <Link href="https://ashwaniv.me" target="_blank" rel="noopener noreferrer"
               className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+            </Link>
+            <Link href="https://github.com/ashwaniverma-github/Jukebox-Duo-Websocket" target="_blank" rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white">
+              <Github />
             </Link>
           </div>
         </div>
