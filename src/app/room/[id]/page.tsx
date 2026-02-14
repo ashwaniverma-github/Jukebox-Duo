@@ -70,6 +70,7 @@ export default function RoomPage() {
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'general'>('general');
     const [error, setError] = useState<string | null>(null);
+    const [loadingText, setLoadingText] = useState('Loading room...');
 
     const themeStyles = {
         default: {
@@ -113,6 +114,14 @@ export default function RoomPage() {
             router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
     }, [status, router]);
+
+    // Progressive loading text effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoadingText('Fetching queue...');
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Consolidated init: Fetch room details + queue in a single call
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
@@ -591,7 +600,7 @@ export default function RoomPage() {
                     <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center animate-pulse">
                         <Music className="w-6 h-6 text-red-500/50" />
                     </div>
-                    <div className="text-zinc-500 text-sm">Loading room...</div>
+                    <div className="text-zinc-500 text-sm">{loadingText}</div>
                 </div>
             </div>
         );
