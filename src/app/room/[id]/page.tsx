@@ -69,6 +69,7 @@ export default function RoomPage() {
     const [isHostPremium, setIsHostPremium] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'general'>('general');
+    const [error, setError] = useState<string | null>(null);
 
     const themeStyles = {
         default: {
@@ -158,6 +159,7 @@ export default function RoomPage() {
             })
             .catch(err => {
                 console.error('Failed to load room:', err);
+                setError("Failed to load room data. Please try refreshing.");
             });
 
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
@@ -582,7 +584,7 @@ export default function RoomPage() {
         };
     }, [isSyncEnabled]);
 
-    if (status === "loading" || status === "unauthenticated") {
+    if (status === "loading" || status === "unauthenticated" || (!roomDetails && !error)) {
         return (
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -590,6 +592,28 @@ export default function RoomPage() {
                         <Music className="w-6 h-6 text-red-500/50" />
                     </div>
                     <div className="text-zinc-500 text-sm">Loading room...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center text-red-500">
+                <div className="text-center p-6 bg-white/5 rounded-2xl border border-red-500/20 backdrop-blur-sm">
+                    <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                    </div>
+                    <p className="text-lg font-bold text-red-400 mb-2">Error</p>
+                    <p className="text-sm text-red-200/70 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+                    >
+                        Try Again
+                    </button>
                 </div>
             </div>
         );
