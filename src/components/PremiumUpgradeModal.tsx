@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('lifetime')
+    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
     // Track when modal opens
     useEffect(() => {
