@@ -318,9 +318,8 @@ export default function Dashboard() {
               Room Created!
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Your room is ready. Join now to start listening .
-            </DialogDescription>
-          </DialogHeaderUI>
+              Your room is ready. Join now to start listening.
+            </DialogDescription>          </DialogHeaderUI>
           <DialogFooter className="flex gap-3 mt-6">
             <Button
               variant="outline"
