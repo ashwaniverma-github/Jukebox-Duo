@@ -20,6 +20,7 @@ import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider
 import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
 import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
 import { ManageBillingButton } from '../../../components/ManageBillingButton';
+import { SharePlaylistModal } from '../../../components/SharePlaylistModal';
 
 
 export default function RoomPage() {
@@ -55,6 +56,7 @@ export default function RoomPage() {
     const [copied, setCopied] = useState(false);
     const [members, setMembers] = useState<{ id: string; name?: string; image?: string }[]>([]);
     const [playerMounted, setPlayerMounted] = useState(false);
+    const [sharePlaylistOpen, setSharePlaylistOpen] = useState(false);
 
     // Sync state - WebSocket only connects when sync is enabled (cost optimization)
     const [isSyncEnabled, setIsSyncEnabled] = useState(false);
@@ -695,6 +697,12 @@ export default function RoomPage() {
             <PremiumWelcomeModal isPremium={isPremium} />
 
             {/* Animated background elements */}
+            <SharePlaylistModal
+                isOpen={sharePlaylistOpen}
+                onOpenChange={setSharePlaylistOpen}
+                roomId={roomId}
+                theme={theme}
+            />
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {theme === 'default' ? (
                     <>
@@ -898,11 +906,11 @@ export default function RoomPage() {
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
                                 <VisuallyHidden>
-                                    <DialogTitle>Invite to Room</DialogTitle>
+                                    <DialogTitle>Invite to Room with real time sync</DialogTitle>
                                 </VisuallyHidden>
                                 <div className="flex items-center gap-3 mb-4">
                                     <Share2 className="w-6 h-6 text-red-400" />
-                                    <h2 className="text-lg font-bold">Invite to Room</h2>
+                                    <h2 className="text-lg font-bold">Invite to Room with real time sync </h2>
                                 </div>
                                 <div className="flex items-center gap-3 mt-6">
                                     <input
@@ -1320,12 +1328,23 @@ export default function RoomPage() {
                                                 <p className={`text-xs sm:text-sm ${currentTheme.text}`}>{queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue</p>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => setIsQueueCollapsed(!isQueueCollapsed)}
-                                            className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors xl:hidden"
-                                        >
-                                            {isQueueCollapsed ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronUpIcon className="w-5 h-5" />}
-                                        </button>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-gray-400 text-sm">Share playlist</div>
+                                            <button
+                                                onClick={() => setSharePlaylistOpen(true)}
+                                                className="p-2 rounded-lg text-white  transition-colors"
+                                                title="Share Playlist"
+                                            >
+                                                <Share2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setIsQueueCollapsed(!isQueueCollapsed)}
+                                                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors xl:hidden"
+                                            >
+                                                {isQueueCollapsed ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronUpIcon className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
