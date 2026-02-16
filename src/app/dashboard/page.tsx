@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
-import { Music, Plus, Users, Copy, ExternalLink, Play, Radio, Zap, Heart, Share2, LogOut } from "lucide-react";
+import { Music, Plus, Users, Play, Radio, Zap, Heart, LogOut } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -28,11 +28,10 @@ export default function Dashboard() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareLink, setShareLink] = useState("");
-  const [copied, setCopied] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [newRoomId, setNewRoomId] = useState<string>("");
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const router = useRouter();
@@ -92,9 +91,8 @@ export default function Dashboard() {
       });
       const room = await res.json();
       if (room?.id) {
-        const link = `${window.location.origin}/room/${room.id}`;
-        setShareLink(link);
-        setShowShareModal(true);
+        setNewRoomId(room.id);
+        setShowJoinModal(true);
         setName("");
         await loadRooms();
       }
@@ -102,16 +100,6 @@ export default function Dashboard() {
       console.error("Failed to create room:", error);
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy link:", error);
     }
   };
 
@@ -304,16 +292,6 @@ export default function Dashboard() {
                           <Play className="w-4 h-4 mr-2" />
                           Join
                         </Button>
-                        <Button
-                          onClick={() => {
-                            const link = `${window.location.origin}/room/${room.id}`;
-                            setShareLink(link);
-                            setShowShareModal(true);
-                          }}
-                          className="px-4 h-10 bg-white/10 hover:bg-red-900/40 text-white border border-white/20 rounded-lg transition-all duration-200"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </Button>
                         {/* Delete button for host */}
                         <Button
                           onClick={() => setRoomToDelete(room)}
@@ -332,64 +310,34 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Share Modal */}
-      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+      {/* Join Modal */}
+      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
         <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
           <DialogHeaderUI>
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-              Share Room
+              Room Created!
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Copy this link to invite others to your music room
+              Your room is ready. Join now to start listening .
             </DialogDescription>
           </DialogHeaderUI>
-
-          <div className="flex items-center gap-3 mt-6">
-            <div className="flex-1 relative">
-              <Input
-                type="text"
-                value={shareLink}
-                readOnly
-                className="h-12 bg-white/10 border-white/20 text-white text-sm pr-12 rounded-xl backdrop-blur-sm"
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <ExternalLink className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-            <Button
-              onClick={copyToClipboard}
-              className="h-12 px-4 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {copied && (
-            <div className="flex items-center gap-2 text-green-400 text-sm font-semibold mt-3 animate-fadeIn">
-              <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </div>
-              Link copied successfully!
-            </div>
-          )}
-
-          <DialogFooter className="mt-6 flex gap-3">
+          <DialogFooter className="flex gap-3 mt-6">
             <Button
               variant="outline"
-              onClick={() => setShowShareModal(false)}
+              onClick={() => setShowJoinModal(false)}
               className="flex-1 h-11 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
             >
               Close
             </Button>
             <Button
               onClick={() => {
-                setShowShareModal(false);
-                joinRoom(shareLink.split("/").pop() || "");
+                setShowJoinModal(false);
+                joinRoom(newRoomId);
               }}
               className="flex-1 h-11 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
             >
               <Play className="w-4 h-4 mr-2" />
-              Join Now
+              Join Room
             </Button>
           </DialogFooter>
         </DialogContent>
