@@ -906,12 +906,11 @@ export default function RoomPage() {
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
                                 <VisuallyHidden>
-                                    <DialogTitle>Invite to Room with real time sync</DialogTitle>
+                                    <DialogTitle>Invite to Room with real-time sync</DialogTitle>
                                 </VisuallyHidden>
                                 <div className="flex items-center gap-3 mb-4">
                                     <Share2 className="w-6 h-6 text-red-400" />
-                                    <h2 className="text-lg font-bold">Invite to Room with real time sync </h2>
-                                </div>
+                                    <h2 className="text-lg font-bold">Invite to Room with real-time sync</h2>                                </div>
                                 <div className="flex items-center gap-3 mt-6">
                                     <input
                                         type="text"

@@ -9,7 +9,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Share2, Copy } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface SharePlaylistModalProps {
     isOpen: boolean;
@@ -20,6 +20,15 @@ interface SharePlaylistModalProps {
 
 export function SharePlaylistModal({ isOpen, onOpenChange, roomId, theme = 'default' }: SharePlaylistModalProps) {
     const [copied, setCopied] = useState(false);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     // Generate link WITHOUT ?sync=true
     const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : '';
@@ -28,7 +37,9 @@ export function SharePlaylistModal({ isOpen, onOpenChange, roomId, theme = 'defa
         try {
             await navigator.clipboard.writeText(shareLink);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
         }
