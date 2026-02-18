@@ -91,16 +91,21 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Item ID required' }, { status: 400 })
   }
 
-  // Consolidated auth check + room data: 1 query instead of 3
-  const { room, authorized } = await getRoomWithAccess(roomId, session.user.id)
+  // Parallel: auth check + fetch queue item simultaneously (was sequential)
+  const [{ room, authorized }, queueItem] = await Promise.all([
+    getRoomWithAccess(roomId, session.user.id),
+    prisma.queueItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, order: true, roomId: true }
+    })
+  ])
+
   if (!room) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
   if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
-
-  const queueItem = await prisma.queueItem.findUnique({ where: { id: itemId } })
   if (!queueItem || queueItem.roomId !== roomId) {
     return NextResponse.json({ error: 'Item not found' }, { status: 404 })
   }
@@ -109,37 +114,30 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const deletedItemOrder = queueItem.order
   const currentIndex = room.currentQueueIndex || 0
 
-  // Get remaining items (excluding the one to delete) for reordering
-  const remainingItems = await prisma.queueItem.findMany({
-    where: { roomId, id: { not: itemId } },
-    orderBy: { order: 'asc' },
-    select: { id: true, order: true }
-  })
+  // Count remaining items to calculate new index (cheaper than fetching all)
+  const totalItems = await prisma.queueItem.count({ where: { roomId } })
+  const remainingCount = totalItems - 1
 
   // Calculate new current index
   let newCurrentIndex = currentIndex
   if (deletedItemOrder < currentIndex) {
     newCurrentIndex = Math.max(0, currentIndex - 1)
   } else if (deletedItemOrder === currentIndex) {
-    if (remainingItems.length === 0) {
+    if (remainingCount === 0) {
       newCurrentIndex = 0
-    } else if (currentIndex >= remainingItems.length) {
-      newCurrentIndex = remainingItems.length - 1
+    } else if (currentIndex >= remainingCount) {
+      newCurrentIndex = remainingCount - 1
     }
   }
 
-  // Batch all operations in a single transaction: delete + reorder + update index
-  // This reduces N+2 queries to just 1 transaction
+  // Batch all operations in a single transaction:
+  // delete + bulk reorder with raw SQL + update index
+  // Raw SQL replaces N individual UPDATE queries with 1 statement
   await prisma.$transaction([
     // Delete the item
     prisma.queueItem.delete({ where: { id: itemId } }),
-    // Batch reorder all remaining items
-    ...remainingItems.map((item, i) =>
-      prisma.queueItem.update({
-        where: { id: item.id },
-        data: { order: i }
-      })
-    ),
+    // Bulk reorder: decrement order for all items after the deleted one
+    prisma.$executeRaw`UPDATE "QueueItem" SET "order" = "order" - 1 WHERE "roomId" = ${roomId} AND "order" > ${deletedItemOrder}`,
     // Update room's currentQueueIndex if changed
     ...(newCurrentIndex !== currentIndex ? [
       prisma.room.update({
@@ -158,7 +156,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     deletedOrder: deletedItemOrder,
     oldCurrentIndex: currentIndex,
     newCurrentIndex,
-    remainingItemsCount: remainingItems.length
+    remainingItemsCount: remainingCount
   })
 }
 
