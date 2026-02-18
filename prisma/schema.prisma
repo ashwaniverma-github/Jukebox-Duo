@@ -64,6 +64,7 @@ model QueueItem {
   createdAt  DateTime @default(now())
 
   @@index([roomId])
+  @@index([roomId, order])
 }
 
 
