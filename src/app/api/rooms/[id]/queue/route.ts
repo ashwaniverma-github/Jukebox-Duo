@@ -33,7 +33,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Check queue limit for free users (max 5 songs)
-  const FREE_QUEUE_LIMIT = 3
+  const FREE_QUEUE_LIMIT = 5
   const [user, count] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },

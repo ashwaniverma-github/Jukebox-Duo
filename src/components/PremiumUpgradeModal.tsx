@@ -88,7 +88,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const getTriggerMessage = () => {
         switch (trigger) {
             case 'queue_limit':
-                return "You've reached the free queue limit of 3 songs."
+                return "You've reached the free queue limit of 5 songs."
             case 'sync_limit':
                 return "Real-time sync is a premium feature."
             default:
