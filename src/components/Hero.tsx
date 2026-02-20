@@ -190,10 +190,9 @@ const Hero = () => {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-          <p className="text-m text-zinc-500 tracking-[0.2em] font-medium">
+          <p className="text-sm text-zinc-500 tracking-[0.2em] font-medium">
             Limited Time: Get <span className="text-zinc-300">Lifetime Access</span> for just $12.99
-          </p>
-        </motion.div>
+          </p>        </motion.div>
 
         {/* Visualizer Demo */}
         {/* Visualizer Demo */}
