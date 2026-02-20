@@ -37,17 +37,20 @@ const Features = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">
-            Everything you need to <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600">
-              vibe together.
+
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight leading-tight">
+            Solo or together
+            <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+              the room is yours.
             </span>
           </h2>
-          <p className="text-zinc-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
-            Simple, powerful features designed to make listening together seamless and fun.
+
+          <p className="text-zinc-400 max-w-2xl mx-auto text-lg md:text-xl font-light leading-relaxed">
+            Simple, powerful features designed to make <br className="hidden md:block" />
+            listening seamless and fun.
           </p>
         </motion.div>
 
