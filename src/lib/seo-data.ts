@@ -22,6 +22,16 @@ export interface ForPage {
     benefits: string[];
 }
 
+export interface FocusPage {
+    slug: string;
+    title: string;
+    description: string;
+    keywords: string[];
+    heroTitle: string;
+    heroSubtitle: string;
+    benefits: string[];
+}
+
 export interface AlternativePage {
     slug: string;
     title: string;
@@ -357,6 +367,66 @@ export const forPages: ForPage[] = [
     },
 ];
 
+// Focus Pages - Target solo listeners, desktop users, and study sessions
+export const focusPages: FocusPage[] = [
+    {
+        slug: 'study-sessions',
+        title: 'Ad-Free Study Music Player for Desktop | Jukebox Duo',
+        description: 'Focus on your studies with an ad-free, browser-based music player optimized for desktop. No algorithmic distractions, just your music.',
+        keywords: ['study music desktop app', 'ad free study music', 'focus music player browser', 'no distraction music app', 'study sessions music'],
+        heroTitle: 'Deep Focus for Study Sessions',
+        heroSubtitle: '100% Ad-free. No algorithmic distractions. Just you, your playlist, and deep work perfectly optimized for your desktop browser.',
+        benefits: [
+            'Zero ads to interrupt your flow state',
+            'No algorithmic suggestions to distract you',
+            'Lightweight browser app, no bloated installations',
+            'Queue up exactly what you want to hear',
+        ],
+    },
+    {
+        slug: 'deep-work',
+        title: 'Music Player for Deep Work & Coding | Jukebox Duo',
+        description: 'The ultimate web music player for deep work, coding, and productivity. Build your queue and work without ad interruptions.',
+        keywords: ['deep work music app', 'music player for coding', 'desktop music app productivity', 'browser music player work'],
+        heroTitle: 'Soundtrack Your Deep Work',
+        heroSubtitle: 'Enter the flow state. A distraction-free music environment built for professionals, coders, and creators.',
+        benefits: [
+            'Clean, minimalist interface that stays out of your way',
+            'High-quality audio playback in your browser',
+            'Create the perfect uninterrupted workflow playlist',
+            'Not a Discord bot—a dedicated desktop web experience',
+        ],
+    },
+    {
+        slug: 'adhd-focus',
+        title: 'Ad-Free Focus Music App (No Distractions) | Jukebox Duo',
+        description: 'Tame distractions with a music app that only plays what you tell it to. Perfect for ADHD focus sessions and preventing doom-scrolling.',
+        keywords: ['adhd focus music app', 'no distraction music player', 'music app without recommendations', 'focus app browser'],
+        heroTitle: 'Music Without Distractions',
+        heroSubtitle: 'Stop getting lost in algorithmic rabbit holes. You control the queue, we provide the ad-free playback.',
+        benefits: [
+            'No "Up Next" algorithms to hijack your attention',
+            'No visual clutter or social feeds',
+            'Predictable, ad-free listening environments',
+            'Perfect tool for time-blocking and pomodoro sessions',
+        ],
+    },
+    {
+        slug: 'solo-listening',
+        title: 'Minimalist Solo Music Player for Web | Jukebox Duo',
+        description: 'Enjoy a pure, uncluttered music experience on your desktop. A minimalist web player for when you just want to listen alone.',
+        keywords: ['solo music player web', 'minimalist desktop music app', 'browser audio player', 'simple music queue app'],
+        heroTitle: 'Pure Solo Listening',
+        heroSubtitle: 'Sometimes you just want to listen alone. Experience music on your desktop without the noise of modern streaming apps.',
+        benefits: [
+            'Stripped back to the essentials of playback',
+            'Instantly loads in any desktop browser',
+            'No social pressure or sharing requirements',
+            'Your private, ad-free listening sanctuary',
+        ],
+    }
+];
+
 // Alternative Pages - Target searches like "[Service] alternative"
 export const alternativePages: AlternativePage[] = [
     {
@@ -508,6 +578,10 @@ export function getForSlugs(): string[] {
     return forPages.map(page => page.slug);
 }
 
+export function getFocusSlugs(): string[] {
+    return focusPages.map(page => page.slug);
+}
+
 export function getAlternativeSlugs(): string[] {
     return alternativePages.map(page => page.slug);
 }
@@ -519,6 +593,10 @@ export function getListenTogetherPage(slug: string): ListenTogetherPage | undefi
 
 export function getForPage(slug: string): ForPage | undefined {
     return forPages.find(page => page.slug === slug);
+}
+
+export function getFocusPage(slug: string): FocusPage | undefined {
+    return focusPages.find(page => page.slug === slug);
 }
 
 export function getAlternativePage(slug: string): AlternativePage | undefined {

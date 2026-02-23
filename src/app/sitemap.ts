@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getListenTogetherSlugs, getForSlugs, getAlternativeSlugs } from '@/lib/seo-data';
+import { getListenTogetherSlugs, getForSlugs, getAlternativeSlugs, getFocusSlugs } from '@/lib/seo-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://jukeboxduo.com';
@@ -82,5 +82,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.8,
     }));
 
-    return [...staticPages, ...listenTogetherPages, ...forPages, ...alternativePages];
+    // Focus programmatic pages
+    const focusPages: MetadataRoute.Sitemap = getFocusSlugs().map((slug) => ({
+        url: `${baseUrl}/focus/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.8,
+    }));
+
+    return [...staticPages, ...listenTogetherPages, ...forPages, ...alternativePages, ...focusPages];
 }

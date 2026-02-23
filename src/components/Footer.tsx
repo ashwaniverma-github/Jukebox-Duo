@@ -6,8 +6,8 @@ const Footer = () => (
   <footer className="relative bg-black text-white pt-24 pb-12 overflow-hidden border-t border-white/10 font-[var(--font-inter)]">
     <div className="container mx-auto px-6 relative z-10">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
-        {/* Column 1: Brand & Social (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* Column 1: Brand & Social (3 cols) */}
+        <div className="lg:col-span-3 space-y-6">
           <Link href="/" className="inline-block">
             <span className="font-bold text-2xl tracking-tight text-white">
               Jukebox<span className="text-red-500 ml-1">Duo</span>
@@ -128,6 +128,22 @@ const Footer = () => (
                 <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </Link>
             </li>
+          </ul>
+        </div>
+
+        {/* Column 6: Solo Listeners (2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
+          <h3 className="font-semibold text-white tracking-wide">Focus Mode</h3>
+          <ul className="space-y-2">
+            {[
+              'study-sessions', 'deep-work', 'adhd-focus', 'solo-listening'
+            ].map((slug) => (
+              <li key={slug}>
+                <Link href={`/focus/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
+                  {slug.replace(/-/g, ' ')}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
