@@ -166,7 +166,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                         <div className="flex items-center gap-2">
                                             <span className="text-2xl sm:text-3xl font-bold text-white">$0</span>
                                             <span className="text-xs sm:text-sm font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
-                                                Free for 1 day
+                                                Free for 7 days
                                             </span>
                                         </div>
                                         <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Then $3.99/mo • Cancel anytime</span>
@@ -222,7 +222,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                     "Get Lifetime Access"
                                 ) : (
                                     <span className="flex items-center justify-center gap-2">
-                                        Start 1-Day Free Trial
+                                        Start 7-Day Free Trial
                                     </span>
                                 )
                             )}

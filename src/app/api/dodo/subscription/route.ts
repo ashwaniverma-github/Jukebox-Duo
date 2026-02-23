@@ -72,7 +72,7 @@ export async function POST(req: Request) {
                 source: 'music-duo',
             },
             subscription_data: {
-                trial_period_days: 1,
+                trial_period_days: 7,
             },
         };
 
