@@ -109,42 +109,43 @@ const Footer = () => (
           </ul>
         </div>
 
-        {/* Column 5: Alternatives (2 cols) */}
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="font-semibold text-white tracking-wide">Alternatives</h3>
-          <ul className="space-y-2">
-            {[
-              'spotify', 'youtube-music'
-            ].map((slug) => (
-              <li key={slug}>
-                <Link href={`/alternatives/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
-                  {slug.replace(/-/g, ' ')} Alternative
+        {/* Column 5 & 6: Alternatives & Focus Mode */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          <div>
+            <h3 className="font-semibold text-white tracking-wide mb-6">Alternatives</h3>
+            <ul className="space-y-2">
+              {[
+                'spotify', 'youtube-music'
+              ].map((slug) => (
+                <li key={slug}>
+                  <Link href={`/alternatives/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
+                    {slug.replace(/-/g, ' ')} Alternative
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/alternatives" className="text-sm text-red-500 hover:text-red-400 font-medium inline-flex items-center gap-1 mt-1 group">
+                  View All
+                  <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </Link>
               </li>
-            ))}
-            <li>
-              <Link href="/alternatives" className="text-sm text-red-500 hover:text-red-400 font-medium inline-flex items-center gap-1 mt-1 group">
-                View All
-                <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </Link>
-            </li>
-          </ul>
-        </div>
+            </ul>
+          </div>
 
-        {/* Column 6: Solo Listeners (2 cols) */}
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="font-semibold text-white tracking-wide">Focus Mode</h3>
-          <ul className="space-y-2">
-            {[
-              'study-sessions', 'deep-work', 'adhd-focus', 'solo-listening'
-            ].map((slug) => (
-              <li key={slug}>
-                <Link href={`/focus/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
-                  {slug.replace(/-/g, ' ')}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div>
+            <h3 className="font-semibold text-white tracking-wide mb-6">Focus Mode</h3>
+            <ul className="space-y-2">
+              {[
+                'study-sessions', 'deep-work', 'adhd-focus', 'solo-listening'
+              ].map((slug) => (
+                <li key={slug}>
+                  <Link href={`/focus/${slug}`} className="text-sm text-gray-500 hover:text-white transition-colors capitalize block py-0.5">
+                    {slug.replace(/-/g, ' ')}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
