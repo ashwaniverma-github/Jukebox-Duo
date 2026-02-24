@@ -21,6 +21,7 @@ import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
 import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
 import { ManageBillingButton } from '../../../components/ManageBillingButton';
 import { SharePlaylistModal } from '../../../components/SharePlaylistModal';
+import { DesktopExperienceModal } from '../../../components/DesktopExperienceModal';
 
 
 export default function RoomPage() {
@@ -695,6 +696,7 @@ export default function RoomPage() {
                 trigger={premiumTrigger}
             />
             <PremiumWelcomeModal isPremium={isPremium} />
+            <DesktopExperienceModal />
 
             {/* Animated background elements */}
             <SharePlaylistModal
