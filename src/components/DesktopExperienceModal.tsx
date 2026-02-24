@@ -8,7 +8,7 @@ export function DesktopExperienceModal() {
     const [open, setOpen] = useState(false)
 
     useEffect(() => {
-        // Only show once per session
+        // Only show once ever (persists across browser restarts via localStorage)
         const hasSeenModal = localStorage.getItem('desktop-modal-shown')
         if (hasSeenModal) return
 
@@ -38,7 +38,7 @@ export function DesktopExperienceModal() {
                     </div>
 
                     <p className="text-base text-zinc-200 font-medium">
-                        For best experience use in Desktop or laptop
+                        For the best experience, use a desktop or laptop
                     </p>
 
                     <button
