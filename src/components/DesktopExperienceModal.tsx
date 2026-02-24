@@ -38,9 +38,8 @@ export function DesktopExperienceModal() {
                     </div>
 
                     <p className="text-base text-zinc-200 font-medium">
-                        For the best experience, use a desktop or laptop
+                        For the best experience, use a desktop or laptop.
                     </p>
-
                     <button
                         onClick={() => setOpen(false)}
                         className="mt-2 w-full h-10 rounded-full bg-zinc-100 text-zinc-900 font-semibold text-sm hover:bg-white transition-all active:scale-[0.98]"
