@@ -64,6 +64,11 @@ const Footer = () => (
                   Playlist Name Generator
                 </Link>
               </li>
+              <li>
+                <Link href="/games/higher-lower" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  Higher or Lower Game
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
