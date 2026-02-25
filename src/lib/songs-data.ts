@@ -327,13 +327,18 @@ export function getRandomPair(): [SongData, SongData] {
     return [a, b];
 }
 
-// Get a single random song (different videoId AND different view count from the provided one)
+// Get a single random song (different videoId AND preferably different view count)
 export function getRandomSong(excludeVideoId: string): SongData {
     const excludeSong = songs.find(s => s.videoId === excludeVideoId);
-    const candidates = songs.filter(s =>
+    // First pass: exclude same videoId AND same view count (no tie)
+    let candidates = songs.filter(s =>
         s.videoId !== excludeVideoId &&
         !(excludeSong && s.views === excludeSong.views)
     );
+    // Fallback: if strict filter yields nothing, only exclude by videoId
+    if (candidates.length === 0) {
+        candidates = songs.filter(s => s.videoId !== excludeVideoId);
+    }
     if (candidates.length === 0) {
         throw new Error(`getRandomSong: no songs available after excluding "${excludeVideoId}"`);
     }

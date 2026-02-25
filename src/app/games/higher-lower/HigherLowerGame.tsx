@@ -21,6 +21,7 @@ export default function HigherLowerGame() {
     const [highScore, setHighScore] = useState(0);
     const [phase, setPhase] = useState<GamePhase>("playing");
     const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+    const [lastTie, setLastTie] = useState(false);
     const [chosen, setChosen] = useState<"a" | "b" | null>(null);
     const [showCta, setShowCta] = useState(false);
     const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -101,10 +102,11 @@ export default function HigherLowerGame() {
             const pickedSong = choice === "a" ? songA : songB;
             const otherSong = choice === "a" ? songB : songA;
 
-            const isCorrect =
-                pickedSong.views >= otherSong.views;
+            const isTie = pickedSong.views === otherSong.views;
+            const isCorrect = pickedSong.views >= otherSong.views;
 
             setLastCorrect(isCorrect);
+            setLastTie(isTie);
             animateCountUp(songA.views, songB.views);
 
             safeTimeout(() => {
@@ -162,6 +164,7 @@ export default function HigherLowerGame() {
         setPhase("playing");
         setChosen(null);
         setLastCorrect(null);
+        setLastTie(false);
         setCountUpA(0);
         setCountUpB(0);
     }, []);
@@ -356,6 +359,7 @@ export default function HigherLowerGame() {
                             phase={phase}
                             isChosen={chosen === "a"}
                             isCorrect={lastCorrect}
+                            isTie={lastTie}
                             showViews={phase === "revealing" || phase === "gameover"}
                             displayViews={countUpA}
                             onClick={() => handleChoice("a")}
@@ -382,6 +386,7 @@ export default function HigherLowerGame() {
                             phase={phase}
                             isChosen={chosen === "b"}
                             isCorrect={lastCorrect}
+                            isTie={lastTie}
                             showViews={phase === "revealing" || phase === "gameover"}
                             displayViews={countUpB}
                             onClick={() => handleChoice("b")}
@@ -504,6 +509,7 @@ interface SongCardProps {
     phase: GamePhase;
     isChosen: boolean;
     isCorrect: boolean | null;
+    isTie: boolean;
     showViews: boolean;
     displayViews: number;
     onClick: () => void;
@@ -515,6 +521,7 @@ function SongCard({
     phase,
     isChosen,
     isCorrect,
+    isTie,
     showViews,
     displayViews,
     onClick,
@@ -588,9 +595,9 @@ function SongCard({
                     {showViews && isChosen && (
                         <div className={`mt-8 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-black uppercase tracking-[0.2em] text-sm shadow-2xl
                 animate-in zoom-in slide-in-from-bottom-8 duration-700 delay-150
-                ${isCorrect ? "bg-emerald-500 text-white shadow-emerald-500/50" : "bg-red-500 text-white shadow-red-500/50"}
+                ${isTie ? "bg-amber-500 text-white shadow-amber-500/50" : isCorrect ? "bg-emerald-500 text-white shadow-emerald-500/50" : "bg-red-500 text-white shadow-red-500/50"}
              `}>
-                            {isCorrect ? "✅ Correct" : "❌ Wrong"}
+                            {isTie ? "🤝 It's a Tie!" : isCorrect ? "✅ Correct" : "❌ Wrong"}
                         </div>
                     )}
                 </div>
