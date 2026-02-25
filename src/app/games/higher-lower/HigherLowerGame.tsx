@@ -23,9 +23,11 @@ export default function HigherLowerGame() {
     const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
     const [chosen, setChosen] = useState<"a" | "b" | null>(null);
     const [showCta, setShowCta] = useState(false);
+    const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle');
     const [countUpA, setCountUpA] = useState(0);
     const [countUpB, setCountUpB] = useState(0);
     const countRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
 
     // Load high score & init game
     useEffect(() => {
@@ -47,6 +49,21 @@ export default function HigherLowerGame() {
             document.body.style.overflow = "";
         };
     }, [phase]);
+
+    // Cleanup interval AND all pending timeouts on unmount
+    useEffect(() => {
+        return () => {
+            if (countRef.current) clearInterval(countRef.current);
+            timeoutRefs.current.forEach(clearTimeout);
+        };
+    }, []);
+
+    // Safe setTimeout that tracks IDs for cleanup
+    const safeTimeout = useCallback((fn: () => void, ms: number) => {
+        const id = setTimeout(fn, ms);
+        timeoutRefs.current.push(id);
+        return id;
+    }, []);
 
     const animateCountUp = useCallback(
         (targetA: number, targetB: number) => {
@@ -90,7 +107,7 @@ export default function HigherLowerGame() {
             setLastCorrect(isCorrect);
             animateCountUp(songA.views, songB.views);
 
-            setTimeout(() => {
+            safeTimeout(() => {
                 if (isCorrect) {
                     const newScore = score + 1;
                     setScore(newScore);
@@ -98,11 +115,11 @@ export default function HigherLowerGame() {
                     // Show CTA every 5 rounds
                     if (newScore > 0 && newScore % 5 === 0) {
                         setShowCta(true);
-                        setTimeout(() => setShowCta(false), 4000);
+                        safeTimeout(() => setShowCta(false), 4000);
                     }
 
                     // Next round: winner stays, new challenger
-                    setTimeout(() => {
+                    safeTimeout(() => {
                         const winner = pickedSong;
                         const newChallenger = getRandomSong(winner.videoId);
                         // Randomly place winner on left or right
@@ -120,7 +137,7 @@ export default function HigherLowerGame() {
                     }, 1800);
                 } else {
                     // Game over
-                    setTimeout(() => {
+                    safeTimeout(() => {
                         if (score > highScore) {
                             const newHigh = score;
                             setHighScore(newHigh);
@@ -131,10 +148,13 @@ export default function HigherLowerGame() {
                 }
             }, 1400);
         },
-        [phase, songA, songB, score, highScore, animateCountUp]
+        [phase, songA, songB, score, highScore, animateCountUp, safeTimeout]
     );
-
     const restart = useCallback(() => {
+        // Cancel all in-flight timers and the count-up interval
+        timeoutRefs.current.forEach(clearTimeout);
+        timeoutRefs.current = [];
+        if (countRef.current) clearInterval(countRef.current);
         const [a, b] = getRandomPair();
         setSongA(a);
         setSongB(b);
@@ -146,14 +166,29 @@ export default function HigherLowerGame() {
         setCountUpB(0);
     }, []);
 
-    const shareScore = useCallback(() => {
+    const shareScore = useCallback(async () => {
         const text = `🎵 I scored ${score} in Higher or Lower: Music Edition!\n\nCan you beat me? Play free → https://jukeboxduo.com/games/higher-lower`;
+
+        const copyToClipboard = async () => {
+            try {
+                await navigator.clipboard.writeText(text);
+                setShareState('copied');
+            } catch {
+                setShareState('failed');
+            } finally {
+                setTimeout(() => setShareState('idle'), 3000);
+            }
+        };
+
         if (navigator.share) {
-            navigator.share({ text }).catch(() => {
-                navigator.clipboard.writeText(text);
-            });
+            try {
+                await navigator.share({ text });
+            } catch {
+                // User cancelled share or API failed — fall back to clipboard
+                await copyToClipboard();
+            }
         } else {
-            navigator.clipboard.writeText(text);
+            await copyToClipboard();
         }
     }, [score]);
 
@@ -275,9 +310,18 @@ export default function HigherLowerGame() {
                                     </button>
                                     <button
                                         onClick={shareScore}
-                                        className="w-full py-4 rounded-xl bg-white/[0.05] border border-white/10 text-white font-bold text-base hover:bg-white/10 transition-all active:scale-[0.98]"
+                                        className={`w-full py-4 rounded-xl border font-bold text-base transition-all active:scale-[0.98] ${shareState === 'copied'
+                                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                            : shareState === 'failed'
+                                                ? 'bg-red-500/20 border-red-500/40 text-red-300'
+                                                : 'bg-white/[0.05] border-white/10 text-white hover:bg-white/10'
+                                            }`}
                                     >
-                                        <span className="mr-2"></span> Share Score
+                                        {shareState === 'copied'
+                                            ? '✓ Link Copied!'
+                                            : shareState === 'failed'
+                                                ? 'Copy failed — share manually'
+                                                : ' Share Score'}
                                     </button>
                                 </div>
 
@@ -503,6 +547,7 @@ function SongCard({
         <button
             onClick={onClick}
             disabled={!isClickable}
+            aria-label={`Select "${song.title}" by ${song.artist} as having more views`}
             className={`
         relative group rounded-[2rem] md:rounded-[2.5rem] border transition-all duration-700 w-full aspect-video md:aspect-[16/10] lg:aspect-video flex flex-col justify-end overflow-hidden
         ${borderClass} ${glowClass} ${containerBg}

@@ -995,7 +995,7 @@ export default function RoomPage() {
                                         My Dashboard
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Item
-                                        onSelect={() => { window.open('/games/higher-lower', '_blank'); }}
+                                        onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
                                         className="w-full px-4 py-2 rounded-lg text-left hover:bg-purple-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
                                     >
                                         <span>🎵</span>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     keywords: [
         'music game',
         'higher or lower',
-        'higher or lower music-edition',
+        'higher or lower music edition',
         'youtube views game',
         'music trivia',
         'guess the views',
@@ -87,7 +87,7 @@ const faqJsonLd = {
             name: 'What is the most viewed music video on YouTube?',
             acceptedAnswer: {
                 '@type': 'Answer',
-                text: "As of 2026, 'Baby Shark Dance' by Pinkfong holds the record with over 14 billion views, followed by 'Despacito' by Luis Fonsi ft. Daddy Yankee.",
+                text: "'Baby Shark Dance' by Pinkfong currently holds the record as the most-viewed YouTube video ever, followed by 'Despacito' by Luis Fonsi ft. Daddy Yankee.",
             },
         },
         {

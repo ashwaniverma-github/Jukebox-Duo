@@ -15,6 +15,7 @@ module.exports = {
           '/admin/',
           '/dashboard/',
           '/room/',
+          '/signin',
         ],
       },
     ],
@@ -25,6 +26,9 @@ module.exports = {
     '/admin/*',
     '/dashboard/*',
     '/room/*',
+    '/signin',
+    '/sitemap.xml',
+    '/sitemap-*.xml',
   ],
   // Add custom pages with specific priorities
   additionalPaths: async (config) => {

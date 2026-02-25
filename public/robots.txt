@@ -5,6 +5,7 @@ Disallow: /api/
 Disallow: /admin/
 Disallow: /dashboard/
 Disallow: /room/
+Disallow: /signin
 
 # Host
 Host: https://jukeboxduo.com

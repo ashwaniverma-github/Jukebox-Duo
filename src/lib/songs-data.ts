@@ -179,7 +179,7 @@ export const songsDatabase: SongData[] = [
     { title: "Not Afraid", artist: "Eminem", videoId: "j5-yKhDd64s", views: 1500000000, year: 2010 },
     { title: "Rap God", artist: "Eminem", videoId: "XbGs_qK2PQA", views: 1500000000, year: 2013 },
     { title: "Mockingbird", artist: "Eminem", videoId: "S9bCLPwzSC0", views: 1100000000, year: 2004 },
-    { title: "River", artist: "Eminem ft. Ed Sheeran", videoId: "DkeiKbqa02I", views: 800000000, year: 2017 },
+    { title: "River", artist: "Eminem ft. Ed Sheeran", videoId: "AqhiTsu2wBQ", views: 800000000, year: 2017 },
     { title: "Somebody That I Used to Know", artist: "Gotye ft. Kimbra", videoId: "8UVNT4wvIGY", views: 1800000000, year: 2011 },
     { title: "Let It Go", artist: "Idina Menzel", videoId: "moSFlvxnbgk", views: 1400000000, year: 2013 },
 
@@ -291,11 +291,11 @@ export function formatViews(views: number): string {
     }
     if (views >= 1_000_000) {
         const m = views / 1_000_000;
-        return m % 1 === 0 ? `${m}M` : `${m.toFixed(0)}M`;
+        return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`;
     }
     if (views >= 1_000) {
         const k = views / 1_000;
-        return k % 1 === 0 ? `${k}K` : `${k.toFixed(0)}K`;
+        return k % 1 === 0 ? `${k}K` : `${k.toFixed(1)}K`;
     }
     return views.toString();
 }
@@ -305,21 +305,37 @@ export function getThumbnailUrl(videoId: string): string {
     return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 }
 
-// Get two random songs that are different
+// Get two random songs that are different AND have strictly different view counts (no ties)
 export function getRandomPair(): [SongData, SongData] {
-    const a = Math.floor(Math.random() * songs.length);
-    let b = Math.floor(Math.random() * songs.length);
-    while (b === a) {
-        b = Math.floor(Math.random() * songs.length);
+    if (songs.length < 2) {
+        throw new Error(`getRandomPair requires at least 2 songs; got ${songs.length}`);
     }
-    return [songs[a], songs[b]];
+    let a: SongData, b: SongData;
+    let attempts = 0;
+    do {
+        const idxA = Math.floor(Math.random() * songs.length);
+        let idxB = Math.floor(Math.random() * songs.length);
+        while (idxB === idxA) {
+            idxB = Math.floor(Math.random() * songs.length);
+        }
+        a = songs[idxA];
+        b = songs[idxB];
+        attempts++;
+        // Safety valve: after 50 attempts just return whatever we have
+        if (attempts > 50) break;
+    } while (a.views === b.views);
+    return [a, b];
 }
 
-// Get a single random song (different from the provided one)
+// Get a single random song (different videoId AND different view count from the provided one)
 export function getRandomSong(excludeVideoId: string): SongData {
-    let song: SongData;
-    do {
-        song = songs[Math.floor(Math.random() * songs.length)];
-    } while (song.videoId === excludeVideoId);
-    return song;
+    const excludeSong = songs.find(s => s.videoId === excludeVideoId);
+    const candidates = songs.filter(s =>
+        s.videoId !== excludeVideoId &&
+        !(excludeSong && s.views === excludeSong.views)
+    );
+    if (candidates.length === 0) {
+        throw new Error(`getRandomSong: no songs available after excluding "${excludeVideoId}"`);
+    }
+    return candidates[Math.floor(Math.random() * candidates.length)];
 }

@@ -12,6 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://jukeboxduo.com'),
   title: "Jukebox Duo - Listen Together, No Matter Where You Are",
   description: "Create synchronized music listening rooms directly in your browser. Optimized for the best experience on desktop and browser. Share YouTube music in perfect sync with friends, no extensions required.",
   keywords: ["music sharing", "synchronized music", "YouTube music", "browser music party", "desktop music sync", "collaborative playlists", "real-time music"],
