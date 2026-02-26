@@ -140,7 +140,7 @@ const Hero = () => {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
             </span>
             <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
-              Your desktop music companion
+              Your all in one music companion
             </span>
           </div>
         </motion.div>
