@@ -152,10 +152,11 @@ const Hero = () => {
           className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-tight"
         >
           Queue up{" "}
+          <br className="block md:hidden" />
           <motion.span
             animate={{ x: [0, 6, 0] }}
             transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-flex items-center text-rose-500/70 align-middle"
+            className="hidden md:inline-flex items-center text-rose-500/70 align-middle"
           >
             <ArrowRight className="w-8 h-8 md:w-12 md:h-12" />
           </motion.span>{" "}
