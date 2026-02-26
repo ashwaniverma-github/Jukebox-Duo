@@ -140,7 +140,7 @@ const Hero = () => {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
             </span>
             <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
-              Vibe together in real-time
+              Your desktop music companion
             </span>
           </div>
         </motion.div>
@@ -151,9 +151,17 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-tight"
         >
-          Music is better <br />
+          Queue up{" "}
+          <motion.span
+            animate={{ x: [0, 6, 0] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-flex items-center text-rose-500/70 align-middle"
+          >
+            <ArrowRight className="w-8 h-8 md:w-12 md:h-12" />
+          </motion.span>{" "}
+          Tune in <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600">
-            when shared.
+            Together or solo
           </span>
         </motion.h1>
 
@@ -163,7 +171,7 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
         >
-          Create a room, invite your partner or friends, and vibe to music in perfect sync. Built for simple, seamless listening experiences.
+          Stream music right from your browser - solo while you focus, or in perfect sync with friends. No downloads, no ads, just music.
         </motion.p>
 
         <motion.div
@@ -200,7 +208,7 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative max-w-4xl mx-auto"
+          className="relative max-w-4xl mx-auto my-4"
         >
           {/* Glow effect behind visualizer */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-rose-500/20 blur-[100px] rounded-full opacity-30 pointer-events-none" />

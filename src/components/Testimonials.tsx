@@ -4,19 +4,19 @@ import { Quote } from "lucide-react";
 
 const testimonials = [
   {
-    quote: "Best virtual listening party app I've used! The sync is actually perfect.",
-    author: "Jane D.",
-    role: "Music Lover",
-  },
-  {
-    quote: "Finally, my playlists with friends stay in perfect time. No more '3, 2, 1, play'.",
-    author: "Carlos M.",
-    role: "DJ Enthusiast",
-  },
-  {
-    quote: "I use this every day to listen to music with my partner while we work remotely.",
+    quote: "I use this every day to listen to music with my partner while we work remotely. It just stays open in a tab.",
     author: "Sarah K.",
     role: "Remote Worker",
+  },
+  {
+    quote: "I keep Jukebox Duo open in a tab all day. Better than any playlist app I've tried.",
+    author: "Jane D.",
+    role: "Product Designer",
+  },
+  {
+    quote: "My coworkers and I run a shared room during work hours. It's like having an office radio.",
+    author: "Carlos M.",
+    role: "Software Engineer",
   },
 ];
 

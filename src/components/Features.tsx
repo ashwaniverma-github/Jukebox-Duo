@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Zap, ListMusic, Globe, Github } from "lucide-react";
+import { Zap, ListMusic, Globe, Github, Headphones } from "lucide-react";
 
 const features = [
   {
@@ -17,9 +17,15 @@ const features = [
   },
   {
     title: "No Downloads Required",
-    desc: "Jump straight into the action. Runs entirely in your browser with no software to install.",
+    desc: "Runs entirely in your desktop browser — open a tab and start playing. No installs, no apps, just music.",
     icon: <Globe className="w-6 h-6 text-emerald-400" />,
     gradient: "from-emerald-500/10 to-teal-500/10",
+  },
+  {
+    title: "Focus Mode",
+    desc: "Start a solo room for distraction-free listening. Perfect for deep work, studying, or just vibing on your own.",
+    icon: <Headphones className="w-6 h-6 text-amber-400" />,
+    gradient: "from-amber-500/10 to-yellow-500/10",
   },
   {
     title: "Open Source",
@@ -42,9 +48,9 @@ const Features = () => {
         >
 
           <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight leading-tight">
-            Solo or together
+            Simple features
             <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-              the room is yours.
+              Serious listening
             </span>
           </h2>
 

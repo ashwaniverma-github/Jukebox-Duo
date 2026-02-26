@@ -15,10 +15,10 @@ const CTABanner = () => (
         className="max-w-3xl mx-auto"
       >
         <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
-          Ready to start listening?
+          Open a tab. Press play.
         </h2>
         <p className="text-xl text-zinc-400 mb-10 font-light">
-          Create a room in seconds and start listening to your favorite songs.
+          Your browser is all you need. Create a room in seconds and start listening - solo or with friends.
         </p>
 
         <motion.a

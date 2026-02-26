@@ -2,6 +2,7 @@
 import Hero from "../components/Hero";
 import HowItWorks from "../components/HowItWorks";
 import Features from "../components/Features";
+import UseCases from "../components/UseCases";
 import Testimonials from "../components/Testimonials";
 import CTABanner from "../components/CTABanner";
 import FAQ from "../components/FAQ";
@@ -20,6 +21,7 @@ export default function Home() {
       <div className="relative z-10">
         <Hero />
         <Features />
+        <UseCases />
         <HowItWorks />
         <Testimonials />
         <FAQ />
