@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import { Music, Plus, Users, Play, Radio, Zap, Heart, LogOut } from "lucide-react";
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import Link from "next/link";
+import { ManageBillingButton } from '../../components/ManageBillingButton';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -24,7 +27,7 @@ interface Room {
 }
 
 export default function Dashboard() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -34,6 +37,7 @@ export default function Dashboard() {
   const [newRoomId, setNewRoomId] = useState<string>("");
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
+  const [isPremium, setIsPremium] = useState(false)
   const router = useRouter();
 
   useEffect(() => {
@@ -45,6 +49,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === "authenticated") {
       loadRooms();
+      // Fetch premium status
+      fetch('/api/user/premium-status')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setIsPremium(data.isPremium) })
+        .catch(() => { });
     }
   }, [status]);
 
@@ -139,7 +148,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-hidden flex flex-col">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-gray-900/40 to-black" />
@@ -149,42 +158,92 @@ export default function Dashboard() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative min-h-screen flex flex-col">
+      <div className="relative flex-1 flex flex-col min-h-0">
         {/* Navigation */}
-        <nav className="relative z-10 flex justify-end items-center p-6 lg:p-4">
+        <nav className="relative z-20 flex justify-between items-center px-6 py-3 border-b border-white/10 bg-gray-900/80 backdrop-blur-xl shrink-0">
+          <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-1">
+            Jukebox<span className="text-red-500">Duo</span>
+          </Link>
 
-
-          <Button
-            onClick={handleSignout}
-            className="h-10 px-4 justify-end bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200 flex  items-center gap-2"
-            disabled={isSigningout}
-          >
-            <LogOut className="w-4 h-4" />
-            {isSigningout ? 'Signing out..' : ' Sign Out'}
-          </Button>
-
+          {/* Profile Avatar + Dropdown */}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || 'Profile'}
+                  className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                </div>
+              )}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                sideOffset={8}
+                align="end"
+                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
+              >
+                <div className="flex flex-col items-center gap-2 px-2 py-3">
+                  {session?.user?.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || 'Profile'}
+                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                  </div>
+                </div>
+                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                <DropdownMenu.Item
+                  onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-purple-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                >
+                  <span>🎵</span>
+                  <span>Higher or Lower Game</span>
+                </DropdownMenu.Item>
+                <ManageBillingButton isPremium={isPremium} />
+                <DropdownMenu.Item
+                  onSelect={handleSignout}
+                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {isSigningout ? 'Signing out...' : 'Sign Out'}
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </nav>
 
 
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col lg:flex-row relative z-10">
+        <div className="flex-1 flex flex-col lg:flex-row relative z-10 min-h-0 overflow-auto">
           {/* Left Side - Hero Content */}
-          <div className="flex-1 flex flex-col justify-center px-6 lg:px-12  ">
+          <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 py-4 lg:py-6">
             <div className="max-w-2xl">
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4">
                 <span className="block text-white">Listen</span>
                 <span className="block bg-gradient-to-r from-red-400 via-red-600 to-gray-400 bg-clip-text text-transparent">
                   Together
                 </span>
               </h1>
-              <p className="text-lg sm:text-xl text-gray-300 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg text-gray-300 mb-5 leading-relaxed">
                 Create synchronized music rooms where friends can listen to the same tracks at the exact same time.
                 Share the moment, share the beat.
               </p>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-6 mb-8">
+              <div className="flex flex-wrap gap-6 mb-5">
                 <div className="flex items-center gap-2 text-gray-400">
                   <Radio className="w-5 h-5 text-red-400" />
                   <span className="text-sm">Real-time Sync</span>
@@ -200,9 +259,9 @@ export default function Dashboard() {
               </div>
 
               {/* Create Room Form */}
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 lg:p-8 shadow-2xl">
-                <h3 className="text-2xl font-bold mb-2 text-white">Create Your Room</h3>
-                <p className="text-gray-400 mb-6">Start a new synchronized listening session</p>
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 lg:p-6 shadow-2xl">
+                <h3 className="text-xl font-bold mb-1 text-white">Create Your Room</h3>
+                <p className="text-gray-400 mb-4 text-sm">Start a new synchronized listening session</p>
 
                 <form onSubmit={handleCreateRoom} className="space-y-4">
                   <div className="relative">
@@ -211,7 +270,7 @@ export default function Dashboard() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="h-14 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-red-500 focus:ring-red-500/20 text-lg rounded-xl backdrop-blur-sm"
+                      className="h-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-red-500 focus:ring-red-500/20 text-base rounded-xl backdrop-blur-sm"
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <div className="w-8 h-8 bg-gradient-to-r from-red-700 to-red-500 rounded-lg flex items-center justify-center">
@@ -223,7 +282,7 @@ export default function Dashboard() {
                   <Button
                     type="submit"
                     disabled={isCreating || !name.trim()}
-                    className="w-full h-14 bg-gradient-to-r from-red-700 via-red-500 to-gray-800 hover:from-red-800 hover:via-red-600 hover:to-black text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full h-12 bg-gradient-to-r from-red-700 via-red-500 to-gray-800 hover:from-red-800 hover:via-red-600 hover:to-black text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {isCreating ? (
                       <div className="flex items-center gap-2">
@@ -243,9 +302,9 @@ export default function Dashboard() {
           </div>
 
           {/* Right Side - Active Rooms */}
-          <div className="flex-1 lg:max-w-lg px-6 lg:px-12 py-8 lg:py-16">
-            <div className="sticky top-8">
-              <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 lg:max-w-lg px-6 lg:px-10 py-4 lg:py-6">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
                   <Users className="w-6 h-6 text-white" />
                 </div>
@@ -256,7 +315,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+              <div className="space-y-3">
                 {isLoadingRooms ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="w-10 h-10 border-3 border-white/20 border-t-red-500 rounded-full animate-spin mb-4" />
