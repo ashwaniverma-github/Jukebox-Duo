@@ -148,7 +148,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-hidden flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-auto lg:overflow-hidden flex flex-col">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-gray-900/40 to-black" />
@@ -158,9 +158,9 @@ export default function Dashboard() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative flex-1 flex flex-col min-h-0">
+      <div className="relative flex-1 flex flex-col lg:min-h-0">
         {/* Navigation */}
-        <nav className="relative lg:sticky lg:top-0 z-20 flex justify-between items-center px-6 py-3 border-b border-white/10 bg-gray-900/80 backdrop-blur-xl shrink-0">
+        <nav className="flex justify-between items-center px-6 py-3 border-b border-white/10 bg-gray-900/80 backdrop-blur-xl shrink-0">
           <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-1">
             Jukebox<span className="text-red-500">Duo</span>
           </Link>
@@ -227,7 +227,7 @@ export default function Dashboard() {
 
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col lg:flex-row relative z-10 min-h-0 overflow-auto">
+        <div className="flex-1 flex flex-col lg:flex-row relative z-10 lg:min-h-0 overflow-visible lg:overflow-auto pb-20 lg:pb-0">
           {/* Left Side - Hero Content */}
           <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 py-4 lg:py-6">
             <div className="max-w-2xl">
