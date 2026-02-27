@@ -679,7 +679,7 @@ export default function RoomPage() {
     };
 
     return (
-        <div className={`min-h-screen w-full relative overflow-hidden transition-colors duration-1000 ${currentTheme.bg}`}>
+        <div className={`min-h-screen w-full relative overflow-y-auto transition-colors duration-1000 [&::-webkit-scrollbar]:hidden ${currentTheme.bg}`} style={{ scrollbarWidth: 'none' }}>
             <PlaylistImportModal
                 isOpen={importModalOpen}
                 onOpenChange={setImportModalOpen}
