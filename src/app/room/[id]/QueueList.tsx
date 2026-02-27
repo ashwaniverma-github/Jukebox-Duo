@@ -134,7 +134,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Add videos to get started</p>
         </motion.div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <AnimatePresence mode="popLayout">
             {queue.map((item, idx) => {
               const isCurrentVideo = item.videoId === currentVideoId;
@@ -202,17 +202,6 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                       <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2 text-sm leading-tight mb-1">
                         {item.title}
                       </h4>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>#{idx + 1} in queue</span>
-                        {isCurrentVideo && (
-                          <>
-                            <span>•</span>
-                            <span className={`${currentTheme.playingText} font-medium animate-pulse`}>
-                              Playing now
-                            </span>
-                          </>
-                        )}
-                      </div>
                     </div>
 
                     {/* Actions */}

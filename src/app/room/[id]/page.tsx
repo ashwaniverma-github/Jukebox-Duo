@@ -793,7 +793,7 @@ export default function RoomPage() {
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative z-10 w-full px-4 sm:px-6 py-4 sm:py-6"
+                className="relative  sm:fixed sm:top-0 sm:left-0 sm:right-0 z-20 w-full px-4 sm:px-6 py-2 sm:backdrop-blur-xl "
             >
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     {/* Left: Room Info (dynamic) */}
@@ -807,11 +807,11 @@ export default function RoomPage() {
                                 <div className={`w-10 h-10 sm:w-12 sm:h-12 ${currentTheme.iconBg} rounded-xl flex items-center justify-center shadow-lg transition-colors duration-500`}>
                                     <Music className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+
                             </div>
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h1 className="text-lg sm:text-2xl font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
+                                    <h1 className="text-lg  font-bold text-white truncate max-w-[100px] sm:max-w-[200px]">{roomDetails?.name || 'Room'}</h1>
                                     {isHostPremium && (
                                         <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-xs font-bold text-black">
                                             <Crown className="w-3 h-3" />
@@ -1074,31 +1074,31 @@ export default function RoomPage() {
             </AnimatePresence>
 
             {/* Main content */}
-            <main className="relative z-10 px-2 sm:px-4 pb-6">
+            <main className="relative z-10 px-2 sm:px-4 pb-6 sm:pt-14">
                 <div className="max-w-7xl mx-auto">
                     {/* Search Card */}
                     <motion.div
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="mb-4 sm:mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+                        className="mt-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
                         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                             <DialogTrigger asChild>
                                 <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group">
-                                    <CardContent className="p-3 sm:p-6">
-                                        <div className="flex items-center gap-4">
+                                    <CardContent className="p-3 sm:p-4">
+                                        <div className="flex items-center gap-3">
                                             <div className="relative">
-                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500`}>
-                                                    <Search className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                                <div className={`w-12 h-12 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500`}>
+                                                    <Search className="w-6 h-6 text-white" />
                                                 </div>
-                                                <div className={`absolute -top-1 -right-1 w-6 h-6 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
+                                                <div className={`absolute -top-1 -right-1 w-5 h-5 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
                                                     <span className="text-white text-xs font-bold">+</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Search & Add Music</h3>
-                                                <p className={`text-sm sm:text-base ${currentTheme.text} opacity-90`}>Discover new tracks and add them to the queue</p>
+                                                <h3 className="text-base font-bold text-white mb-0.5">Search & Add Music</h3>
+                                                <p className={`text-sm ${currentTheme.text} opacity-90`}>Discover new tracks and add them to the queue</p>
                                             </div>
                                             <div className="hidden sm:block">
                                                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -1215,17 +1215,17 @@ export default function RoomPage() {
                             onClick={() => setImportModalOpen(true)}
                             className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group"
                         >
-                            <CardContent className="p-3 sm:p-6">
-                                <div className="flex items-center gap-4">
+                            <CardContent className="p-3 sm:p-4">
+                                <div className="flex items-center gap-3">
                                     <div className="relative">
-                                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br  bg-white/10 backdrop-blur-md border-white/20 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                                            <ListMusic className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                        <div className="w-12 h-12 bg-white/10 backdrop-blur-md border-white/20 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500">
+                                            <ListMusic className="w-6 h-6 text-white" />
                                         </div>
 
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Import Playlist</h3>
-                                        <p className={`text-sm sm:text-base ${currentTheme.text} opacity-90`}>Bulk add songs from YouTube</p>
+                                        <h3 className="text-base font-bold text-white mb-0.5">Import Playlist</h3>
+                                        <p className={`text-sm ${currentTheme.text} opacity-90`}>Bulk add songs from YouTube</p>
                                     </div>
                                     <div className="hidden sm:block">
                                         <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -1323,9 +1323,9 @@ export default function RoomPage() {
                             transition={{ duration: 0.5, delay: 0.4 }}
                             className="xl:col-span-1"
                         >
-                            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl h-[350px] sm:h-[450px] xl:h-[600px] flex flex-col">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl h-[350px] sm:h-[450px] xl:h-[520px] flex flex-col">
                                 {/* Queue Header */}
-                                <div className="p-3 sm:p-6 pb-2 sm:pb-4 border-b border-white/10">
+                                <div className="p-3 sm:p-6 pb-2 sm:pb-2 border-white/10">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center shadow-lg transition-colors duration-500`}>
