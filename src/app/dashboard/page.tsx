@@ -160,7 +160,7 @@ export default function Dashboard() {
       {/* Hero Section */}
       <div className="relative flex-1 flex flex-col min-h-0">
         {/* Navigation */}
-        <nav className="relative z-20 flex justify-between items-center px-6 py-3 border-b border-white/10 bg-gray-900/80 backdrop-blur-xl shrink-0">
+        <nav className="relative lg:sticky lg:top-0 z-20 flex justify-between items-center px-6 py-3 border-b border-white/10 bg-gray-900/80 backdrop-blur-xl shrink-0">
           <Link href="/" className="font-bold text-xl tracking-tight text-white flex items-center gap-1">
             Jukebox<span className="text-red-500">Duo</span>
           </Link>
