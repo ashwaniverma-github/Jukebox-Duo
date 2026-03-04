@@ -4,6 +4,7 @@ import { Check, X, ArrowRight, Users, Zap, Shield, Globe, Music, Sparkles, Clock
 import Footer from '@/components/Footer';
 import { CONFIG } from '@/lib/config';
 import AnimatedSection from '@/components/AnimatedSection';
+import { safeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
     title: 'Best Spotify Jam Alternative (2026) — Free & Ad-Free | Jukebox Duo',
@@ -80,7 +81,7 @@ export default function SpotifyJamAlternativePage() {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
+                    __html: safeJsonLd({
                         "@context": "https://schema.org",
                         "@type": "FAQPage",
                         "mainEntity": faqs.map((faq) => ({
@@ -97,7 +98,7 @@ export default function SpotifyJamAlternativePage() {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
+                    __html: safeJsonLd({
                         "@context": "https://schema.org",
                         "@type": "Article",
                         "headline": "Best Spotify Jam Alternative in 2026",
@@ -430,7 +431,7 @@ export default function SpotifyJamAlternativePage() {
 
                     <div className="grid md:grid-cols-3 gap-8 relative">
                         {/* Connecting line for desktop */}
-                        <div className="hidden md:block absolute top-[4.5rem] left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent z-0"></div>
+                        <div className="hidden md:block absolute top-[4.5rem] left-[16.67%] right-[16.67%] h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent z-0"></div>
 
                         {[
                             {

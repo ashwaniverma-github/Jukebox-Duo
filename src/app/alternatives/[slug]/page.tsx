@@ -5,6 +5,7 @@ import { getAlternativePage, getAlternativeSlugs } from '@/lib/seo-data';
 import Footer from '@/components/Footer';
 import { CONFIG } from '@/lib/config';
 import { Check, X, Shield, Users, Zap, Eye, Globe, Headphones, Music, Sparkles, AlertCircle } from 'lucide-react';
+import { safeJsonLd } from '@/lib/safe-json-ld';
 
 export async function generateStaticParams() {
     const slugs = getAlternativeSlugs();
@@ -73,7 +74,7 @@ export default async function AlternativePage({
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
+                        __html: safeJsonLd({
                             "@context": "https://schema.org",
                             "@type": "FAQPage",
                             "mainEntity": page.faqs.map((faq: { q: string; a: string }) => ({

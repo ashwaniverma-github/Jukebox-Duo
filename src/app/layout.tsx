@@ -5,6 +5,7 @@ import { Providers } from "./Providers";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
+import { safeJsonLd } from '@/lib/safe-json-ld';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -113,7 +114,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLd({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "Jukebox Duo",

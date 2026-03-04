@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import HigherLowerGame from './HigherLowerGame';
+import { safeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
     title: 'Higher or Lower: Music Views Game | Jukebox Duo',
@@ -114,11 +115,11 @@ export default function HigherLowerPage() {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
             />
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }}
             />
             <HigherLowerGame />
         </>
