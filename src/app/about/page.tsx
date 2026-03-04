@@ -1,7 +1,16 @@
-"use client"
-import { motion } from 'framer-motion';
+import { Metadata } from 'next';
 import { Music, Heart, Users, Globe, Code, Coffee } from 'lucide-react';
 import Link from 'next/link';
+import AnimatedSection from '@/components/AnimatedSection';
+
+export const metadata: Metadata = {
+  title: 'About Jukebox Duo - Listen to Music with Friends Online',
+  description: 'Jukebox Duo brings people together through music. Create synchronized music listening rooms with friends, couples, and communities — no downloads needed.',
+  keywords: ['about jukebox duo', 'music sharing app', 'listen together app', 'social music platform'],
+  alternates: {
+    canonical: 'https://jukeboxduo.com/about',
+  },
+};
 
 export default function AboutPage() {
   return (
@@ -22,11 +31,7 @@ export default function AboutPage() {
       <main className="relative z-10 px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
+          <AnimatedSection className="text-center mb-16">
             <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6">
               About
               <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent"> Jukebox Duo</span>
@@ -34,36 +39,26 @@ export default function AboutPage() {
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
               Bringing people together through the universal language of music
             </p>
-          </motion.div>
+          </AnimatedSection>
 
           {/* Story Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
-          >
+          <AnimatedSection delay={0.1} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12">
             <h2 className="text-3xl font-bold text-white mb-6">Our Story</h2>
             <div className="space-y-4 text-gray-300">
-                             <p>
-                 Jukebox Duo was born from a simple idea: music is better when shared. In a world where we&apos;re increasingly connected digitally but often isolated physically, we wanted to create a space where friends, families, and communities could come together through music.
-               </p>
-                             <p>
-                 Whether you&apos;re hosting a virtual party, studying with friends, or just want to share your favorite tracks with someone special, Jukebox Duo makes it effortless to create shared musical experiences in real-time.
-               </p>
-                             <p>
-                 We believe that music has the power to bring people together, create memories, and build connections. That&apos;s why we&apos;ve built a platform that&apos;s not just about playing music, but about creating moments together.
-               </p>
+              <p>
+                Jukebox Duo was born from a simple idea: music is better when shared. In a world where we&apos;re increasingly connected digitally but often isolated physically, we wanted to create a space where friends, families, and communities could come together through music.
+              </p>
+              <p>
+                Whether you&apos;re hosting a virtual party, studying with friends, or just want to share your favorite tracks with someone special, Jukebox Duo makes it effortless to create shared musical experiences in real-time.
+              </p>
+              <p>
+                We believe that music has the power to bring people together, create memories, and build connections. That&apos;s why we&apos;ve built a platform that&apos;s not just about playing music, but about creating moments together.
+              </p>
             </div>
-          </motion.div>
+          </AnimatedSection>
 
           {/* Mission Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
-          >
+          <AnimatedSection delay={0.2} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12">
             <h2 className="text-3xl font-bold text-white mb-6">Our Mission</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4">
@@ -111,15 +106,10 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </AnimatedSection>
 
           {/* Values Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
-          >
+          <AnimatedSection delay={0.3} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12">
             <h2 className="text-3xl font-bold text-white mb-6">Our Values</h2>
             <div className="space-y-6">
               <div className="flex items-start gap-4">
@@ -167,15 +157,10 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </AnimatedSection>
 
           {/* CTA Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-center"
-          >
+          <AnimatedSection delay={0.4} className="text-center">
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-bold py-4 px-8 rounded-xl text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
@@ -183,7 +168,7 @@ export default function AboutPage() {
               <Coffee className="w-5 h-5" />
               Join the Music Revolution
             </Link>
-          </motion.div>
+          </AnimatedSection>
         </div>
       </main>
     </div>

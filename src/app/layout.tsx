@@ -13,9 +13,9 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://jukeboxduo.com'),
-  title: "Jukebox Duo - Listen Together, No Matter Where You Are",
-  description: "Create synchronized music listening rooms directly in your browser. Optimized for the best experience on desktop and browser. Share YouTube music in perfect sync with friends, no extensions required.",
-  keywords: ["music sharing", "synchronized music", "YouTube music", "browser music party", "desktop music sync", "collaborative playlists", "real-time music"],
+  title: "Jukebox Duo - Listen to Music Together with Friends Online",
+  description: "Listen to music with friends online in real-time. Free music listening rooms with synchronized playback — no downloads, no ads. The best Spotify Jam alternative for couples, study groups & friend groups.",
+  keywords: ["listen to music together", "listen with friends online", "music listening room", "spotify jam alternative", "listen together app", "collaborative playlists", "synchronized music playback", "playlist name generator", "music sharing app"],
   authors: [{ name: "Jukebox Duo Team" }],
   creator: "Jukebox Duo",
   publisher: "Jukebox Duo",
@@ -45,8 +45,8 @@ export const metadata: Metadata = {
 
   // Open Graph (social preview)
   openGraph: {
-    title: "Jukebox Duo - Listen Together, No Matter Where You Are",
-    description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+    title: "Jukebox Duo - Listen to Music Together with Friends Online",
+    description: "Listen to music with friends online in real-time. Free music listening rooms — no downloads, no ads. The best Spotify Jam alternative.",
     url: "https://jukeboxduo.com",
     siteName: "Jukebox Duo",
     locale: "en_US",
@@ -65,8 +65,8 @@ export const metadata: Metadata = {
   // Twitter card
   twitter: {
     card: "summary_large_image",
-    title: "Jukebox Duo - Listen Together, No Matter Where You Are",
-    description: "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+    title: "Jukebox Duo - Listen to Music Together with Friends Online",
+    description: "Listen to music with friends online in real-time. Free music listening rooms — no downloads, no ads. The best Spotify Jam alternative.",
     images: ["/og-image.png"],
     creator: "@ashwanivermax", // Add your Twitter handle if you have one
   },
@@ -117,7 +117,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "Jukebox Duo",
-              "description": "Create synchronized music listening rooms with friends. Share YouTube music, create playlists, and enjoy music together in real-time.",
+              "description": "Listen to music with friends online in real-time. Free music listening rooms with synchronized playback. The best Spotify Jam alternative for couples and groups.",
               "url": "https://jukeboxduo.com",
               "applicationCategory": "MusicApplication",
               "operatingSystem": "Web Browser",
@@ -132,12 +132,14 @@ export default function RootLayout({
                 "name": "Jukebox Duo Team"
               },
               "featureList": [
-                "Synchronized music listening",
-                "YouTube music sharing",
-                "Real-time collaboration",
-                "Virtual music rooms",
-                "Playlist creation",
-                "Cross-platform compatibility"
+                "Listen to music together with friends online",
+                "Real-time synchronized playback",
+                "Free Spotify Jam alternative",
+                "Virtual music listening rooms",
+                "Collaborative playlist creation",
+                "No downloads required — works in browser",
+                "Ad-free music experience",
+                "Playlist name generator tool"
               ],
               "screenshot": "https://jukeboxduo.com/og-image.png",
               "softwareVersion": "1.0.0"

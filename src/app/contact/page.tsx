@@ -1,7 +1,15 @@
-"use client"
-import { motion } from 'framer-motion';
+import { Metadata } from 'next';
 import { Music, Twitter, Mail, MessageCircle, Heart } from 'lucide-react';
 import Link from 'next/link';
+import AnimatedSection from '@/components/AnimatedSection';
+
+export const metadata: Metadata = {
+  title: 'Contact Jukebox Duo - Get in Touch',
+  description: 'Have questions about Jukebox Duo? Get in touch via X (Twitter) or email. We love hearing from our community of music lovers.',
+  alternates: {
+    canonical: 'https://jukeboxduo.com/contact',
+  },
+};
 
 export default function ContactPage() {
   return (
@@ -22,11 +30,7 @@ export default function ContactPage() {
       <main className="relative z-10 px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
+          <AnimatedSection className="text-center mb-16">
             <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6">
               Get in
               <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent"> Touch</span>
@@ -34,17 +38,12 @@ export default function ContactPage() {
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
               Have questions, feedback, or just want to say hello? I&apos;d love to hear from you!
             </p>
-          </motion.div>
+          </AnimatedSection>
 
           {/* Contact Methods */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             {/* Primary Contact - X/Twitter */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
-            >
+            <AnimatedSection delay={0.1} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6">
                 <Twitter className="w-8 h-8 text-white" />
               </div>
@@ -61,19 +60,14 @@ export default function ContactPage() {
                 <Twitter className="w-5 h-5" />
                 @ashwanivermax
               </a>
-            </motion.div>
+            </AnimatedSection>
 
             {/* Support & Inquiries */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
-            >
+            <AnimatedSection delay={0.2} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               <div className="w-16 h-16 bg-gradient-to-br from-red-700 to-red-500 rounded-2xl flex items-center justify-center mb-6">
                 <Mail className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Support & Inquiries</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Support &amp; Inquiries</h3>
               <p className="text-gray-300 mb-6">
                 For support, billing questions, feedback, or anything else — drop us an email. We typically respond within 24 hours.
               </p>
@@ -94,20 +88,15 @@ export default function ContactPage() {
                   <span>I love hearing from the community</span>
                 </div>
               </div>
-            </motion.div>
+            </AnimatedSection>
           </div>
 
           {/* What We'd Love to Hear */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12"
-          >
+          <AnimatedSection delay={0.3} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-12">
             <h2 className="text-3xl font-bold text-white mb-6">What I&apos;d Love to Hear</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white">Feedback & Suggestions</h3>
+                <h3 className="text-xl font-bold text-white">Feedback &amp; Suggestions</h3>
                 <ul className="space-y-2 text-gray-300">
                   <li>• Feature requests and ideas</li>
                   <li>• Bug reports and issues</li>
@@ -116,7 +105,7 @@ export default function ContactPage() {
                 </ul>
               </div>
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white">Community & Support</h3>
+                <h3 className="text-xl font-bold text-white">Community &amp; Support</h3>
                 <ul className="space-y-2 text-gray-300">
                   <li>• How you&apos;re using Jukebox Duo</li>
                   <li>• Success stories and experiences</li>
@@ -125,15 +114,10 @@ export default function ContactPage() {
                 </ul>
               </div>
             </div>
-          </motion.div>
+          </AnimatedSection>
 
           {/* Response Time */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-gradient-to-r from-red-700/20 to-pink-700/20 backdrop-blur-sm rounded-2xl p-8 border border-red-500/20 mb-12"
-          >
+          <AnimatedSection delay={0.4} className="bg-gradient-to-r from-red-700/20 to-pink-700/20 backdrop-blur-sm rounded-2xl p-8 border border-red-500/20 mb-12">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center">
                 <Heart className="w-6 h-6 text-white" />
@@ -143,15 +127,10 @@ export default function ContactPage() {
             <p className="text-gray-300">
               I&apos;m a passionate individual builder dedicated to making Jukebox Duo the best it can be. I typically respond to messages within 24 hours, and I read every single message I receive. Your feedback helps me improve and grow!
             </p>
-          </motion.div>
+          </AnimatedSection>
 
           {/* CTA Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-center"
-          >
+          <AnimatedSection delay={0.5} className="text-center">
             <a
               href="https://x.com/ashwanivermax"
               target="_blank"
@@ -161,7 +140,7 @@ export default function ContactPage() {
               <Twitter className="w-5 h-5" />
               Say Hello on X
             </a>
-          </motion.div>
+          </AnimatedSection>
         </div>
       </main>
     </div>

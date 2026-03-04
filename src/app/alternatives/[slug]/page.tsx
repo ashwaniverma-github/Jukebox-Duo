@@ -68,6 +68,26 @@ export default async function AlternativePage({
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-red-500/30 font-[var(--font-inter)]">
+            {/* FAQ Structured Data for rich snippets */}
+            {page.faqs && page.faqs.length > 0 && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "FAQPage",
+                            "mainEntity": page.faqs.map((faq: { q: string; a: string }) => ({
+                                "@type": "Question",
+                                "name": faq.q,
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": faq.a,
+                                },
+                            })),
+                        }),
+                    }}
+                />
+            )}
             {/* Ambient Background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className={`absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-red-600/10 blur-[120px] rounded-full animate-pulse`} />

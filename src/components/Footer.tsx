@@ -129,6 +129,11 @@ const Footer = () => (
                 </li>
               ))}
               <li>
+                <Link href="/spotify-jam-alternative" className="text-sm text-gray-500 hover:text-white transition-colors block py-0.5">
+                  Spotify Jam Alternative
+                </Link>
+              </li>
+              <li>
                 <Link href="/alternatives" className="text-sm text-red-500 hover:text-red-400 font-medium inline-flex items-center gap-1 mt-1 group">
                   View All
                   <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
