@@ -180,7 +180,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                         <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
                                     </div>
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
-                                        <span>🔥 Only 1 spot remaining!</span>
+                                        <span>🔥 Only 1 spot left!</span>
                                     </div>
                                 </div>
                             )}
