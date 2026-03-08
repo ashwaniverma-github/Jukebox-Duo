@@ -108,17 +108,17 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[85vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Header Section */}
-                <div className="relative p-3 sm:p-6 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
-                    <div className="flex flex-col items-center text-center space-y-2 sm:space-y-4">
+                <div className="relative p-3 sm:p-4 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
+                    <div className="flex flex-col items-center text-center space-y-2 sm:space-y-2">
                         <div className="relative">
                             <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full" />
-                            <div className="relative w-10 sm:w-16 h-10 sm:h-16 bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-700 flex items-center justify-center shadow-inner">
-                                <Crown className="w-5 sm:w-8 h-5 sm:h-8 text-yellow-500" />
+                            <div className="relative w-10 sm:w-12 h-10 sm:h-12 bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-700 flex items-center justify-center shadow-inner">
+                                <Crown className="w-5 sm:w-6 h-5 sm:h-6 text-yellow-500" />
                             </div>
                         </div>
 
-                        <div className="space-y-0.5 sm:space-y-1">
-                            <DialogTitle className="text-lg sm:text-xl font-semibold tracking-tight">
+                        <div className="space-y-0.5">
+                            <DialogTitle className="text-lg sm:text-lg font-semibold tracking-tight">
                                 Upgrade to Premium
                             </DialogTitle>
                             <DialogDescription className="text-xs sm:text-sm text-zinc-400">
@@ -154,18 +154,18 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 Lifetime
                             </button>
                         </div>
-                        <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                        <div className="flex flex-col items-center gap-0.5">
                             <div className="flex items-center gap-2">
                                 {plan === 'lifetime' ? (
                                     <>
                                         <span className="text-sm line-through text-zinc-500 font-medium">$49.99</span>
-                                        <span className="text-2xl sm:text-3xl font-bold text-white">$12.99</span>
+                                        <span className="text-2xl font-bold text-white">$12.99</span>
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-2xl sm:text-3xl font-bold text-white">$0</span>
-                                            <span className="text-xs sm:text-sm font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
+                                            <span className="text-2xl font-bold text-white">$0</span>
+                                            <span className="text-xs font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
                                                 Free for 7 days
                                             </span>
                                         </div>
@@ -189,7 +189,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Features List */}
-                <div className="px-4 sm:px-6 py-2 sm:py-4 space-y-1.5 sm:space-y-4">
+                <div className="px-4 sm:px-6 py-2 sm:py-2 space-y-1.5 sm:space-y-2">
                     {features.map((feature, i) => (
                         <div key={i} className="flex items-center sm:items-start gap-3 group">
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:border-zinc-700 transition-colors">
@@ -205,7 +205,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 </div>
 
                 {/* Footer Section */}
-                <div className="px-4 sm:px-6 pb-3 sm:pb-6 pt-0 bg-zinc-950/50">
+                <div className="px-4 sm:px-6 pb-3 sm:pb-3 pt-0 bg-zinc-950/50">
                     <div className="space-y-2">
                         <Button
                             onClick={action}
@@ -229,7 +229,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         </Button>
                     </div>
 
-                    <div className="mt-1.5 sm:mt-4 flex flex-col items-center space-y-1 sm:space-y-2">
+                    <div className="mt-1.5 sm:mt-2 flex flex-col items-center space-y-1 sm:space-y-1">
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
                             <Lock className="w-3 h-3" />
                             Secure Checkout
@@ -244,7 +244,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
                     <button
                         onClick={() => onOpenChange(false)}
-                        className="w-full mt-2 sm:mt-4 pb-3 text-xs text-zinc-500 hover:text-zinc-600 transition-colors"
+                        className="w-full mt-1 sm:mt-2 pb-2 text-xs text-zinc-500 hover:text-zinc-600 transition-colors"
                     >
                         No thanks, maybe later
                     </button>
