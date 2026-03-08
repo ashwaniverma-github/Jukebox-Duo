@@ -1,4 +1,5 @@
 import Hero from "../components/Hero";
+import SocialProof from "../components/SocialProof";
 import HowItWorks from "../components/HowItWorks";
 import Features from "../components/Features";
 import UseCases from "../components/UseCases";
@@ -19,6 +20,7 @@ export default function Home() {
 
       <div className="relative z-10">
         <Hero />
+        <SocialProof />
         <Features />
         <UseCases />
         <HowItWorks />
