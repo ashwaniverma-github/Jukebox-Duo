@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://jukeboxduo.com",
+    canonical: "/",
   },
   icons: {
     icon: [
