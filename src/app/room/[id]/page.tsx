@@ -1,6 +1,8 @@
 // app/room/[id]/page.tsx
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -184,7 +186,13 @@ export default function RoomPage() {
             })
             .catch(err => {
                 console.error('Failed to load room:', err);
-                setError("Failed to load room data. Please try refreshing.");
+                Sentry.captureException(err, {
+                    tags: { component: 'room-init', roomId },
+                    extra: { userAgent: navigator.userAgent },
+                });
+                if (err.message !== 'Session expired') {
+                    setError("Failed to load room data. Please try refreshing.");
+                }
             });
 
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency

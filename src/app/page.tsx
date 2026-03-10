@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-hidden selection:bg-rose-500/30">
