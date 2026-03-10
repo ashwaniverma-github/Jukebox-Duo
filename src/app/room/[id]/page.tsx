@@ -131,7 +131,20 @@ export default function RoomPage() {
     useEffect(() => {
         if (status !== "authenticated") return;
         fetch(`/api/rooms/${roomId}/init`)
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) {
+                    if (r.status === 401) {
+                        // Session expired — redirect to sign in
+                        const callbackUrl = typeof window !== 'undefined'
+                            ? window.location.pathname + window.location.search
+                            : '/dashboard';
+                        router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+                        throw new Error('Session expired');
+                    }
+                    throw new Error(`Failed to load room (${r.status})`);
+                }
+                return r.json();
+            })
             .then((data) => {
                 // Set room details
                 setRoomDetails({
