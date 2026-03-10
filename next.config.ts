@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default withPWA(withSentryConfig(nextConfig, {
+export default withSentryConfig(withPWA(nextConfig), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -53,4 +53,4 @@ export default withPWA(withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
-}));
+});
