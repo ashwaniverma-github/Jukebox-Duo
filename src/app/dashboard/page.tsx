@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
@@ -38,7 +39,12 @@ export default function Dashboard() {
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -149,13 +155,16 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-auto lg:overflow-hidden flex flex-col">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-gray-900/40 to-black" />
-        <div className="absolute top-20 left-20 w-32 h-32 bg-red-700/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-20 w-48 h-48 bg-red-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gray-800/10 rounded-full blur-3xl animate-pulse delay-2000" />
-      </div>
+      {/* Animated Background - rendered via portal to avoid React fiber/DOM conflicts with Dialog portals */}
+      {mounted && createPortal(
+        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-gray-900/40 to-black" />
+          <div className="absolute top-20 left-20 w-32 h-32 bg-red-700/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-48 h-48 bg-red-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gray-800/10 rounded-full blur-3xl animate-pulse delay-2000" />
+        </div>,
+        document.body
+      )}
 
       {/* Hero Section */}
       <div className="relative flex-1 flex flex-col lg:min-h-0">
