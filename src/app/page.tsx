@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Hero from "../components/Hero";
 import SocialProof from "../components/SocialProof";
 import HowItWorks from "../components/HowItWorks";
@@ -7,6 +8,12 @@ import Testimonials from "../components/Testimonials";
 import CTABanner from "../components/CTABanner";
 import FAQ from "../components/FAQ";
 import Footer from "../components/Footer";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "https://jukeboxduo.com",
+  },
+};
 
 export default function Home() {
   return (

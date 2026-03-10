@@ -1,6 +1,9 @@
 export const metadata = {
   title: "Terms of Service | Jukebox Duo",
   description: "Read the Terms of Service for Jukebox Duo, including your rights, responsibilities, and our policies.",
+  alternates: {
+    canonical: "https://jukeboxduo.com/terms",
+  },
 };
 
 import Footer from "../../components/Footer";
