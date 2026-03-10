@@ -154,21 +154,8 @@ export default function RootLayout({
         <Providers>
           <MaintenanceBanner />
           {children}
-          <Script id="feedinbox-config" strategy="afterInteractive">
-            {`
-            window.feedinboxConfig = {
-              projectKey: "cmj3omf3600035qx2fnqkgkot"
-            };
-          `}
-          </Script>
-
-          {/* 2. Widget Script */}
-          <Script
-            src="https://www.feedinbox.com/widget.js"
-            strategy="lazyOnload"
-          />
-
-
+          {/* Feedinbox widget */}
+          <script async src="https://www.feedinbox.com/widget.js" data-project-key="cmj3omf3600035qx2fnqkgkot"></script>
         </Providers>
         <Analytics />
       </body>
