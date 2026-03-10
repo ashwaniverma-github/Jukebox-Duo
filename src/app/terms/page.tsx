@@ -145,7 +145,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold">14. Contact Us</h2>
               <p className="mt-3 text-gray-300">
-                Questions about these Terms? Contact us at <span className="font-medium">ap8606574@gmail.com</span>.
+                Questions about these Terms? Contact us at <span className="font-medium">jukeboxduo.com@gmail.com</span>.
               </p>
             </section>
 
