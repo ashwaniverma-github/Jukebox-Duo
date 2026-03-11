@@ -336,6 +336,10 @@ export default function RoomPage() {
         }
     }, [roomId]);
 
+    // Keep a stable ref to refreshQueue so socket listeners never need it as a dependency
+    const refreshQueueRef = useRef(refreshQueue);
+    useEffect(() => { refreshQueueRef.current = refreshQueue; }, [refreshQueue]);
+
     // Debounced search function
     const debouncedSearch = useCallback(
         (searchTerm: string) => {
@@ -539,7 +543,7 @@ export default function RoomPage() {
         console.log('[Socket] Setting up queue-updated listener for room:', roomId);
         const handler = async () => {
             console.log('[Socket] received queue-updated; refreshing queue');
-            await refreshQueue();
+            await refreshQueueRef.current();
         };
         socket.on('queue-updated', handler);
         console.log('[Socket] queue-updated listener added');
@@ -547,7 +551,7 @@ export default function RoomPage() {
             console.log('[Socket] Removing queue-updated listener');
             socket.off('queue-updated', handler);
         };
-    }, [roomId, refreshQueue, isSyncEnabled]);
+    }, [roomId, isSyncEnabled]);
 
     // Listen for queue-removed event from socket (only when sync is enabled)
     useEffect(() => {
@@ -564,7 +568,7 @@ export default function RoomPage() {
             const oldCurrentIndex = currentQueueIndexRef.current;
 
             // Refresh the queue to get the updated state from server
-            await refreshQueue();
+            await refreshQueueRef.current();
 
             // Log queue state after refresh for debugging
             console.log(`[Socket] Queue refreshed after deletion. Old index: ${oldCurrentIndex}, New index: ${data.newCurrentIndex}`);
@@ -588,7 +592,7 @@ export default function RoomPage() {
             console.log('[Socket] Removing queue-removed listener');
             socket.off('queue-removed', handler);
         };
-    }, [roomId, refreshQueue, isSyncEnabled]);
+    }, [roomId, isSyncEnabled]);
 
     // After remove, sync by refetching and updating current index if needed
     const handleRemoveFromQueue = async () => {
