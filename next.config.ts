@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(withPWA(nextConfig), {
   org: "saas-apps-ej",
-  project: "javascript-nextjs-ow",
+  project: "jukebox-duo",
   silent: !process.env.CI,
   widenClientFileUpload: true,
   automaticVercelMonitors: true, // ✅ this one IS a valid top-level Sentry option
