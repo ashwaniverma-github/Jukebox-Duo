@@ -24,6 +24,7 @@ import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
 import { ManageBillingButton } from '../../../components/ManageBillingButton';
 import { SharePlaylistModal } from '../../../components/SharePlaylistModal';
 import { DesktopExperienceModal } from '../../../components/DesktopExperienceModal';
+import { CONFIG } from '../../../lib/config';
 
 
 export default function RoomPage() {
@@ -818,7 +819,7 @@ export default function RoomPage() {
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative  sm:fixed sm:top-0 sm:left-0 sm:right-0 z-20 w-full px-4 sm:px-6 py-2 sm:backdrop-blur-xl "
+                className={`relative sm:fixed ${CONFIG.MAINTENANCE_MODE ? 'sm:top-10' : 'sm:top-0'} sm:left-0 sm:right-0 z-20 w-full px-4 sm:px-6 py-2 sm:backdrop-blur-xl`}
             >
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     {/* Left: Room Info (dynamic) */}
@@ -1099,7 +1100,7 @@ export default function RoomPage() {
             </AnimatePresence>
 
             {/* Main content */}
-            <main className="relative z-10 px-2 sm:px-4 pb-6 sm:pt-14">
+            <main className={`relative z-10 px-2 sm:px-4 pb-6 ${CONFIG.MAINTENANCE_MODE ? 'sm:pt-24' : 'sm:pt-14'}`}>
                 <div className="max-w-7xl mx-auto">
                     {/* Search Card */}
                     <motion.div
