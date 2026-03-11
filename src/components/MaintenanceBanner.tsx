@@ -14,10 +14,9 @@ const MaintenanceBanner: React.FC = () => {
                     </span>
                 </div>
                 <p className="truncate">
-                    <span>Ongoing maintenance : </span>
+                    <span>Ongoing maintenance: </span>
                     Send feedback if you face any issues.
-                </p>
-            </div>
+                </p>            </div>
         </div>
     );
 };
