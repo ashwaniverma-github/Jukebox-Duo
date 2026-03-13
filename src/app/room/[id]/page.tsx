@@ -133,7 +133,8 @@ export default function RoomPage() {
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
     useEffect(() => {
         if (status !== "authenticated") return;
-        fetch(`/api/rooms/${roomId}/init`)
+        const abortController = new AbortController();
+        fetch(`/api/rooms/${roomId}/init`, { signal: abortController.signal })
             .then(r => {
                 if (!r.ok) {
                     if (r.status === 401) {
@@ -186,6 +187,8 @@ export default function RoomPage() {
                 }
             })
             .catch(err => {
+                // Ignore aborted fetches (caused by effect cleanup on re-render)
+                if (err.name === 'AbortError') return;
                 console.error('Failed to load room:', err);
                 Sentry.captureException(err, {
                     tags: { component: 'room-init', roomId },
@@ -198,6 +201,7 @@ export default function RoomPage() {
 
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
+        return () => abortController.abort();
     }, [roomId, status, session]);
 
     // Restore saved theme from local storage when boughtThemes are available
@@ -892,6 +896,28 @@ export default function RoomPage() {
                             )}
                         </div>
 
+                        {/* Mobile: tiny member avatars (only when sync enabled and members exist) */}
+                        {isSyncEnabled && members.length > 0 && (
+                            <div className="flex sm:hidden -space-x-1.5 flex-shrink-0">
+                                {members.slice(0, 3).map((m) => (
+                                    <div key={m.id} className="w-5 h-5 rounded-full border border-white/30 overflow-hidden flex-shrink-0 bg-white/10">
+                                        {m.image ? (
+                                            <img src={m.image} alt={m.name || 'User'} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-white/20 flex items-center justify-center text-white text-[8px] font-bold">
+                                                {(m.name || '?')[0].toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {members.length > 3 && (
+                                    <div className="w-5 h-5 rounded-full border border-white/30 bg-white/10 flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
+                                        +{members.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Enable Sync Button / Connecting Spinner / Live Indicator */}
                         {!isSyncEnabled && !isSyncConnecting ? (
                             <Button
@@ -902,12 +928,12 @@ export default function RoomPage() {
                                 <span className="hidden sm:inline ml-1.5">Enable Sync</span>
                             </Button>
                         ) : isSyncConnecting ? (
-                            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-yellow-500/20 border border-yellow-500/40 rounded-xl">
-                                <div className="w-4 h-4 border-2 border-yellow-300/30 border-t-yellow-300 rounded-full animate-spin" />
+                            <div className="flex items-center gap-1 sm:gap-2 p-1.5 sm:px-3 sm:py-2 bg-yellow-500/20 border border-yellow-500/40 rounded-xl">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-yellow-300/30 border-t-yellow-300 rounded-full animate-spin" />
                                 <span className="hidden sm:inline text-yellow-300 text-sm font-medium">Connecting...</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
+                            <div className="flex items-center gap-1 sm:gap-2 p-1.5 sm:px-3 sm:py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                 <span className="hidden sm:inline text-green-300 text-sm font-medium">Live</span>
                             </div>
