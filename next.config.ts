@@ -36,5 +36,7 @@ export default withSentryConfig(withPWA(nextConfig), {
   project: "jukebox-duo",
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  automaticVercelMonitors: true, // ✅ this one IS a valid top-level Sentry option
+  webpack: {
+    automaticVercelMonitors: true,
+  },
 });

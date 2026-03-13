@@ -106,37 +106,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             item.snippet.title !== 'Deleted video'
         );
 
-        // Get current max order
-        const currentCount = await prisma.queueItem.count({ where: { roomId: roomId } });
-
-        // Prepare data for createMany
-        // Note: createMany is not supported in SQLite if you are using it, but Postgres/MySQL supports it. 
-        // Assuming Postgres/MySQL based on project. If SQLite, we'd need a loop or Promise.all.
-        // Checking package.json... prisma is used. 
-        // Let's use a transaction with createMany to be safe/efficient.
-
         // Safe assignment since we checked session.user.id earlier
         const userId = session.user.id;
 
-        const newItemsData = validItems.map((item, index: number) => ({
-            roomId: roomId,
-            videoId: item.snippet.resourceId.videoId,
-            title: item.snippet.title,
-            thumbnail: item.snippet.thumbnails?.default?.url || '',
-            order: currentCount + index,
-            addedById: userId
-        }));
+        // Use interactive transaction to prevent race conditions with concurrent imports
+        const newItemCount = await prisma.$transaction(async (tx) => {
+            const currentCount = await tx.queueItem.count({ where: { roomId: roomId } });
 
-        if (newItemsData.length > 0) {
-            await prisma.queueItem.createMany({
-                data: newItemsData
-            });
-        }
+            const newItemsData = validItems.map((item, index: number) => ({
+                roomId: roomId,
+                videoId: item.snippet.resourceId.videoId,
+                title: item.snippet.title.slice(0, 500),
+                thumbnail: item.snippet.thumbnails?.default?.url || '',
+                order: currentCount + index,
+                addedById: userId
+            }));
+
+            if (newItemsData.length > 0) {
+                await tx.queueItem.createMany({
+                    data: newItemsData
+                });
+            }
+
+            return newItemsData.length;
+        });
 
         return NextResponse.json({
             success: true,
-            count: newItemsData.length,
-            message: `Added ${newItemsData.length} songs to queue`
+            count: newItemCount,
+            message: `Added ${newItemCount} songs to queue`
         });
 
     } catch (err) {

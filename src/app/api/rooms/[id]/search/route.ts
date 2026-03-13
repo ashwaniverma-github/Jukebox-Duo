@@ -13,6 +13,14 @@ const RATE_LIMIT_MAX = 50 // Increased since we have multiple API keys
 const buckets = new Map<string, Bucket>()
 const SWR_STALE_AFTER_MS = 12 * 60 * 60 * 1000 // 12 hours
 
+// Periodic cleanup of expired rate limit buckets to prevent memory leak
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, bucket] of buckets) {
+    if (now > bucket.resetAt) buckets.delete(key)
+  }
+}, 5 * 60 * 1000).unref()
+
 function getClientKey(userId: string | undefined, req: Request): string {
   if (userId) return `user:${userId}`
   const ip = (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'anonymous').split(',')[0].trim()

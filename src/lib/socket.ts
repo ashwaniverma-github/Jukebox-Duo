@@ -20,6 +20,12 @@ export function connectSocket(): Socket {
     return socket;
   }
 
+  // If socket exists but is disconnected, reconnect it (preserves attached listeners)
+  if (socket && !socket.connected) {
+    socket.connect();
+    return socket;
+  }
+
   // Use environment variable for production, fallback to localhost for development
   const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 

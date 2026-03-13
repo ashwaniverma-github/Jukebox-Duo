@@ -62,18 +62,11 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
 
   const currentTheme = themeStyles[theme];
 
-  const handlePlay = async (item: QueueItem) => {
-    console.log('[QueueList] handlePlay called for item:', item);
+  const handlePlay = (item: QueueItem) => {
     const itemIndex = queue.findIndex(q => q.id === item.id)
     if (itemIndex !== -1) {
       setCurrentIndex(itemIndex)
-      console.log('[QueueList] Calling onSelect with id:', item.id);
       onSelect(item.id)
-      await fetch(`/api/rooms/${roomId}/queue`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentIndex: itemIndex })
-      })
     }
   }
 

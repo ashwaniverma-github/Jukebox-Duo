@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/options';
+import { checkRoomAccess } from '@/lib/room-auth';
 
 export async function GET(
   req: NextRequest,
@@ -12,6 +13,16 @@ export async function GET(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
+
+  // Check room exists and user has access (host or member)
+  const { authorized, roomExists } = await checkRoomAccess(id, session.user.id);
+  if (!roomExists) {
+    return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+  }
+  if (!authorized) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
+
   const room = await prisma.room.findUnique({
     where: { id },
     include: { host: { select: { name: true, id: true } } },

@@ -26,13 +26,14 @@ export async function GET(
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
-  // List participants (includes host if they joined/auto-joined)
+  // List participants (includes host if they joined/auto-joined), capped at 100
   const members = await prisma.roomMember.findMany({
     where: { roomId },
     select: {
       user: { select: { id: true, name: true, image: true } },
     },
     orderBy: { joinedAt: 'asc' },
+    take: 100,
   })
 
   const participants = members.map((m: { user: { id: string; name: string | null; image: string | null } }) => m.user)

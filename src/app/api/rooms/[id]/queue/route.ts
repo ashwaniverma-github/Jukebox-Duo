@@ -22,13 +22,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const { videoId, title, thumbnail } = await req.json()
-  if (!videoId || typeof videoId !== 'string') {
+  if (!videoId || typeof videoId !== 'string' || videoId.length > 20) {
     return NextResponse.json({ error: 'Invalid videoId' }, { status: 400 })
   }
-  if (!title || typeof title !== 'string') {
+  if (!title || typeof title !== 'string' || title.length > 500) {
     return NextResponse.json({ error: 'Invalid title' }, { status: 400 })
   }
-  if (thumbnail && typeof thumbnail !== 'string') {
+  if (thumbnail && (typeof thumbnail !== 'string' || thumbnail.length > 500)) {
     return NextResponse.json({ error: 'Invalid thumbnail' }, { status: 400 })
   }
 
@@ -64,16 +64,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: roomId } = await params
-  // No auth required to view queue, but ensure room exists
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, currentQueueIndex: true } })
-  if (!room) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  // Check room exists and user has access
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
+  if (!roomExists) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
-  const items = await prisma.queueItem.findMany({
-    where: { roomId },
-    orderBy: { order: 'asc' }
-  })
-  const currentQueueIndex = room.currentQueueIndex ?? 0;
+  if (!authorized) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+  }
+
+  const [room, items] = await Promise.all([
+    prisma.room.findUnique({ where: { id: roomId }, select: { currentQueueIndex: true } }),
+    prisma.queueItem.findMany({ where: { roomId }, orderBy: { order: 'asc' } })
+  ])
+  const currentQueueIndex = room?.currentQueueIndex ?? 0;
   return NextResponse.json({ queue: items, currentQueueIndex });
 }
 
@@ -167,13 +176,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Consolidated auth check - only host can update index
-  const { isHost, roomExists } = await checkRoomAccess(roomId, session.user.id)
+  // Any room member can update the current index (both host and guests advance songs)
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
   if (!roomExists) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
-  if (!isHost) {
-    return NextResponse.json({ error: 'Only host can update current index' }, { status: 403 })
+  if (!authorized) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
   const { currentIndex } = await req.json()

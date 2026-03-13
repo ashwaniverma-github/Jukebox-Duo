@@ -202,30 +202,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
     setIsLoading(true);
   }, [videoId]);
 
-  // 3) Listen for remote video changes and load accordingly
-  useEffect(() => {
-    // Only set up socket listeners if socket is connected
-    if (!socket) return;
-
-    console.log('[SyncAudio] Setting up video-changed listener for room:', roomId);
-    const onChange = (newVideoId: string) => {
-      console.log('🔄 Received video-changed →', newVideoId);
-      console.log('[SyncAudio] Current videoId prop:', videoId);
-      console.log('[SyncAudio] Loading new video:', newVideoId);
-      playerRef.current?.loadVideoById(newVideoId);
-      // Reset time states
-      setCurrentTime(0);
-      setDuration(0);
-    };
-    socket.on('video-changed', onChange);
-    console.log('[SyncAudio] video-changed listener added');
-    return () => {
-      console.log('[SyncAudio] Removing video-changed listener');
-      socket.off('video-changed', onChange);
-    };
-  }, [socket, roomId, videoId]); // Added videoId dependency
-
-  // 4) Sync play/pause commands
+  // 3) Sync play/pause commands
   useEffect(() => {
     // Only set up socket listeners if socket is connected
     if (!socket) return;

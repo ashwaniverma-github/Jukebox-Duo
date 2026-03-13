@@ -307,12 +307,14 @@ export default function HigherLowerGame() {
                                 <div className="space-y-4 relative z-10 p-1">
                                     <button
                                         onClick={restart}
+                                        aria-label="Play again"
                                         className="w-full py-4 rounded-xl bg-white text-black font-black text-lg hover:bg-gray-200 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                                     >
                                         Play Again
                                     </button>
                                     <button
                                         onClick={shareScore}
+                                        aria-label="Share your score"
                                         className={`w-full py-4 rounded-xl border font-bold text-base transition-all active:scale-[0.98] ${shareState === 'copied'
                                             ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                                             : shareState === 'failed'

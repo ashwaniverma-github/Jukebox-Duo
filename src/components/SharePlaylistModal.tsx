@@ -33,15 +33,21 @@ export function SharePlaylistModal({ isOpen, onOpenChange, roomId, theme = 'defa
     // Generate link WITHOUT ?sync=true
     const shareLink = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : '';
 
+    const [copyFailed, setCopyFailed] = useState(false);
+
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(shareLink);
             setCopied(true);
+            setCopyFailed(false);
 
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
+            setCopyFailed(true);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => setCopyFailed(false), 3000);
         }
     };
 
@@ -88,7 +94,7 @@ export function SharePlaylistModal({ isOpen, onOpenChange, roomId, theme = 'defa
                         onClick={handleCopy}
                         className={`h-12 px-4 bg-gradient-to-r ${currentTheme.buttonGradient} text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
                     >
-                        {copied ? 'Copied!' : <Copy className="w-4 h-4" />}
+                        {copied ? 'Copied!' : copyFailed ? 'Failed' : <Copy className="w-4 h-4" />}
                     </Button>
                 </div>
 

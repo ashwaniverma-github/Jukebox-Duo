@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import SyncAudio from '../../../components/SyncAudio'
-import { getSocket, connectSocket, disconnectSocket, isSocketConnected } from '../../../lib/socket'
+import { getSocket, connectSocket, disconnectSocket } from '../../../lib/socket'
 import QueueList from './QueueList'
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -252,51 +252,92 @@ export default function RoomPage() {
         console.log('[Sync] Room sync enabled!');
     }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium]);
 
-    // Connect WebSocket when sync is enabled (either manually or via URL param)
+    // Refs for values needed inside the consolidated socket effect (avoids stale closures
+    // and prevents the effect from re-running when these change)
+    const sessionRef = useRef(session);
+    useEffect(() => { sessionRef.current = session; }, [session]);
+    const isSyncConnectingRef = useRef(isSyncConnecting);
+    useEffect(() => { isSyncConnectingRef.current = isSyncConnecting; }, [isSyncConnecting]);
+
+    // Consolidated socket effect: connect + ALL listeners in one place.
+    // This guarantees listeners are always on the correct socket instance.
     useEffect(() => {
         if (!isSyncEnabled || status !== "authenticated") return;
 
-        // Only connect if not already connected
-        if (!isSocketConnected()) {
-            console.log('[Sync] Connecting WebSocket...');
-            const socket = connectSocket();
-            socket.emit('join-room', roomId);
+        console.log('[Sync] Setting up socket connection and all listeners...');
+        const socket = connectSocket();
+        socket.emit('join-room', roomId);
 
-            // Emit presence join
-            if (session?.user?.id) {
+        // Emit presence join using ref to avoid session dependency
+        const sess = sessionRef.current;
+        if (sess?.user?.id) {
+            socket.emit('presence-join', {
+                roomId,
+                user: {
+                    id: sess.user.id,
+                    name: sess.user.name,
+                    image: sess.user.image,
+                }
+            });
+        }
+
+        // --- Helper: re-join room and refresh state ---
+        const rejoinRoom = () => {
+            console.log('[Sync] Re-joining room and refreshing queue...');
+            socket.emit('join-room', roomId);
+            const sess = sessionRef.current;
+            if (sess?.user?.id) {
                 socket.emit('presence-join', {
                     roomId,
                     user: {
-                        id: session.user.id,
-                        name: session.user.name,
-                        image: session.user.image,
+                        id: sess.user.id,
+                        name: sess.user.name,
+                        image: sess.user.image,
                     }
                 });
             }
-        }
-
-        // Cleanup on unmount
-        return () => {
-            const socket = getSocket();
-            if (socket && session?.user?.id) {
-                socket.emit('leave-room', { roomId, userId: session.user.id });
-            }
-            disconnectSocket();
+            // Refresh queue so onVideoChanged can find the correct videoId
+            refreshQueueRef.current();
         };
-    }, [isSyncEnabled, roomId, session, status]);
 
-    // Live presence via socket (only when sync is enabled)
-    useEffect(() => {
-        if (status !== "authenticated" || !isSyncEnabled) return;
+        // --- Reconnect handler: re-join room after Socket.IO auto-reconnect ---
+        let hasConnectedOnce = socket.connected; // skip first fire if already connected
+        const onReconnect = () => {
+            if (!hasConnectedOnce) {
+                hasConnectedOnce = true;
+                return; // initial connection — already joined above
+            }
+            console.log('[Sync] Socket reconnected with new ID');
+            rejoinRoom();
+        };
+        socket.on('connect', onReconnect);
 
-        const socket = getSocket();
-        if (!socket) return;
+        // --- Tab visibility handler: catch cases where socket silently loses server-side room membership ---
+        // When a tab is hidden, the server may time out the socket and clean up room membership.
+        // The client socket might still appear "connected" but the server no longer has it in the room.
+        // Re-joining on visibility change is cheap (server-side join is idempotent) and ensures reliability.
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[Sync] Tab became visible, ensuring socket is in room...');
+                if (socket.connected) {
+                    // Socket thinks it's connected — re-join room anyway (idempotent on server)
+                    rejoinRoom();
+                } else {
+                    // Socket is disconnected — force reconnect
+                    console.log('[Sync] Socket disconnected while tab was hidden, reconnecting...');
+                    socket.connect();
+                    // onReconnect will handle re-joining after connect event fires
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
 
+        // --- Presence listener ---
         const onPresence = (list: { id: string; name?: string; image?: string }[]) => {
             setMembers(list);
-            // Stop showing connecting spinner once we receive presence with current user
-            if (isSyncConnecting && session?.user?.id) {
-                const userInPresence = list.some(m => m.id === session.user?.id);
+            const currentSession = sessionRef.current;
+            if (isSyncConnectingRef.current && currentSession?.user?.id) {
+                const userInPresence = list.some(m => m.id === currentSession.user?.id);
                 if (userInPresence) {
                     setIsSyncConnecting(false);
                     console.log('[Sync] Connection confirmed - presence received');
@@ -304,10 +345,69 @@ export default function RoomPage() {
             }
         };
         socket.on('room-presence', onPresence);
-        return () => {
-            socket.off('room-presence', onPresence);
+
+        // --- Video changed listener ---
+        const onVideoChanged = (newVideoId: string) => {
+            const currentQueue = queueRef.current;
+            const idx = currentQueue.findIndex(item => item.videoId === newVideoId);
+            console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
+            if (idx !== -1) {
+                setCurrentQueueIndex(idx);
+            } else {
+                console.warn(`[video-changed] VideoId ${newVideoId} not found in current queue`);
+            }
         };
-    }, [roomId, status, isSyncEnabled, isSyncConnecting, session]);
+        socket.on('video-changed', onVideoChanged);
+
+        // --- Queue updated listener ---
+        const onQueueUpdated = async () => {
+            console.log('[Socket] received queue-updated; refreshing queue');
+            await refreshQueueRef.current();
+        };
+        socket.on('queue-updated', onQueueUpdated);
+
+        // --- Queue removed listener ---
+        const onQueueRemoved = async (data: { roomId: string; itemId: string; deletedOrder?: number; newCurrentIndex?: number }) => {
+            console.log('[Socket] received queue-removed; refreshing queue', data);
+            const oldCurrentIndex = currentQueueIndexRef.current;
+            await refreshQueueRef.current();
+
+            if (data.newCurrentIndex !== undefined && data.newCurrentIndex !== oldCurrentIndex) {
+                const updatedQueue = queueRef.current;
+                if (updatedQueue.length > 0 && updatedQueue[data.newCurrentIndex]) {
+                    const newVideoId = updatedQueue[data.newCurrentIndex].videoId;
+                    console.log(`[Socket] Emitting change-video for new current song: ${newVideoId}`);
+                    socket.emit('change-video', { roomId, newVideoId });
+                }
+            }
+        };
+        socket.on('queue-removed', onQueueRemoved);
+
+        // --- Theme changed listener ---
+        const onThemeChanged = (newTheme: 'default' | 'love') => {
+            console.log('[Socket] received theme-changed:', newTheme);
+            setTheme(newTheme);
+            localStorage.setItem('selectedTheme', newTheme);
+        };
+        socket.on('theme-changed', onThemeChanged);
+
+        // --- Cleanup: remove ALL listeners and disconnect ---
+        return () => {
+            console.log('[Sync] Cleaning up socket listeners...');
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            socket.off('connect', onReconnect);
+            socket.off('room-presence', onPresence);
+            socket.off('video-changed', onVideoChanged);
+            socket.off('queue-updated', onQueueUpdated);
+            socket.off('queue-removed', onQueueRemoved);
+            socket.off('theme-changed', onThemeChanged);
+            const sess = sessionRef.current;
+            if (sess?.user?.id) {
+                socket.emit('leave-room', { roomId, userId: sess.user.id });
+            }
+            disconnectSocket();
+        };
+    }, [isSyncEnabled, roomId, status]);
 
 
     // When queue or currentQueueIndex changes, update currentSong and videoId
@@ -461,7 +561,6 @@ export default function RoomPage() {
                 const socket = getSocket();
                 if (socket) {
                     socket.emit('change-video', { roomId, newVideoId });
-                    socket.emit('video-changed', newVideoId);
                 }
             }
         } else {
@@ -501,7 +600,6 @@ export default function RoomPage() {
                 const socket = getSocket();
                 if (socket) {
                     socket.emit('change-video', { roomId, newVideoId });
-                    socket.emit('video-changed', newVideoId);
                 }
             }
         } else {
@@ -510,117 +608,11 @@ export default function RoomPage() {
     };
 
 
-    // Listen for video-changed event from socket (only when sync is enabled)
-    useEffect(() => {
-        if (!isSyncEnabled) return;
-
-        const socket = getSocket();
-        if (!socket) return;
-
-        const handler = (newVideoId: string) => {
-            // Use current queue ref to find the video
-            const currentQueue = queueRef.current;
-            const idx = currentQueue.findIndex(item => item.videoId === newVideoId);
-            console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
-            if (idx !== -1) {
-                setCurrentQueueIndex(idx);
-            } else {
-                console.warn(`[video-changed] VideoId ${newVideoId} not found in current queue`);
-            }
-        };
-        socket.on('video-changed', handler);
-        return () => {
-            socket.off('video-changed', handler);
-        };
-    }, [roomId, isSyncEnabled]); // Removed queue dependency since we use queueRef
-
-    // Listen for queue-updated event from socket (only when sync is enabled)
-    useEffect(() => {
-        if (!isSyncEnabled) return;
-
-        const socket = getSocket();
-        if (!socket) return;
-
-        console.log('[Socket] Setting up queue-updated listener for room:', roomId);
-        const handler = async () => {
-            console.log('[Socket] received queue-updated; refreshing queue');
-            await refreshQueueRef.current();
-        };
-        socket.on('queue-updated', handler);
-        console.log('[Socket] queue-updated listener added');
-        return () => {
-            console.log('[Socket] Removing queue-updated listener');
-            socket.off('queue-updated', handler);
-        };
-    }, [roomId, isSyncEnabled]);
-
-    // Listen for queue-removed event from socket (only when sync is enabled)
-    useEffect(() => {
-        if (!isSyncEnabled) return;
-
-        const socket = getSocket();
-        if (!socket) return;
-
-        console.log('[Socket] Setting up queue-removed listener for room:', roomId);
-        const handler = async (data: { roomId: string; itemId: string; deletedOrder?: number; newCurrentIndex?: number }) => {
-            console.log('[Socket] received queue-removed; refreshing queue', data);
-
-            // Store the old current index for comparison
-            const oldCurrentIndex = currentQueueIndexRef.current;
-
-            // Refresh the queue to get the updated state from server
-            await refreshQueueRef.current();
-
-            // Log queue state after refresh for debugging
-            console.log(`[Socket] Queue refreshed after deletion. Old index: ${oldCurrentIndex}, New index: ${data.newCurrentIndex}`);
-
-            // If the currently playing song changed due to deletion, emit video-changed
-            if (data.newCurrentIndex !== undefined && data.newCurrentIndex !== oldCurrentIndex) {
-                console.log(`[Socket] Current playing song changed due to deletion, will sync video`);
-                // The refreshQueue already updated videoId and currentSong based on new index
-                // But we should emit video-changed to sync the player across all clients
-                const updatedQueue = queueRef.current;
-                if (updatedQueue.length > 0 && updatedQueue[data.newCurrentIndex]) {
-                    const newVideoId = updatedQueue[data.newCurrentIndex].videoId;
-                    console.log(`[Socket] Emitting video-changed for new current song: ${newVideoId}`);
-                    socket.emit('video-changed', newVideoId);
-                }
-            }
-        };
-        socket.on('queue-removed', handler);
-        console.log('[Socket] queue-removed listener added');
-        return () => {
-            console.log('[Socket] Removing queue-removed listener');
-            socket.off('queue-removed', handler);
-        };
-    }, [roomId, isSyncEnabled]);
-
     // After remove, sync by refetching and updating current index if needed
     const handleRemoveFromQueue = async () => {
         await refreshQueue();
         setRemovingQueueItemId(null);
-
-        // The refreshQueue will get the updated currentQueueIndex from the server
-        // and update our local state accordingly
     };
-
-    // Listen for theme-changed event from socket
-    useEffect(() => {
-        if (!isSyncEnabled) return;
-
-        const socket = getSocket();
-        if (!socket) return;
-
-        const handler = (newTheme: 'default' | 'love') => {
-            console.log('[Socket] received theme-changed:', newTheme);
-            setTheme(newTheme);
-            localStorage.setItem('selectedTheme', newTheme);
-        };
-        socket.on('theme-changed', handler);
-        return () => {
-            socket.off('theme-changed', handler);
-        };
-    }, [isSyncEnabled]);
 
     if (status === "loading" || status === "unauthenticated" || (!roomDetails && !error)) {
         return (
@@ -1405,7 +1397,6 @@ export default function RoomPage() {
                                                         const socket = getSocket();
                                                         if (socket) {
                                                             socket.emit('change-video', { roomId, newVideoId });
-                                                            socket.emit('video-changed', newVideoId);
                                                         }
                                                     }
                                                 }

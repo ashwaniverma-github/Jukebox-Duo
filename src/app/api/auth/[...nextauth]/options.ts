@@ -36,6 +36,10 @@ function isLegacyGoogleId(id: string): boolean {
   return /^\d{15,}$/.test(id);
 }
 
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  console.warn('WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set. Authentication will not work.');
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({

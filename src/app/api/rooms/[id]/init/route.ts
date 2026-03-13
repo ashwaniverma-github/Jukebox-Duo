@@ -60,11 +60,14 @@ export async function GET(
     if (!isHost && !isMember) {
         try {
             // Ensure user exists in database (handles new users from share links)
+            if (!session.user.email) {
+                return NextResponse.json({ error: 'User email required' }, { status: 400 })
+            }
             await prisma.user.upsert({
                 where: { id: session.user.id },
                 create: {
                     id: session.user.id,
-                    email: session.user.email ?? '',
+                    email: session.user.email,
                     name: session.user.name,
                     image: session.user.image,
                 },

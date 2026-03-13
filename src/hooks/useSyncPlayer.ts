@@ -10,18 +10,20 @@ export function useSyncPlayer(roomId: string) {
   // join the room & clock sync
   useEffect(() => {
     const socket = getSocket();
-    if (!socket) return; // Socket not connected, skip sync
+    if (!socket) return;
 
     const t0 = Date.now();
     socket.emit('sync-ping', t0);
-    socket.on('sync-pong', (serverTs: number) => {
+
+    const handlePong = (serverTs: number) => {
       const t2 = Date.now();
       setOffset(((t0 + t2) / 2) - serverTs);
-    });
+    };
+
+    socket.on('sync-pong', handlePong);
 
     return () => {
-      socket.off('sync-pong');
-      socket.off('sync-command');
+      socket.off('sync-pong', handlePong);
     };
   }, [roomId]);
 

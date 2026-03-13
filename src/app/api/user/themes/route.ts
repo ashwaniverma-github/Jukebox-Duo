@@ -41,8 +41,9 @@ export async function POST(req: Request) {
     try {
         const { theme } = await req.json();
 
-        if (!theme) {
-            return NextResponse.json({ error: 'Theme required' }, { status: 400 });
+        const VALID_THEMES = ['default', 'love'];
+        if (!theme || !VALID_THEMES.includes(theme)) {
+            return NextResponse.json({ error: 'Invalid theme' }, { status: 400 });
         }
 
         // Check if user is premium - they already have love theme
