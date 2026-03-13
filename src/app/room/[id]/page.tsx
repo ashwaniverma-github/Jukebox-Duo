@@ -347,14 +347,22 @@ export default function RoomPage() {
         socket.on('room-presence', onPresence);
 
         // --- Video changed listener ---
-        const onVideoChanged = (newVideoId: string) => {
+        const onVideoChanged = async (newVideoId: string) => {
             const currentQueue = queueRef.current;
-            const idx = currentQueue.findIndex(item => item.videoId === newVideoId);
+            let idx = currentQueue.findIndex(item => item.videoId === newVideoId);
             console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
+            if (idx === -1) {
+                // Queue might not be synced yet — refresh and retry once
+                console.log(`[video-changed] VideoId not in local queue, refreshing...`);
+                const refreshedData = await refreshQueueRef.current();
+                if (refreshedData) {
+                    idx = refreshedData.queue.findIndex((item: { videoId: string }) => item.videoId === newVideoId);
+                }
+            }
             if (idx !== -1) {
                 setCurrentQueueIndex(idx);
             } else {
-                console.warn(`[video-changed] VideoId ${newVideoId} not found in current queue`);
+                console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
             }
         };
         socket.on('video-changed', onVideoChanged);
@@ -370,10 +378,11 @@ export default function RoomPage() {
         const onQueueRemoved = async (data: { roomId: string; itemId: string; deletedOrder?: number; newCurrentIndex?: number }) => {
             console.log('[Socket] received queue-removed; refreshing queue', data);
             const oldCurrentIndex = currentQueueIndexRef.current;
-            await refreshQueueRef.current();
+            const refreshedData = await refreshQueueRef.current();
+            if (!refreshedData) return;
 
             if (data.newCurrentIndex !== undefined && data.newCurrentIndex !== oldCurrentIndex) {
-                const updatedQueue = queueRef.current;
+                const updatedQueue = refreshedData.queue;
                 if (updatedQueue.length > 0 && updatedQueue[data.newCurrentIndex]) {
                     const newVideoId = updatedQueue[data.newCurrentIndex].videoId;
                     console.log(`[Socket] Emitting change-video for new current song: ${newVideoId}`);
@@ -424,7 +433,7 @@ export default function RoomPage() {
     // Helper: refetch queue from backend to ensure canonical IDs/order
     const refreshQueue = useCallback(async () => {
         const res = await fetch(`/api/rooms/${roomId}/queue`);
-        if (!res.ok) return;
+        if (!res.ok) return null;
         const data = await res.json();
         setQueue(data.queue);
         setCurrentQueueIndex(data.currentQueueIndex);
@@ -435,6 +444,7 @@ export default function RoomPage() {
             setVideoId('');
             setCurrentSong(null);
         }
+        return data;
     }, [roomId]);
 
     // Keep a stable ref to refreshQueue so socket listeners never need it as a dependency

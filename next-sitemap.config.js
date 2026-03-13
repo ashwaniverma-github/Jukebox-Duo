@@ -24,6 +24,7 @@ module.exports = {
   exclude: [
     '/api/*',
     '/admin/*',
+    '/dashboard',
     '/dashboard/*',
     '/room/*',
     '/signin',

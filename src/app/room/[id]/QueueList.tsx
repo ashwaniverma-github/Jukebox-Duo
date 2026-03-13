@@ -17,7 +17,7 @@ interface QueueItem {
 interface Props {
   roomId: string;
   queue: QueueItem[];
-  onSelect: (videoId: string) => void;
+  onSelect: (itemId: string) => void;
   currentVideoId?: string;
   onRemove?: (itemId: string) => void;
   removingQueueItemId?: string | null;

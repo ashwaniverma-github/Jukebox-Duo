@@ -45,6 +45,7 @@ export function SharePlaylistModal({ isOpen, onOpenChange, roomId, theme = 'defa
             timeoutRef.current = setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
+            setCopied(false);
             setCopyFailed(true);
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => setCopyFailed(false), 3000);
