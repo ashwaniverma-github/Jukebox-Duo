@@ -348,21 +348,25 @@ export default function RoomPage() {
 
         // --- Video changed listener ---
         const onVideoChanged = async (newVideoId: string) => {
-            const currentQueue = queueRef.current;
-            let idx = currentQueue.findIndex(item => item.videoId === newVideoId);
-            console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
-            if (idx === -1) {
-                // Queue might not be synced yet — refresh and retry once
-                console.log(`[video-changed] VideoId not in local queue, refreshing...`);
-                const refreshedData = await refreshQueueRef.current();
-                if (refreshedData) {
-                    idx = refreshedData.queue.findIndex((item: { videoId: string }) => item.videoId === newVideoId);
+            try {
+                const currentQueue = queueRef.current;
+                let idx = currentQueue.findIndex(item => item.videoId === newVideoId);
+                console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
+                if (idx === -1) {
+                    // Queue might not be synced yet — refresh and retry once
+                    console.log(`[video-changed] VideoId not in local queue, refreshing...`);
+                    const refreshedData = await refreshQueueRef.current();
+                    if (refreshedData) {
+                        idx = refreshedData.queue.findIndex((item: { videoId: string }) => item.videoId === newVideoId);
+                    }
                 }
-            }
-            if (idx !== -1) {
-                setCurrentQueueIndex(idx);
-            } else {
-                console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
+                if (idx !== -1) {
+                    setCurrentQueueIndex(idx);
+                } else {
+                    console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
+                }
+            } catch (err) {
+                console.error('[video-changed] Error handling video change:', err);
             }
         };
         socket.on('video-changed', onVideoChanged);
