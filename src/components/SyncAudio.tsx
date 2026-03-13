@@ -213,7 +213,7 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       console.log(`🔄 Scheduling ${cmd} in ${delay}ms`);
       setTimeout(() => {
         const p = playerRef.current;
-        if (!p) return;
+        if (!p || typeof p.seekTo !== 'function') return;
         p.seekTo(seekTime, true);
         if (cmd === 'play') p.playVideo(); else p.pauseVideo();
       }, delay);
