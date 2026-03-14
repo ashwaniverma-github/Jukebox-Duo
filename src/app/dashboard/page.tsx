@@ -109,7 +109,9 @@ export default function Dashboard() {
         setNewRoomId(room.id);
         setShowJoinModal(true);
         setName("");
-        await loadRooms();
+        // Delay room list refresh so the Dialog portal mounts before the list re-renders
+        // (avoids React DOM insertBefore conflict between portal + list mutations)
+        setTimeout(() => loadRooms(), 100);
       }
     } catch (error) {
       console.error("Failed to create room:", error);
