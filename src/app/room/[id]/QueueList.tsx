@@ -71,6 +71,8 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
   }
 
   const handleRemove = async (itemId: string) => {
+    // Prevent duplicate delete for the same item
+    if (removingQueueItemId === itemId) return;
     if (setRemovingQueueItemId) setRemovingQueueItemId(itemId);
 
     try {

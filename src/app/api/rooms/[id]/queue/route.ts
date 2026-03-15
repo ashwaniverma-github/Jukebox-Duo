@@ -142,19 +142,27 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   // Batch all operations in a single transaction:
   // delete + bulk reorder with raw SQL + update index
   // Raw SQL replaces N individual UPDATE queries with 1 statement
-  await prisma.$transaction([
-    // Delete the item
-    prisma.queueItem.delete({ where: { id: itemId } }),
-    // Bulk reorder: decrement order for all items after the deleted one
-    prisma.$executeRaw`UPDATE "QueueItem" SET "order" = "order" - 1 WHERE "roomId" = ${roomId} AND "order" > ${deletedItemOrder}`,
-    // Update room's currentQueueIndex if changed
-    ...(newCurrentIndex !== currentIndex ? [
-      prisma.room.update({
-        where: { id: roomId },
-        data: { currentQueueIndex: newCurrentIndex }
-      })
-    ] : [])
-  ])
+  try {
+    await prisma.$transaction([
+      // Delete the item
+      prisma.queueItem.delete({ where: { id: itemId } }),
+      // Bulk reorder: decrement order for all items after the deleted one
+      prisma.$executeRaw`UPDATE "QueueItem" SET "order" = "order" - 1 WHERE "roomId" = ${roomId} AND "order" > ${deletedItemOrder}`,
+      // Update room's currentQueueIndex if changed
+      ...(newCurrentIndex !== currentIndex ? [
+        prisma.room.update({
+          where: { id: roomId },
+          data: { currentQueueIndex: newCurrentIndex }
+        })
+      ] : [])
+    ])
+  } catch (error: unknown) {
+    // P2025: Record not found — item was already deleted by a concurrent request
+    if (error instanceof Error && 'code' in error && (error as { code: string }).code === 'P2025') {
+      return NextResponse.json({ success: true, alreadyDeleted: true })
+    }
+    throw error
+  }
 
   if (newCurrentIndex !== currentIndex) {
     console.log(`Updated currentQueueIndex from ${currentIndex} to ${newCurrentIndex} after deleting item at position ${deletedItemOrder}`)
