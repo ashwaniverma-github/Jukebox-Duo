@@ -103,7 +103,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                         scale: [1, 1.05, 1]
                                     }}
                                     transition={{ duration: 6, repeat: Infinity }}
-                                    className="relative w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-zinc-900 to-black rounded-[1.5rem] sm:rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
+                                    className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-zinc-900 to-black rounded-[1.5rem] sm:rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
                                 >
                                     <Crown className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
 
@@ -149,7 +149,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
                         >
                             <div className="flex items-start gap-2">
                                 <div className="space-y-2 sm:space-y-4">
