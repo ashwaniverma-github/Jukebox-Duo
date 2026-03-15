@@ -57,7 +57,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         <div className="absolute inset-0 opacity-[0.03] bg-[url('/noise.svg')] brightness-100 contrast-150" />
                     </div>
 
-                    <div className="relative z-10 p-5 sm:p-10 flex flex-col items-center">
+                    <div className="relative z-10 p-5 sm:p-8 flex flex-col items-center">
                         {/* Floating Decorative Elements */}
                         <div className="absolute inset-0 pointer-events-none">
                             {[...Array(6)].map((_, i) => (
@@ -94,7 +94,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ type: "spring", damping: 12, delay: 0.2 }}
-                            className="mb-4 sm:mb-8"
+                            className="mb-4 sm:mb-4"
                         >
                             <div className="relative group">
                                 <motion.div
@@ -103,7 +103,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                         scale: [1, 1.05, 1]
                                     }}
                                     transition={{ duration: 6, repeat: Infinity }}
-                                    className="relative w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-zinc-900 to-black rounded-[1.5rem] sm:rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
+                                    className="relative w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-zinc-900 to-black rounded-[1.5rem] sm:rounded-[2rem] border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.2)]"
                                 >
                                     <Crown className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
 
@@ -151,7 +151,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             transition={{ delay: 0.5 }}
                             className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
                         >
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-start gap-2">
                                 <div className="space-y-2 sm:space-y-4">
                                     <div className="flex items-center gap-1.5 sm:gap-2">
                                         <span className="text-base sm:text-lg">Hey there!</span>
@@ -167,7 +167,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                     <p className="text-zinc-300 text-xs sm:text-base leading-relaxed text-left">
                                         It&apos;s <span className="text-white font-semibold">Ashwani</span> here, the builder of Jukebox Duo.
                                         I&apos;m constantly working to make your music sessions more magical.
-                                        <span className="block mt-2 sm:mt-4 text-zinc-300 font-medium italic">Thanks for fueling the dream!</span>
+                                        <span className="block mt-2 text-zinc-300 font-medium italic">Thanks for fueling the dream!</span>
                                     </p>
 
 
@@ -213,10 +213,6 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                                     </span>
                                 </Button>
                             </motion.div>
-
-                            <p className="text-[9px] text-zinc-600 text-center uppercase tracking-[0.2em] font-medium">
-                                Stay Awesome • Jukebox Duo v2.0
-                            </p>
                         </div>
                     </div>
                 </motion.div>
