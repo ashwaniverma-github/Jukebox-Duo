@@ -1,7 +1,7 @@
 // components/SyncAudio.tsx
 'use client';
 import { CirclePlay, CirclePause, SkipForward, SkipBack } from 'lucide-react';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import Script from 'next/script';
 import { useSyncPlayer } from '../hooks/useSyncPlayer';
 import { getSocket } from '../lib/socket';
@@ -58,7 +58,11 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }: Props) {
+export interface SyncAudioHandle {
+  playVideo: () => void;
+}
+
+const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }, ref) {
   /* eslint-disable jsx-a11y/media-has-caption */
   const playerRef = useRef<YT.Player | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null); // Silent audio ref
@@ -71,6 +75,16 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
   const [hasStartedPlayback, setHasStartedPlayback] = useState(false); // Track if user has started playback
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
+
+  // Expose playVideo to parent so queue clicks can trigger playback synchronously (iOS requirement)
+  useImperativeHandle(ref, () => ({
+    playVideo: () => {
+      const p = playerRef.current;
+      if (p && typeof p.playVideo === 'function') {
+        p.playVideo();
+      }
+    },
+  }));
 
   const themeStyles = {
     default: {
@@ -623,4 +637,6 @@ export default function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayP
       `}</style>
     </>
   );
-}
+});
+
+export default SyncAudio;

@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/nextjs'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import SyncAudio from '../../../components/SyncAudio'
+import SyncAudio, { SyncAudioHandle } from '../../../components/SyncAudio'
 import { getSocket, connectSocket, disconnectSocket } from '../../../lib/socket'
 import QueueList from './QueueList'
 
@@ -51,6 +51,7 @@ export default function RoomPage() {
     const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
     // Debounce timer for search
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const syncAudioRef = useRef<SyncAudioHandle>(null);
     const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [importModalOpen, setImportModalOpen] = useState(false);
@@ -1323,6 +1324,7 @@ export default function RoomPage() {
                                         {/* Mount once after initial data load; keep mounted thereafter */}
                                         {playerMounted && (
                                             <SyncAudio
+                                                ref={syncAudioRef}
                                                 roomId={roomId}
                                                 videoId={videoId}
                                                 isHost={true}
@@ -1423,6 +1425,9 @@ export default function RoomPage() {
                                                 const idx = queue.findIndex(item => item.id === id);
                                                 if (idx !== -1) {
                                                     setCurrentQueueIndex(idx);
+                                                    // Trigger playVideo synchronously within the click event
+                                                    // so iOS recognizes it as a user gesture
+                                                    syncAudioRef.current?.playVideo();
                                                     // Update backend
                                                     await fetch(`/api/rooms/${roomId}/queue`, {
                                                         method: 'PATCH',
