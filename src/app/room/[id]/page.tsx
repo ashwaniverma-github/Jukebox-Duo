@@ -626,9 +626,19 @@ export default function RoomPage() {
     };
 
 
-    // After remove, sync by refetching and updating current index if needed
-    const handleRemoveFromQueue = async () => {
-        await refreshQueue();
+    // After remove, update local state directly from DELETE response (no re-fetch needed)
+    const handleRemoveFromQueue = (itemId: string, result: { deletedOrder: number; newCurrentIndex: number }) => {
+        const updatedQueue = queueRef.current.filter(item => item.id !== itemId);
+        setQueue(updatedQueue);
+        setCurrentQueueIndex(result.newCurrentIndex);
+        // Update current song based on new index
+        if (updatedQueue.length > 0 && updatedQueue[result.newCurrentIndex]) {
+            setVideoId(updatedQueue[result.newCurrentIndex].videoId);
+            setCurrentSong(updatedQueue[result.newCurrentIndex]);
+        } else if (updatedQueue.length === 0) {
+            setVideoId('');
+            setCurrentSong(null);
+        }
         setRemovingQueueItemId(null);
     };
 

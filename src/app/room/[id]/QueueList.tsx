@@ -19,7 +19,7 @@ interface Props {
   queue: QueueItem[];
   onSelect: (itemId: string) => void;
   currentVideoId?: string;
-  onRemove?: (itemId: string) => void;
+  onRemove?: (itemId: string, result: { deletedOrder: number; newCurrentIndex: number }) => void;
   removingQueueItemId?: string | null;
   setRemovingQueueItemId?: (id: string | null) => void;
   theme?: 'default' | 'love';
@@ -95,8 +95,8 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
           });
         }
 
-        // Call the parent's onRemove callback which will refresh the queue
-        if (onRemove) onRemove(itemId);
+        // Call the parent's onRemove callback with DELETE result data
+        if (onRemove) onRemove(itemId, { deletedOrder: result.deletedOrder, newCurrentIndex: result.newCurrentIndex });
 
         // Update local state based on server response
         const removedIndex = queue.findIndex(item => item.id === itemId)
