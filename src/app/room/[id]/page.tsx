@@ -39,6 +39,7 @@ export default function RoomPage() {
     const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
     const currentQueueIndexRef = useRef(currentQueueIndex);
     const queueRef = useRef(queue);
+    const localIndexChangeRef = useRef(0); // Timestamp of last local index change (play next/prev/queue select)
     useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
     useEffect(() => { queueRef.current = queue; }, [queue]);
     const [search, setSearch] = useState('');
@@ -444,13 +445,18 @@ export default function RoomPage() {
         if (!res.ok) return null;
         const data = await res.json();
         setQueue(data.queue);
-        setCurrentQueueIndex(data.currentQueueIndex);
-        if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
-            setVideoId(data.queue[data.currentQueueIndex].videoId);
-            setCurrentSong(data.queue[data.currentQueueIndex]);
-        } else {
-            setVideoId('');
-            setCurrentSong(null);
+        // Skip overwriting currentQueueIndex if a local action (play next/prev/queue select)
+        // happened recently — the server may not have processed the PATCH yet
+        const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 5000;
+        if (!isLocalActionRecent) {
+            setCurrentQueueIndex(data.currentQueueIndex);
+            if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
+                setVideoId(data.queue[data.currentQueueIndex].videoId);
+                setCurrentSong(data.queue[data.currentQueueIndex]);
+            } else {
+                setVideoId('');
+                setCurrentSong(null);
+            }
         }
         return data;
     }, [roomId]);
@@ -571,6 +577,7 @@ export default function RoomPage() {
             const newIndex = idx + 1;
             console.log(`[handlePlayNext] Moving to next song at index ${newIndex}: ${currentQueue[newIndex].title}`);
 
+            localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
             // Update backend
@@ -610,6 +617,7 @@ export default function RoomPage() {
             const newIndex = idx - 1;
             console.log(`[handlePlayPrev] Moving to previous song at index ${newIndex}: ${currentQueue[newIndex].title}`);
 
+            localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
             // Update backend
@@ -1441,6 +1449,7 @@ export default function RoomPage() {
                                             onSelect={async (id) => {
                                                 const idx = queue.findIndex(item => item.id === id);
                                                 if (idx !== -1) {
+                                                    localIndexChangeRef.current = Date.now();
                                                     setCurrentQueueIndex(idx);
                                                     // Trigger playVideo synchronously within the click event
                                                     // so iOS recognizes it as a user gesture
