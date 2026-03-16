@@ -45,7 +45,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="relative w-full max-h-[90vh] overflow-y-auto bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]"
+                    className="relative w-full max-h-[90vh] overflow-y-auto no-scrollbar bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]"
                 >
                     {/* Premium Mesh Background */}
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -149,10 +149,10 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl sm:rounded-3xl p-4 backdrop-blur-md relative group hover:bg-white/[0.05] transition-colors"
                         >
                             <div className="flex items-start gap-2">
-                                <div className="space-y-2 sm:space-y-4">
+                                <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 sm:gap-2">
                                         <span className="text-base sm:text-lg">Hey there!</span>
                                         <motion.span
@@ -176,7 +176,7 @@ export function PremiumWelcomeModal({ isPremium }: PremiumWelcomeModalProps) {
                         </motion.div>
 
                         {/* Footer / CTA UI */}
-                        <div className="w-full mt-4 sm:mt-8 space-y-3 sm:space-y-4">
+                        <div className="w-full mt-4 space-y-3 sm:space-y-4">
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
