@@ -523,8 +523,15 @@ export default function RoomPage() {
             }
 
             if (!res.ok) throw new Error('Add failed');
-            // Refresh to get canonical DB IDs/order
-            await refreshQueue();
+            // Use the POST response directly instead of re-fetching
+            const newItem = await res.json();
+            setQueue(prev => [...prev, newItem]);
+            // If this is the first song, auto-select it
+            if (queueRef.current.length === 0) {
+                setCurrentQueueIndex(0);
+                setVideoId(newItem.videoId);
+                setCurrentSong(newItem);
+            }
 
             // Only emit socket events if sync is enabled
             if (isSyncEnabled) {
