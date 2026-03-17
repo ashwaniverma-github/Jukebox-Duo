@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
+    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
 
     // Track when modal opens
     useEffect(() => {
@@ -57,12 +57,13 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const handleSubscribe = async () => {
         setSubLoading(true)
         setError('')
-        trackPremiumPurchaseClick('monthly', trigger)
+        trackPremiumPurchaseClick(plan, trigger)
         try {
             const res = await fetch('/api/dodo/subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    plan,
                     returnUrl: window.location.href
                 })
             })
@@ -83,6 +84,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     }
 
     const action = plan === 'lifetime' ? handlePurchase : handleSubscribe
+    const isAnnual = plan === 'annual'
     const isProcessing = loading || subLoading
 
     const getTriggerMessage = () => {
@@ -127,12 +129,12 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         </div>
 
                         {/* Plan Toggle */}
-                        <div className="flex items-center gap-3 p-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
+                        <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
                             <button
                                 onClick={() => setPlan('monthly')}
                                 disabled={isProcessing}
                                 className={cn(
-                                    "relative px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    "relative px-3 py-1.5 text-xs font-semibold rounded-full transition-all",
                                     plan === 'monthly' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
                                     isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
@@ -143,10 +145,24 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 </span>
                             </button>
                             <button
+                                onClick={() => setPlan('annual')}
+                                disabled={isProcessing}
+                                className={cn(
+                                    "relative px-3 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    plan === 'annual' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
+                                    isProcessing && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                Annual
+                                <span className="absolute -top-2.5 -right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-[9px] text-white font-extrabold tracking-tight shadow-lg shadow-orange-500/30 ring-2 ring-zinc-950">
+                                    50% OFF
+                                </span>
+                            </button>
+                            <button
                                 onClick={() => setPlan('lifetime')}
                                 disabled={isProcessing}
                                 className={cn(
-                                    "px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+                                    "px-3 py-1.5 text-xs font-semibold rounded-full transition-all",
                                     plan === 'lifetime' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
                                     isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
@@ -158,9 +174,20 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             <div className="flex items-center gap-2">
                                 {plan === 'lifetime' ? (
                                     <>
-                                        <span className="text-sm line-through text-zinc-500 font-medium">$99.99</span>
-                                        <span className="text-2xl font-bold text-white">$29.99</span>
+                                        <span className="text-sm line-through text-zinc-500 font-medium">$149</span>
+                                        <span className="text-2xl font-bold text-white">$49.99</span>
                                     </>
+                                ) : plan === 'annual' ? (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm line-through text-zinc-500 font-medium">$47.88</span>
+                                            <span className="text-2xl font-bold text-white">$23.99</span>
+                                            <span className="text-xs font-medium text-yellow-500 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+                                                /year
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Just $2/mo • Cancel anytime</span>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
@@ -220,6 +247,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             ) : (
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
+                                ) : isAnnual ? (
+                                    "Subscribe Annually"
                                 ) : (
                                     <span className="flex items-center justify-center gap-2">
                                         Start 7-Day Free Trial

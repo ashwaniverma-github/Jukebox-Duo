@@ -57,7 +57,7 @@ export const trackPremiumModalOpen = (trigger: 'queue_limit' | 'sync_limit' | 'g
 }
 
 // Track Premium Purchase Button Click
-export const trackPremiumPurchaseClick = (plan: 'monthly' | 'lifetime', trigger: 'queue_limit' | 'sync_limit' | 'general') => {
+export const trackPremiumPurchaseClick = (plan: 'monthly' | 'annual' | 'lifetime', trigger: 'queue_limit' | 'sync_limit' | 'general') => {
     trackEvent('premium_purchase_clicked', {
         plan,
         trigger,
