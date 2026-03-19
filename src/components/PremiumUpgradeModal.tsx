@@ -245,7 +245,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 {/* Footer Section */}
                 <div className="px-4 sm:px-6 pb-3 sm:pb-3 pt-0 bg-zinc-950/50">
                     <div className="space-y-2">
-                        <p className="text-[10px] sm:text-xs text-zinc-500 text-center font-medium">Loved by 29+ music lovers this month</p>
+                        <p className="text-[10px] sm:text-xs text-zinc-500 text-center font-medium">Trusted by couples & friends worldwide</p>
                         <Button
                             onClick={action}
                             disabled={isProcessing}
