@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
+    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('annual')
 
     // Track when modal opens
     useEffect(() => {
@@ -140,9 +140,11 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 )}
                             >
                                 Monthly
+                                {/* Trial disabled — uncomment to re-enable TRY FREE badge
                                 <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-emerald-500 text-[8px] text-white font-bold tracking-tighter shadow-xl ring-2 ring-zinc-950">
                                     TRY FREE
                                 </span>
+                                */}
                             </button>
                             <button
                                 onClick={() => setPlan('annual')}
@@ -190,6 +192,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
+                                        {/* Trial disabled — uncomment to re-enable $0 trial pricing
                                         <div className="flex items-center gap-2">
                                             <span className="text-2xl font-bold text-white">$0</span>
                                             <span className="text-xs font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
@@ -197,6 +200,14 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                             </span>
                                         </div>
                                         <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Then $3.99/mo • Cancel anytime</span>
+                                        */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-white">$3.99</span>
+                                            <span className="text-xs font-medium text-zinc-400 px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                                                /month
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Cancel anytime</span>
                                     </div>
                                 )}
                             </div>
@@ -234,6 +245,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 {/* Footer Section */}
                 <div className="px-4 sm:px-6 pb-3 sm:pb-3 pt-0 bg-zinc-950/50">
                     <div className="space-y-2">
+                        <p className="text-[10px] sm:text-xs text-zinc-500 text-center font-medium">Loved by 29+ music lovers this month</p>
                         <Button
                             onClick={action}
                             disabled={isProcessing}
@@ -250,9 +262,11 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 ) : isAnnual ? (
                                     "Subscribe Annually"
                                 ) : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        Start 7-Day Free Trial
-                                    </span>
+                                    // Trial disabled — uncomment to re-enable trial button
+                                    // <span className="flex items-center justify-center gap-2">
+                                    //     Start 7-Day Free Trial
+                                    // </span>
+                                    "Subscribe Monthly"
                                 )
                             )}
                         </Button>
@@ -270,13 +284,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                     </div>
 
                     {error && <p className="mt-1 text-xs text-red-400 text-center">{error}</p>}
-
-                    <button
-                        onClick={() => onOpenChange(false)}
-                        className="w-full mt-1 sm:mt-2 pb-2 text-xs text-zinc-500 hover:text-zinc-600 transition-colors"
-                    >
-                        No thanks, maybe later
-                    </button>
                 </div>
             </DialogContent>
         </Dialog>
