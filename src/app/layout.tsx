@@ -91,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
 
         {/* Google Analytics */}
@@ -148,6 +148,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${inter.variable} antialiased`}
+        suppressHydrationWarning
       >
         <Providers>
           <MaintenanceBanner />

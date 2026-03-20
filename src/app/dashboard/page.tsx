@@ -240,8 +240,8 @@ export default function Dashboard() {
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-gray-300 mb-5 leading-relaxed">
-                Create synchronized music rooms where friends can listen to the same tracks at the exact same time.
-                Share the moment, share the beat.
+                <span>Create synchronized music rooms where friends can listen to the same tracks at the exact same time.</span>
+                {" "}<span>Share the moment, share the beat.</span>
               </p>
 
               {/* Stats */}
@@ -262,8 +262,8 @@ export default function Dashboard() {
 
               {/* Create Room Form */}
               <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 lg:p-6 shadow-2xl">
-                <h3 className="text-xl font-bold mb-1 text-white">Create Your Room</h3>
-                <p className="text-gray-400 mb-4 text-sm">Start a new synchronized listening session</p>
+                <h3 className="text-xl font-bold mb-1 text-white"><span>Create Your Room</span></h3>
+                <p className="text-gray-400 mb-4 text-sm"><span>Start a new synchronized listening session</span></p>
 
                 <form onSubmit={handleCreateRoom} className="space-y-4">
                   <div className="relative">
@@ -289,12 +289,12 @@ export default function Dashboard() {
                     {isCreating ? (
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Creating Room...
+                        <span>Creating Room...</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <Plus className="w-5 h-5" />
-                        Create Room
+                        <span>Create Room</span>
                       </div>
                     )}
                   </Button>
@@ -310,10 +310,10 @@ export default function Dashboard() {
                 <div className="w-10 h-10 bg-gradient-to-br from-red-700 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
                   <Users className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Active Rooms</h2>
+                <h2 className="text-2xl font-bold text-white"><span>Active Rooms</span></h2>
                 <div className="ml-auto flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-sm text-gray-400">{rooms.length} live</span>
+                  <span className="text-sm text-gray-400">{rooms.length} <span>live</span></span>
                 </div>
               </div>
 
@@ -321,15 +321,15 @@ export default function Dashboard() {
                 {isLoadingRooms ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="w-10 h-10 border-3 border-white/20 border-t-red-500 rounded-full animate-spin mb-4" />
-                    <p className="text-gray-400 text-sm">Loading rooms...</p>
+                    <p className="text-gray-400 text-sm"><span>Loading rooms...</span></p>
                   </div>
                 ) : rooms.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <Music className="w-12 h-12 text-gray-500" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">No active rooms</h3>
-                    <p className="text-gray-400 text-sm">Be the first to start a session!</p>
+                    <h3 className="text-lg font-semibold text-white mb-2"><span>No active rooms</span></h3>
+                    <p className="text-gray-400 text-sm"><span>Be the first to start a session!</span></p>
                   </div>
                 ) : (
                   rooms.map((room) => (
@@ -341,7 +341,7 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                           <span className="text-xs text-gray-400 whitespace-nowrap">
-                            {room.participantCount || 0} listening
+                            {room.participantCount || 0} <span>listening</span>
                           </span>
                         </div>
                       </div>
@@ -351,7 +351,7 @@ export default function Dashboard() {
                           className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
                         >
                           <Play className="w-4 h-4 mr-2" />
-                          Join
+                          <span>Join</span>
                         </Button>
                         {/* Delete button for host */}
                         <Button
@@ -359,7 +359,7 @@ export default function Dashboard() {
                           className="px-4 h-10 bg-red-700 hover:bg-red-900 text-white border border-red-800 rounded-lg transition-all duration-200"
                           variant="destructive"
                         >
-                          Delete
+                          <span>Delete</span>
                         </Button>
                       </div>
                     </div>
@@ -429,7 +429,7 @@ export default function Dashboard() {
               variant="destructive"
               disabled={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
