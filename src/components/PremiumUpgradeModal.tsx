@@ -176,8 +176,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             <div className="flex items-center gap-2">
                                 {plan === 'lifetime' ? (
                                     <>
-                                        <span className="text-sm line-through text-zinc-500 font-medium">$149</span>
-                                        <span className="text-2xl font-bold text-white">$49.99</span>
+                                        <span className="text-sm line-through text-zinc-500 font-medium">$99</span>
+                                        <span className="text-2xl font-bold text-white">$29.99</span>
                                     </>
                                 ) : plan === 'annual' ? (
                                     <div className="flex flex-col items-center gap-1">
