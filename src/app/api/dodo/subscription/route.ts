@@ -75,12 +75,11 @@ export async function POST(req: Request) {
                 plan,
                 source: 'music-duo',
             },
-            // Trial disabled — uncomment to re-enable 7-day free trial for monthly
-            // ...(plan === 'monthly' ? {
-            //     subscription_data: {
-            //         trial_period_days: 7,
-            //     },
-            // } : {}),
+            ...(plan === 'monthly' ? {
+                subscription_data: {
+                    trial_period_days: 1,
+                },
+            } : {}),
         };
 
         if (email) {
