@@ -17,12 +17,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing DODO_PAYMENTS_API_KEY' }, { status: 500 });
         }
 
-        const plan = body?.plan === 'annual' ? 'annual' : 'monthly';
-        const productId = plan === 'annual'
-            ? process.env.DODO_PREMIUM_PRODUCT_ID_ANNUAL
-            : process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
+        const productId = process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
         if (!productId) {
-            return NextResponse.json({ error: `Missing product ID for ${plan} plan` }, { status: 500 });
+            return NextResponse.json({ error: 'Missing DODO_PREMIUM_PRODUCT_ID_MONTHLY' }, { status: 500 });
         }
 
         const environment =
@@ -51,9 +48,9 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid return URL format' }, { status: 400 });
             }
             const separator = returnUrl.includes('?') ? '&' : '?';
-            returnUrl = `${returnUrl}${separator}purchase=success&type=subscription-${plan}`;
+            returnUrl = `${returnUrl}${separator}purchase=success&type=subscription`;
         } else {
-            returnUrl = `${returnBase}?purchase=success&type=subscription-${plan}`;
+            returnUrl = `${returnBase}?purchase=success&type=subscription`;
         }
 
         const client = new DodoPayments({
@@ -72,14 +69,11 @@ export async function POST(req: Request) {
             metadata: {
                 user_id: session.user.id,
                 type: 'subscription',
-                plan,
-                source: 'music-duo',
+                source: 'jukebox-duo',
             },
-            ...(plan === 'monthly' ? {
-                subscription_data: {
-                    trial_period_days: 1,
-                },
-            } : {}),
+            subscription_data: {
+                trial_period_days: 1,
+            },
         };
 
         if (email) {

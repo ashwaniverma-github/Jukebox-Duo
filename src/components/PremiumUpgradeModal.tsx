@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
+    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
     // Track when modal opens
     useEffect(() => {
@@ -84,7 +84,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     }
 
     const action = plan === 'lifetime' ? handlePurchase : handleSubscribe
-    // const isAnnual = plan === 'annual'
     const isProcessing = loading || subLoading
 
     const getTriggerMessage = () => {
@@ -110,7 +109,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:max-w-[400px] p-0 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[85vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Header Section */}
-                <div className="relative p-3 sm:p-4 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
+                <div className="relative p-3 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/50">
                     <div className="flex flex-col items-center text-center space-y-2 sm:space-y-2">
                         <div className="relative">
                             <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full" />
@@ -144,22 +143,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                     TRY FREE
                                 </span>
                             </button>
-                            {/* Annual toggle disabled — uncomment to re-enable
-                            <button
-                                onClick={() => setPlan('annual')}
-                                disabled={isProcessing}
-                                className={cn(
-                                    "relative px-3 py-1.5 text-xs font-semibold rounded-full transition-all",
-                                    plan === 'annual' ? "bg-white text-black shadow-lg ring-1 ring-white/20" : "text-zinc-500 hover:text-zinc-300",
-                                    isProcessing && "opacity-50 cursor-not-allowed"
-                                )}
-                            >
-                                Annual
-                                <span className="absolute -top-2.5 -right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-[9px] text-white font-extrabold tracking-tight shadow-lg shadow-orange-500/30 ring-2 ring-zinc-950">
-                                    50% OFF
-                                </span>
-                            </button>
-                            */}
                             <button
                                 onClick={() => setPlan('lifetime')}
                                 disabled={isProcessing}
@@ -174,23 +157,13 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         </div>
                         <div className="flex flex-col items-center gap-0.5">
                             <div className="flex items-center gap-2">
-                                {/* Annual pricing disabled — to re-enable, add this branch back:
-                                plan === 'annual' ? (
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm line-through text-zinc-500 font-medium">$47.88</span>
-                                            <span className="text-2xl font-bold text-white">$23.99</span>
-                                            <span className="text-xs font-medium text-yellow-500 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
-                                                /year
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Just $2/mo • Cancel anytime</span>
-                                    </div>
-                                ) : */}
                                 {plan === 'lifetime' ? (
                                     <>
                                         <span className="text-sm line-through text-zinc-500 font-medium">$99</span>
                                         <span className="text-2xl font-bold text-white">$19</span>
+                                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-500 tracking-wider">
+                                            Limited Time Deal
+                                        </span>
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
@@ -206,12 +179,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             </div>
                             {plan === 'lifetime' && (
                                 <div className="flex flex-col items-center gap-1">
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
-
-                                        <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Limited Time Deal</span>
-                                    </div>
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
-                                        <span>🔥 Only 10 spots remaining</span>
+                                        <span>🔥 Only 10 spots remaining at this price</span>
                                     </div>
                                 </div>
                             )}
@@ -252,8 +221,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             ) : (
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
-                                    // ) : isAnnual ? (
-                                    //     "Subscribe Annually"
                                 ) : (
                                     "Start Free Trial"
                                 )

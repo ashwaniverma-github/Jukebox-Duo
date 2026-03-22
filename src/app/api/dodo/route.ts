@@ -72,7 +72,7 @@ export async function POST(req: Request) {
             metadata: {
                 user_id: session.user.id,
                 type: 'premium',
-                source: 'music-duo',
+                source: 'jukebox-duo',
             },
         };
 
