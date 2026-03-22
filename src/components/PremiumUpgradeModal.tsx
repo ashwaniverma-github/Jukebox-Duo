@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('annual')
+    const [plan, setPlan] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
 
     // Track when modal opens
     useEffect(() => {
@@ -84,7 +84,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     }
 
     const action = plan === 'lifetime' ? handlePurchase : handleSubscribe
-    const isAnnual = plan === 'annual'
+    // const isAnnual = plan === 'annual'
     const isProcessing = loading || subLoading
 
     const getTriggerMessage = () => {
@@ -146,6 +146,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 </span>
                                 */}
                             </button>
+                            {/* Annual toggle disabled — uncomment to re-enable
                             <button
                                 onClick={() => setPlan('annual')}
                                 disabled={isProcessing}
@@ -160,6 +161,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                     50% OFF
                                 </span>
                             </button>
+                            */}
                             <button
                                 onClick={() => setPlan('lifetime')}
                                 disabled={isProcessing}
@@ -174,12 +176,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         </div>
                         <div className="flex flex-col items-center gap-0.5">
                             <div className="flex items-center gap-2">
-                                {plan === 'lifetime' ? (
-                                    <>
-                                        <span className="text-sm line-through text-zinc-500 font-medium">$99</span>
-                                        <span className="text-2xl font-bold text-white">$29</span>
-                                    </>
-                                ) : plan === 'annual' ? (
+                                {/* Annual pricing disabled — to re-enable, add this branch back:
+                                plan === 'annual' ? (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm line-through text-zinc-500 font-medium">$47.88</span>
@@ -190,6 +188,12 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                         </div>
                                         <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Just $2/mo • Cancel anytime</span>
                                     </div>
+                                ) : */}
+                                {plan === 'lifetime' ? (
+                                    <>
+                                        <span className="text-sm line-through text-zinc-500 font-medium">$99</span>
+                                        <span className="text-2xl font-bold text-white">$29</span>
+                                    </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         {/* Trial disabled — uncomment to re-enable $0 trial pricing
@@ -259,8 +263,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             ) : (
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
-                                ) : isAnnual ? (
-                                    "Subscribe Annually"
+                                // ) : isAnnual ? (
+                                //     "Subscribe Annually"
                                 ) : (
                                     // Trial disabled — uncomment to re-enable trial button
                                     // <span className="flex items-center justify-center gap-2">
