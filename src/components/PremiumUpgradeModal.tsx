@@ -222,7 +222,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
                                 ) : (
-                                    "Start Free Trial"
+                                    "Try for free"
                                 )
                             )}
                         </Button>
