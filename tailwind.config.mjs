@@ -16,7 +16,5 @@ export default {
       },
     },
   },
-  plugins: [
-    // require('tw-animate-css'),                // add if you use it
-  ],
+  plugins: [],
 }
