@@ -7,7 +7,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import { safeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
-    title: 'Jukebox Duo — Listen with Friends | Spotify Jam Alternative',
+    title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
     description: 'Your friends join free, no Premium needed. Jukebox Duo is the Spotify Jam alternative built for real-time group listening — ad-free, perfect sync, no downloads. Try it in 10 seconds.',
     keywords: [
         'spotify jam alternative',
@@ -24,15 +24,24 @@ export const metadata: Metadata = {
         'spotify jam lag fix',
     ],
     openGraph: {
-        title: 'Jukebox Duo — Listen with Friends | Spotify Jam Alternative',
+        title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
         description: 'Your friends join free, no Premium needed. Jukebox Duo is the Spotify Jam alternative built for real-time group listening — ad-free, perfect sync, no downloads.',
         url: 'https://jukeboxduo.com/spotify-jam-alternative',
         type: 'website',
+        images: [
+            {
+                url: '/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'Jukebox Duo — The Best Spotify Jam Alternative',
+            },
+        ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Jukebox Duo — Listen with Friends | Spotify Jam Alternative',
+        title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
         description: 'Your friends join free, no Premium needed. Ad-free group listening rooms with perfect sync. Try it in 10 seconds.',
+        images: ['/og-image.png'],
     },
     alternates: {
         canonical: 'https://jukeboxduo.com/spotify-jam-alternative',
@@ -113,8 +122,37 @@ export default function SpotifyJamAlternativePage() {
                             "url": "https://jukeboxduo.com",
                         },
                         "datePublished": "2026-03-04",
-                        "dateModified": "2026-03-09",
+                        "dateModified": "2026-03-24",
                         "url": "https://jukeboxduo.com/spotify-jam-alternative",
+                    }),
+                }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: safeJsonLd({
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://jukeboxduo.com",
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "Alternatives",
+                                "item": "https://jukeboxduo.com/alternatives",
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 3,
+                                "name": "Spotify Jam Alternative",
+                                "item": "https://jukeboxduo.com/spotify-jam-alternative",
+                            },
+                        ],
                     }),
                 }}
             />
