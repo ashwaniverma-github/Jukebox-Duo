@@ -7,7 +7,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import { safeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
-    title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
+    title: 'Best Spotify Jam Alternative (2026) - Friends Join Free | Jukebox Duo',
     description: 'Your friends join free, no Premium needed. Jukebox Duo is the Spotify Jam alternative built for real-time group listening — ad-free, perfect sync, no downloads. Try it in 10 seconds.',
     keywords: [
         'spotify jam alternative',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
         'spotify jam lag fix',
     ],
     openGraph: {
-        title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
+        title: 'Best Spotify Jam Alternative (2026) - Friends Join Free | Jukebox Duo',
         description: 'Your friends join free, no Premium needed. Jukebox Duo is the Spotify Jam alternative built for real-time group listening — ad-free, perfect sync, no downloads.',
         url: 'https://jukeboxduo.com/spotify-jam-alternative',
         type: 'website',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Best Spotify Jam Alternative (2026) — Friends Join Free | Jukebox Duo',
+        title: 'Best Spotify Jam Alternative (2026) - Friends Join Free | Jukebox Duo',
         description: 'Your friends join free, no Premium needed. Ad-free group listening rooms with perfect sync. Try it in 10 seconds.',
         images: ['/og-image.png'],
     },
