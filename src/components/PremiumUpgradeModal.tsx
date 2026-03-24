@@ -179,9 +179,9 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             </div>
                             {plan === 'lifetime' && (
                                 <div className="flex flex-col items-center gap-1">
-                                    <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
+                                    {/* <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
                                         <span>🔥 Only 10 spots remaining at this price</span>
-                                    </div>
+                                    </div> */}
                                 </div>
                             )}
                         </div>
