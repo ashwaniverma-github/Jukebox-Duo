@@ -72,7 +72,7 @@ export async function POST(req: Request) {
                 source: 'jukebox-duo',
             },
             subscription_data: {
-                trial_period_days: 1,
+                trial_period_days: 7,
             },
         };
 
