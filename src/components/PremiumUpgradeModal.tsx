@@ -173,7 +173,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                                 Free for 7 days
                                             </span>
                                         </div>
-                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Then $3.99/mo after 7 days • Cancel anytime</span>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Then $2.99/mo after 7 days • Cancel anytime</span>
                                     </div>
                                 )}
                             </div>
