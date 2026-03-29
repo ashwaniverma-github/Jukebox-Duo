@@ -78,7 +78,7 @@ export async function checkEventAccess(
             hostId: true,
             currentQueueIndex: true,
             host: {
-                select: { id: true, name: true, image: true }
+                select: { id: true, name: true, image: true, isPremium: true }
             }
         }
     });

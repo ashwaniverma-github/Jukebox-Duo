@@ -20,6 +20,11 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const isEventHosting = trigger === 'event_hosting'
     const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
+    // Reset plan to monthly when event hosting (no plan toggle available)
+    useEffect(() => {
+        if (isEventHosting) setPlan('monthly')
+    }, [isEventHosting])
+
     // Track when modal opens
     useEffect(() => {
         if (open) {

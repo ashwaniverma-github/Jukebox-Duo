@@ -176,6 +176,11 @@ export default function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: eventName.trim(), isEventMode: true }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Failed to create event:", errorData.error || res.statusText);
+        return;
+      }
       const room = await res.json();
       if (room?.id && room?.eventToken) {
         const link = `${window.location.origin}/room/${room.id}?event=${room.eventToken}`;
@@ -191,10 +196,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleCopyEventLink = (link: string) => {
-    navigator.clipboard.writeText(link);
-    setEventLinkCopied(true);
-    setTimeout(() => setEventLinkCopied(false), 2000);
+  const handleCopyEventLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setEventLinkCopied(true);
+      setTimeout(() => setEventLinkCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+    }
   };
 
   return (

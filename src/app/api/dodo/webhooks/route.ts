@@ -124,7 +124,9 @@ function resolveSubscriptionTier(data: Record<string, unknown>): string | null {
     const metaTier = getString(md, 'tier');
     if (metaTier === 'event_pro' || metaTier === 'premium') return metaTier;
 
-    const productId = extractProductId(data);
+    // Don't use extractProductId here — its fallback would incorrectly match as 'premium'
+    const productId = getString(data, 'product_id') ?? getString(data, 'productId');
+    if (!productId) return null;
     const eventProId = process.env.DODO_EVENT_PRO_PRODUCT_ID_MONTHLY;
     const premiumId = process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
     if (eventProId && productId === eventProId) return 'event_pro';

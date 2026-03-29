@@ -87,14 +87,18 @@ export default function RoomPage() {
     const [isHost, setIsHost] = useState(false);
     const [audioUnlocked, setAudioUnlocked] = useState(false);
     const guestAudioRef = useRef<HTMLAudioElement | null>(null);
-    const [guestId] = useState(() => {
-        if (typeof window === 'undefined') return '';
+    const [guestId, setGuestId] = useState('');
+
+    useEffect(() => {
         const stored = sessionStorage.getItem('guestId');
-        if (stored) return stored;
-        const id = 'guest-' + crypto.randomUUID();
-        sessionStorage.setItem('guestId', id);
-        return id;
-    });
+        if (stored) {
+            setGuestId(stored);
+        } else {
+            const id = 'guest-' + crypto.randomUUID();
+            sessionStorage.setItem('guestId', id);
+            setGuestId(id);
+        }
+    }, []);
 
     const themeStyles = {
         default: {
@@ -809,7 +813,7 @@ export default function RoomPage() {
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-6">
                 <audio
                     ref={guestAudioRef}
-                    src="https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3"
+                    src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v/////////////////////////////////"
                     loop
                     playsInline
                     className="hidden"

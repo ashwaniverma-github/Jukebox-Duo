@@ -26,7 +26,19 @@ export async function POST(req: Request) {
     update: {},
   })
 
-  const { name, isEventMode } = await req.json()
+  let name: string
+  let isEventMode: boolean | undefined
+  try {
+    const body = await req.json()
+    name = body.name
+    isEventMode = body.isEventMode
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return NextResponse.json({ error: 'Room name is required' }, { status: 400 })
+  }
 
   // Event hosting requires an active Event Pro subscription ($9.99/mo)
   // Lifetime users get core premium features but NOT event hosting

@@ -1,6 +1,6 @@
 // app/room/[id]/QueueList.tsx
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { getSocket } from '../../../lib/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayCircleIcon, TrashIcon, QueueListIcon } from '@heroicons/react/24/outline';
@@ -30,6 +30,12 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showGuestToast, setShowGuestToast] = useState(false)
   const guestToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (guestToastTimerRef.current) clearTimeout(guestToastTimerRef.current);
+    };
+  }, []);
 
   const triggerGuestToast = () => {
     if (!readOnly) return;

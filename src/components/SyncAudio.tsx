@@ -543,7 +543,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       {/* Silent Audio Hack for Background Play */}
       <audio
         ref={audioRef}
-        src="https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3"
+        src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v/////////////////////////////////"
         loop
         playsInline
         className="fixed opacity-0 pointer-events-none top-0 left-0"
