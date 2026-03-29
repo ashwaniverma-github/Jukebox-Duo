@@ -12,10 +12,17 @@ export async function GET() {
     try {
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { isPremium: true },
+            select: { isPremium: true, subscriptionTier: true },
         });
 
-        return NextResponse.json({ isPremium: user?.isPremium ?? false });
+        // Event hosting requires active Event Pro subscription — lifetime users get core premium only
+        const canHostEvents = user?.subscriptionTier === 'event_pro';
+
+        return NextResponse.json({
+            isPremium: user?.isPremium ?? false,
+            subscriptionTier: user?.subscriptionTier ?? null,
+            canHostEvents,
+        });
     } catch {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

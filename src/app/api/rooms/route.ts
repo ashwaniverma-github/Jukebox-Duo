@@ -26,9 +26,32 @@ export async function POST(req: Request) {
     update: {},
   })
 
-  const { name } = await req.json()
+  const { name, isEventMode } = await req.json()
+
+  // Event hosting requires an active Event Pro subscription ($9.99/mo)
+  // Lifetime users get core premium features but NOT event hosting
+  if (isEventMode) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionTier: true }
+    })
+    const canHostEvents = user?.subscriptionTier === 'event_pro'
+    if (!canHostEvents) {
+      return NextResponse.json({
+        error: 'Event hosting requires Event Pro subscription',
+        isPremiumRequired: true,
+        requiredTier: 'event_pro'
+      }, { status: 403 })
+    }
+  }
+
   const room = await prisma.room.create({
-    data: { name, hostId: userId }
+    data: {
+      name,
+      hostId: userId,
+      isEventMode: isEventMode || false,
+      eventToken: isEventMode ? crypto.randomUUID() : null,
+    }
   })
   // auto-join host
   await prisma.roomMember.create({
@@ -55,7 +78,14 @@ export async function GET() {
 
   const rooms = await prisma.room.findMany({
     where: { hostId: userId },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+      isEventMode: true,
+      eventToken: true,
+    }
   })
   return NextResponse.json(rooms)
 }

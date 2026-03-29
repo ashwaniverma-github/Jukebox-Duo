@@ -19,6 +19,7 @@ model User {
   boughtThemes String[]   @default(["default"]) 
   dodoCustomerId String?  @unique
   premiumType    String?  // "lifetime" | "subscription"
+  subscriptionTier String? // null | "premium" | "event_pro"
   isPremium  Boolean     @default(false)
   premiumPurchasedAt DateTime?
   createdAt  DateTime    @default(now())
@@ -31,6 +32,8 @@ model Room {
   host       User          @relation("RoomHost", fields: [hostId], references: [id])
   hostId     String
   currentQueueIndex Int?   @default(0)
+  isEventMode Boolean      @default(false)
+  eventToken  String?      @unique
   createdAt  DateTime      @default(now())
   members    RoomMember[]
   queueItems QueueItem[]

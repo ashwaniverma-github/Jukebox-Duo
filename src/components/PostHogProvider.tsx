@@ -49,7 +49,7 @@ export const trackEvent = (eventName: string, properties?: Record<string, unknow
 }
 
 // Track Premium Upgrade Modal opening
-export const trackPremiumModalOpen = (trigger: 'queue_limit' | 'sync_limit' | 'general', location: string = 'room') => {
+export const trackPremiumModalOpen = (trigger: 'queue_limit' | 'sync_limit' | 'general' | 'event_hosting', location: string = 'room') => {
     trackEvent('premium_modal_opened', {
         trigger,
         location,
@@ -57,7 +57,7 @@ export const trackPremiumModalOpen = (trigger: 'queue_limit' | 'sync_limit' | 'g
 }
 
 // Track Premium Purchase Button Click
-export const trackPremiumPurchaseClick = (plan: 'monthly' | 'lifetime', trigger: 'queue_limit' | 'sync_limit' | 'general') => {
+export const trackPremiumPurchaseClick = (plan: 'monthly' | 'lifetime', trigger: 'queue_limit' | 'sync_limit' | 'general' | 'event_hosting') => {
     trackEvent('premium_purchase_clicked', {
         plan,
         trigger,

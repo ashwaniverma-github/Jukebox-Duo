@@ -1,6 +1,6 @@
 // app/room/[id]/QueueList.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { getSocket } from '../../../lib/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayCircleIcon, TrashIcon, QueueListIcon } from '@heroicons/react/24/outline';
@@ -23,10 +23,20 @@ interface Props {
   removingQueueItemId?: string | null;
   setRemovingQueueItemId?: (id: string | null) => void;
   theme?: 'default' | 'love';
+  readOnly?: boolean;
 }
 
-export default function QueueList({ roomId, queue, onSelect, currentVideoId, onRemove, removingQueueItemId, setRemovingQueueItemId, theme = 'default' }: Props) {
+export default function QueueList({ roomId, queue, onSelect, currentVideoId, onRemove, removingQueueItemId, setRemovingQueueItemId, theme = 'default', readOnly = false }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [showGuestToast, setShowGuestToast] = useState(false)
+  const guestToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerGuestToast = () => {
+    if (!readOnly) return;
+    if (guestToastTimerRef.current) clearTimeout(guestToastTimerRef.current);
+    setShowGuestToast(true);
+    guestToastTimerRef.current = setTimeout(() => setShowGuestToast(false), 3000);
+  }
 
   // Theme configuration for QueueList
   const themeStyles = {
@@ -112,7 +122,17 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
+
+      {/* Guest toast popup */}
+      {readOnly && showGuestToast && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="bg-black/90 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-xl border border-white/20 shadow-2xl whitespace-nowrap flex items-center gap-2">
+            <span className="text-lg">🎧</span>
+            <span>Only host can control — sit back and enjoy!</span>
+          </div>
+        </div>
+      )}
 
       {/* Queue Content */}
       {queue.length === 0 ? (
@@ -126,7 +146,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
             <QueueListIcon className={`w-8 h-8 ${currentTheme.emptyIconText}`} />
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">Queue is empty</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Add videos to get started</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{readOnly ? 'Waiting for host to add songs' : 'Add videos to get started'}</p>
         </motion.div>
       ) : (
         <div className="space-y-2">
@@ -148,7 +168,8 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                     damping: 25,
                     layout: { duration: 0.3 }
                   }}
-                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${isCurrentVideo
+                  onClick={readOnly ? triggerGuestToast : undefined}
+                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${readOnly ? 'cursor-default' : ''} ${isCurrentVideo
                     ? `${currentTheme.activeBg} border-2 ${currentTheme.activeBorder} shadow-lg scale-[1.02]`
                     : 'bg-white/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/70 hover:shadow-md hover:scale-[1.01]'
                     }`}
@@ -200,6 +221,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                     </div>
 
                     {/* Actions */}
+                    {!readOnly && (
                     <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -230,6 +252,7 @@ export default function QueueList({ roomId, queue, onSelect, currentVideoId, onR
                         )}
                       </motion.button>
                     </div>
+                    )}
                   </div>
 
                   {/* Hover overlay */}

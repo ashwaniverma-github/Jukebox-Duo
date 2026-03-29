@@ -3,20 +3,21 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
+import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock, Radio, Zap } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { trackPremiumModalOpen, trackPremiumPurchaseClick } from './PostHogProvider'
 
 interface PremiumUpgradeModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    trigger?: 'queue_limit' | 'sync_limit' | 'general'
+    trigger?: 'queue_limit' | 'sync_limit' | 'general' | 'event_hosting'
 }
 
 export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }: PremiumUpgradeModalProps) {
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
+    const isEventHosting = trigger === 'event_hosting'
     const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
 
     // Track when modal opens
@@ -64,6 +65,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     plan,
+                    tier: isEventHosting ? 'event_pro' : 'premium',
                     returnUrl: window.location.href
                 })
             })
@@ -92,12 +94,20 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 return "You've reached the free queue limit of 5 songs."
             case 'sync_limit':
                 return "Real-time sync is a premium feature."
+            case 'event_hosting':
+                return "Event hosting requires an Event Pro subscription."
             default:
                 return "Unlock the full Jukebox Duo experience."
         }
     }
 
-    const features = [
+    const features = isEventHosting ? [
+        { icon: Radio, label: "Host Live Events", desc: "Broadcast to 100+ listeners" },
+        { icon: Users, label: "No Sign-in Required", desc: "Guests join instantly via link" },
+        { icon: Zap, label: "Full Host Control", desc: "Only you control the playback" },
+        { icon: Music, label: "Unlimited Queue", desc: "Add as many songs as you want" },
+        { icon: Sparkles, label: "All Premium Features", desc: "Sync, themes, playlist import & more" },
+    ] : [
         { icon: Music, label: "Unlimited Queue", desc: "Add as many songs as you want" },
         { icon: Music, label: "Import playlist", desc: "Bulk add songs from youtube playlist" },
         { icon: Users, label: "Real-time Sync", desc: "Listen together with friends (They join free)" },
@@ -120,7 +130,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
 
                         <div className="space-y-0.5">
                             <DialogTitle className="text-lg sm:text-lg font-semibold tracking-tight">
-                                Upgrade to Premium
+                                {isEventHosting ? 'Upgrade to Event Pro' : 'Upgrade to Premium'}
                             </DialogTitle>
                             <DialogDescription className="text-xs sm:text-sm text-zinc-400">
                                 {getTriggerMessage()}
@@ -128,6 +138,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                         </div>
 
                         {/* Plan Toggle */}
+                        {!isEventHosting && (
                         <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
                             <button
                                 onClick={() => setPlan('monthly')}
@@ -155,6 +166,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 Lifetime
                             </button>
                         </div>
+                        )}
                         <div className="flex flex-col items-center gap-0.5">
                             <div className="flex items-center gap-2">
                                 {plan === 'lifetime' ? (
@@ -165,6 +177,14 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                             Limited Time Deal
                                         </span>
                                     </>
+                                ) : isEventHosting ? (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-white">$9.99</span>
+                                            <span className="text-xs font-medium text-zinc-400">/month</span>
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Includes all premium features • Cancel anytime</span>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
@@ -221,6 +241,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             ) : (
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
+                                ) : isEventHosting ? (
+                                    "Subscribe to Event Pro"
                                 ) : (
                                     "Start 7-Day Free Trial"
                                 )

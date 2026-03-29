@@ -119,6 +119,19 @@ function isLifetimeProduct(data: Record<string, unknown>): boolean {
     return Boolean((type && type.toLowerCase() === 'premium') || (lifetimeId && productId === lifetimeId));
 }
 
+function resolveSubscriptionTier(data: Record<string, unknown>): string | null {
+    const md = getMetadata(data);
+    const metaTier = getString(md, 'tier');
+    if (metaTier === 'event_pro' || metaTier === 'premium') return metaTier;
+
+    const productId = extractProductId(data);
+    const eventProId = process.env.DODO_EVENT_PRO_PRODUCT_ID_MONTHLY;
+    const premiumId = process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
+    if (eventProId && productId === eventProId) return 'event_pro';
+    if (premiumId && productId === premiumId) return 'premium';
+    return null;
+}
+
 function getEventType(payload: unknown): string | undefined {
     if (isRecord(payload)) {
         const t1 = payload['type'];
@@ -240,18 +253,20 @@ export const POST = Webhooks({
                     : [...(userThemes?.boughtThemes ?? []), 'love'];
 
             const customerId = extractCustomerId(data);
+            const tier = resolveSubscriptionTier(data);
 
             await prisma.user.update({
                 where: { id: userId },
                 data: {
                     isPremium: true,
                     premiumType: 'subscription',
+                    subscriptionTier: tier,
                     boughtThemes: { set: updatedThemes },
                     ...(customerId ? { dodoCustomerId: customerId } : {}),
                 },
             });
 
-            console.log('Handled subscription.active', { userId, subscriptionId });
+            console.log('Handled subscription.active', { userId, subscriptionId, tier });
         } catch (err) {
             console.error('Error handling onSubscriptionActive:', err);
         }
@@ -303,18 +318,20 @@ export const POST = Webhooks({
                     : [...(userThemes?.boughtThemes ?? []), 'love'];
 
             const customerId = extractCustomerId(data);
+            const tier = resolveSubscriptionTier(data);
 
             await prisma.user.update({
                 where: { id: userId },
                 data: {
                     isPremium: true,
                     premiumType: 'subscription',
+                    subscriptionTier: tier,
                     boughtThemes: { set: updatedThemes },
                     ...(customerId ? { dodoCustomerId: customerId } : {}),
                 },
             });
 
-            console.log('Handled subscription.renewed', { userId, subscriptionId });
+            console.log('Handled subscription.renewed', { userId, subscriptionId, tier });
         } catch (err) {
             console.error('Error handling onSubscriptionRenewed:', err);
         }
@@ -364,7 +381,13 @@ export const POST = Webhooks({
                 const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { isPremium: false, boughtThemes: { set: filtered } },
+                    data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
+                });
+            } else {
+                // Lifetime user cancelled a subscription overlay — just clear the tier
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { subscriptionTier: null },
                 });
             }
 
@@ -460,7 +483,12 @@ export const POST = Webhooks({
                 const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { isPremium: false, boughtThemes: { set: filtered } },
+                    data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
+                });
+            } else {
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { subscriptionTier: null },
                 });
             }
 

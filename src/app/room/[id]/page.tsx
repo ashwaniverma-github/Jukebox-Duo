@@ -4,6 +4,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import SyncAudio, { SyncAudioHandle } from '../../../components/SyncAudio'
@@ -53,7 +54,7 @@ export default function RoomPage() {
     // Debounce timer for search
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const syncAudioRef = useRef<SyncAudioHandle>(null);
-    const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string } } | null>(null);
+    const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string; image?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [importModalOpen, setImportModalOpen] = useState(false);
     // Share link includes ?sync=true to auto-enable sync for invited users
@@ -78,6 +79,22 @@ export default function RoomPage() {
     const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'general'>('general');
     const [error, setError] = useState<string | null>(null);
     const [loadingText, setLoadingText] = useState('Loading room...');
+
+    // Event Mode State
+    const [isEventGuest, setIsEventGuest] = useState(false);
+    const [isEventMode, setIsEventMode] = useState(false);
+    const [eventToken, setEventToken] = useState<string | null>(null);
+    const [isHost, setIsHost] = useState(false);
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    const guestAudioRef = useRef<HTMLAudioElement | null>(null);
+    const [guestId] = useState(() => {
+        if (typeof window === 'undefined') return '';
+        const stored = sessionStorage.getItem('guestId');
+        if (stored) return stored;
+        const id = 'guest-' + crypto.randomUUID();
+        sessionStorage.setItem('guestId', id);
+        return id;
+    });
 
     const themeStyles = {
         default: {
@@ -112,15 +129,30 @@ export default function RoomPage() {
 
     const currentTheme = themeStyles[theme];
 
+    // Check for event token on mount
+    useEffect(() => {
+        const token = searchParams.get('event');
+        if (token) {
+            setEventToken(token);
+        }
+    }, [searchParams]);
+
     useEffect(() => {
         if (status === "unauthenticated") {
+            // If event token is present, allow guest access
+            const token = searchParams.get('event');
+            if (token) {
+                setIsEventGuest(true);
+                setEventToken(token);
+                return;
+            }
             // Include both pathname and search params to preserve ?sync=true in callback
             const callbackUrl = typeof window !== 'undefined'
                 ? window.location.pathname + window.location.search
                 : '/dashboard';
             router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
-    }, [status, router]);
+    }, [status, router, searchParams]);
 
     // Progressive loading text effect
     useEffect(() => {
@@ -133,21 +165,34 @@ export default function RoomPage() {
     // Consolidated init: Fetch room details + queue in a single call
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
     useEffect(() => {
-        if (status !== "authenticated") return;
+        // Allow loading for authenticated users OR event guests
+        const isAuthenticated = status === "authenticated";
+        const isGuest = isEventGuest && eventToken;
+        if (!isAuthenticated && !isGuest) return;
+
         const abortController = new AbortController();
-        fetch(`/api/rooms/${roomId}/init`, { signal: abortController.signal })
+        const initUrl = isGuest
+            ? `/api/rooms/${roomId}/init?eventToken=${encodeURIComponent(eventToken!)}`
+            : `/api/rooms/${roomId}/init`;
+
+        fetch(initUrl, { signal: abortController.signal })
             .then(r => {
                 if (!r.ok) {
+                    if (r.status === 404) {
+                        if (isGuest) {
+                            throw new Error('Event ended');
+                        }
+                        throw new Error('Room not found');
+                    }
                     if (r.status === 401) {
-                        // Session expired — redirect to sign in
+                        if (isGuest) {
+                            throw new Error('Invalid event link');
+                        }
                         const callbackUrl = typeof window !== 'undefined'
                             ? window.location.pathname + window.location.search
                             : '/dashboard';
                         router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
                         throw new Error('Session expired');
-                    }
-                    if (r.status === 404) {
-                        throw new Error('Room not found');
                     }
                     throw new Error(`Failed to load room (${r.status})`);
                 }
@@ -159,6 +204,11 @@ export default function RoomPage() {
                     name: data.name,
                     host: data.host
                 });
+
+                // Set event mode state
+                setIsEventMode(data.isEventMode ?? false);
+                setIsHost(data.isHost ?? false);
+                if (data.eventToken) setEventToken(data.eventToken);
 
                 // Set queue data
                 setQueue(data.queue);
@@ -195,14 +245,14 @@ export default function RoomPage() {
                 if (err.name === 'AbortError') return;
                 console.error('Failed to load room:', err);
                 // Don't report expected errors to Sentry
-                if (err.message !== 'Session expired' && err.message !== 'Room not found') {
+                if (err.message !== 'Session expired' && err.message !== 'Room not found' && err.message !== 'Invalid event link' && err.message !== 'Event ended') {
                     Sentry.captureException(err, {
                         tags: { component: 'room-init', roomId },
                         extra: { userAgent: navigator.userAgent },
                     });
                 }
-                if (err.message === 'Room not found') {
-                    setError('Room not found');
+                if (err.message === 'Room not found' || err.message === 'Invalid event link' || err.message === 'Event ended') {
+                    setError(err.message);
                 } else if (err.message !== 'Session expired') {
                     setError("Failed to load room data. Please try refreshing.");
                 }
@@ -211,7 +261,7 @@ export default function RoomPage() {
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
         return () => abortController.abort();
-    }, [roomId, status, session]);
+    }, [roomId, status, session, isEventGuest, eventToken]);
 
     // Restore saved theme from local storage when boughtThemes are available
     useEffect(() => {
@@ -223,22 +273,22 @@ export default function RoomPage() {
         }
     }, [boughtThemes]);
 
-    // Auto-enable sync if URL has ?sync=true (for shared links)
+    // Auto-enable sync if URL has ?sync=true (for shared links) or if event mode
     useEffect(() => {
-        if (status !== "authenticated") return;
+        if (status !== "authenticated" && !isEventGuest) return;
         const syncParam = searchParams.get('sync');
-        if (syncParam === 'true' && !isSyncEnabled) {
-            console.log('[Sync] Auto-enabling sync from URL parameter');
+        if ((syncParam === 'true' || isEventMode) && !isSyncEnabled) {
+            console.log('[Sync] Auto-enabling sync from URL parameter or event mode');
             setIsSyncEnabled(true);
         }
-    }, [searchParams, status, isSyncEnabled]);
+    }, [searchParams, status, isSyncEnabled, isEventGuest, isEventMode]);
 
     // Handle WebSocket connection when sync is enabled
     const handleEnableSync = useCallback(() => {
         if (isSyncEnabled || isSyncConnecting) return; // Already enabled or connecting
 
-        // Free users cannot use sync
-        if (!isPremium) {
+        // Free users cannot use sync (unless in event mode)
+        if (!isPremium && !isEventMode) {
             setPremiumTrigger('sync_limit');
             setShowPremiumModal(true);
             return;
@@ -249,21 +299,24 @@ export default function RoomPage() {
         const socket = connectSocket();
         socket.emit('join-room', roomId);
 
-        // Emit presence join
-        if (session?.user?.id) {
+        // Emit presence join (use guestId for event guests)
+        const userId = session?.user?.id || guestId;
+        const userName = session?.user?.name || 'Guest';
+        const userImage = session?.user?.image;
+        if (userId) {
             socket.emit('presence-join', {
                 roomId,
                 user: {
-                    id: session.user.id,
-                    name: session.user.name,
-                    image: session.user.image,
+                    id: userId,
+                    name: userName,
+                    image: userImage,
                 }
             });
         }
 
         setIsSyncEnabled(true);
         console.log('[Sync] Room sync enabled!');
-    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium]);
+    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium, isEventMode, guestId]);
 
     // Refs for values needed inside the consolidated socket effect (avoids stale closures
     // and prevents the effect from re-running when these change)
@@ -272,10 +325,20 @@ export default function RoomPage() {
     const isSyncConnectingRef = useRef(isSyncConnecting);
     useEffect(() => { isSyncConnectingRef.current = isSyncConnecting; }, [isSyncConnecting]);
 
+    // Refs for event guest state (avoids stale closures in socket effect)
+    const isEventGuestRef = useRef(isEventGuest);
+    useEffect(() => { isEventGuestRef.current = isEventGuest; }, [isEventGuest]);
+    const guestIdRef = useRef(guestId);
+    useEffect(() => { guestIdRef.current = guestId; }, [guestId]);
+    const eventTokenRef = useRef(eventToken);
+    useEffect(() => { eventTokenRef.current = eventToken; }, [eventToken]);
+
     // Consolidated socket effect: connect + ALL listeners in one place.
     // This guarantees listeners are always on the correct socket instance.
     useEffect(() => {
-        if (!isSyncEnabled || status !== "authenticated") return;
+        if (!isSyncEnabled) return;
+        // Allow for authenticated users or event guests
+        if (status !== "authenticated" && !isEventGuest) return;
 
         console.log('[Sync] Setting up socket connection and all listeners...');
         const socket = connectSocket();
@@ -283,13 +346,16 @@ export default function RoomPage() {
 
         // Emit presence join using ref to avoid session dependency
         const sess = sessionRef.current;
-        if (sess?.user?.id) {
+        const userId = sess?.user?.id || guestIdRef.current;
+        const userName = sess?.user?.name || 'Guest';
+        const userImage = sess?.user?.image;
+        if (userId) {
             socket.emit('presence-join', {
                 roomId,
                 user: {
-                    id: sess.user.id,
-                    name: sess.user.name,
-                    image: sess.user.image,
+                    id: userId,
+                    name: userName,
+                    image: userImage,
                 }
             });
         }
@@ -299,13 +365,16 @@ export default function RoomPage() {
             console.log('[Sync] Re-joining room and refreshing queue...');
             socket.emit('join-room', roomId);
             const sess = sessionRef.current;
-            if (sess?.user?.id) {
+            const userId = sess?.user?.id || guestIdRef.current;
+            const userName = sess?.user?.name || 'Guest';
+            const userImage = sess?.user?.image;
+            if (userId) {
                 socket.emit('presence-join', {
                     roomId,
                     user: {
-                        id: sess.user.id,
-                        name: sess.user.name,
-                        image: sess.user.image,
+                        id: userId,
+                        name: userName,
+                        image: userImage,
                     }
                 });
             }
@@ -428,12 +497,13 @@ export default function RoomPage() {
             socket.off('queue-removed', onQueueRemoved);
             socket.off('theme-changed', onThemeChanged);
             const sess = sessionRef.current;
-            if (sess?.user?.id) {
-                socket.emit('leave-room', { roomId, userId: sess.user.id });
+            const leaveUserId = sess?.user?.id || guestIdRef.current;
+            if (leaveUserId) {
+                socket.emit('leave-room', { roomId, userId: leaveUserId });
             }
             disconnectSocket();
         };
-    }, [isSyncEnabled, roomId, status]);
+    }, [isSyncEnabled, roomId, status, isEventGuest]);
 
 
     // When queue or currentQueueIndex changes, update currentSong and videoId
@@ -449,7 +519,10 @@ export default function RoomPage() {
 
     // Helper: refetch queue from backend to ensure canonical IDs/order
     const refreshQueue = useCallback(async () => {
-        const res = await fetch(`/api/rooms/${roomId}/queue`);
+        const queueUrl = eventTokenRef.current && isEventGuestRef.current
+            ? `/api/rooms/${roomId}/queue?eventToken=${encodeURIComponent(eventTokenRef.current)}`
+            : `/api/rooms/${roomId}/queue`;
+        const res = await fetch(queueUrl);
         if (!res.ok) return null;
         const data = await res.json();
         setQueue(data.queue);
@@ -665,7 +738,7 @@ export default function RoomPage() {
         setRemovingQueueItemId(null);
     };
 
-    if (status === "loading" || status === "unauthenticated" || (!roomDetails && !error)) {
+    if (status === "loading" || (status === "unauthenticated" && !isEventGuest) || (!roomDetails && !error)) {
         return (
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -680,11 +753,15 @@ export default function RoomPage() {
 
     if (error) {
         const isRoomDeleted = error === 'Room not found';
+        const isEventEnded = error === 'Event ended';
+        const showHomeLink = isRoomDeleted || isEventEnded;
         return (
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center text-red-500">
-                <div className="text-center p-6 bg-white/5 rounded-2xl border border-red-500/20 backdrop-blur-sm">
+                <div className="text-center p-6 bg-white/5 rounded-2xl border border-red-500/20 backdrop-blur-sm max-w-sm">
                     <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        {isRoomDeleted ? (
+                        {isEventEnded ? (
+                            <Music className="w-6 h-6" />
+                        ) : isRoomDeleted ? (
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                             </svg>
@@ -695,20 +772,22 @@ export default function RoomPage() {
                         )}
                     </div>
                     <p className="text-lg font-bold text-red-400 mb-2">
-                        {isRoomDeleted ? 'Room Deleted' : 'Error'}
+                        {isEventEnded ? 'Event Ended' : isRoomDeleted ? 'Room Deleted' : 'Error'}
                     </p>
                     <p className="text-sm text-red-200/70 mb-6">
-                        {isRoomDeleted
+                        {isEventEnded
+                            ? 'This event has been ended by the host. Thanks for listening!'
+                            : isRoomDeleted
                             ? 'This room has been deleted by the host.'
                             : error}
                     </p>
-                    {isRoomDeleted ? (
-                        <button
-                            onClick={() => router.push('/dashboard')}
-                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+                    {showHomeLink ? (
+                        <Link
+                            href="/"
+                            className="inline-block px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
                         >
-                            Go to Dashboard
-                        </button>
+                            Go to Homepage
+                        </Link>
                     ) : (
                         <button
                             onClick={() => window.location.reload()}
@@ -722,13 +801,64 @@ export default function RoomPage() {
         );
     }
 
+    // iOS audio unlock gate — only for event guests
+    // Desktop/Android auto-play works fine, so we only gate on iOS-like UAs
+    // But to be safe and consistent, we show this for ALL event guests — it's a nice UX anyway
+    if (isEventGuest && !audioUnlocked && roomDetails) {
+        return (
+            <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-6">
+                <audio
+                    ref={guestAudioRef}
+                    src="https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3"
+                    loop
+                    playsInline
+                    className="hidden"
+                />
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="text-center max-w-md"
+                >
+                    <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Music className="w-10 h-10 text-red-400" />
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{roomDetails.name || 'Event'}</h1>
+                    <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
+                    <button
+                        onClick={() => {
+                            // Unlock iOS audio context with user gesture
+                            if (guestAudioRef.current) {
+                                guestAudioRef.current.play().catch(() => {});
+                            }
+                            // Also create and play an AudioContext to unlock Web Audio
+                            try {
+                                const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+                                const osc = ctx.createOscillator();
+                                const gain = ctx.createGain();
+                                gain.gain.value = 0;
+                                osc.connect(gain);
+                                gain.connect(ctx.destination);
+                                osc.start();
+                                osc.stop(ctx.currentTime + 0.1);
+                            } catch {}
+                            setAudioUnlocked(true);
+                        }}
+                        className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                        Tap to Join
+                    </button>
+                </motion.div>
+            </div>
+        );
+    }
+
     const handleThemeChange = (newTheme: 'default' | 'love') => {
         const updateTheme = () => {
             setTheme(newTheme);
             localStorage.setItem('selectedTheme', newTheme);
 
             // If host, broadcast theme change
-            const isHost = session?.user?.email && roomDetails?.host?.email && session.user.email === roomDetails.host.email;
             if (isHost && isSyncEnabled) {
                 const socket = getSocket();
                 if (socket) {
@@ -918,62 +1048,84 @@ export default function RoomPage() {
                     </div>
                     {/* Right: Participants + Invite Button + Profile Avatar */}
                     <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Participants (avatars) */}
-                        <div className="hidden sm:flex -space-x-2">
-                            {members.slice(0, 5).map((m) => {
-                                const isHost = m.id === roomDetails?.host?.id;
-                                const isCurrentUser = m.id === session?.user?.id;
-                                // Show crown on host if host is premium, or on current user if they're premium
-                                const showCrown = (isHost && isHostPremium) || (isCurrentUser && isPremium);
-
-                                return (
-                                    <div key={m.id} className="relative">
-                                        {m.image ? (
-                                            <img src={m.image} alt={m.name || 'User'} className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} object-cover`} />
-                                        ) : (
-                                            <div className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} bg-white/10 flex items-center justify-center text-white text-xs font-bold`}>
-                                                {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                            </div>
-                                        )}
-                                        {showCrown && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                                                <Crown className="w-2.5 h-2.5 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {members.length > 5 && (
-                                <div className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
-                                    +{members.length - 5}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Mobile: tiny member avatars (only when sync enabled and members exist) */}
-                        {isSyncEnabled && members.length > 0 && (
-                            <div className="flex sm:hidden -space-x-1.5 flex-shrink-0">
-                                {members.slice(0, 3).map((m) => (
-                                    <div key={m.id} className="w-5 h-5 rounded-full border border-white/30 overflow-hidden flex-shrink-0 bg-white/10">
-                                        {m.image ? (
-                                            <img src={m.image} alt={m.name || 'User'} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-white/20 flex items-center justify-center text-white text-[8px] font-bold">
-                                                {(m.name || '?')[0].toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                {members.length > 3 && (
-                                    <div className="w-5 h-5 rounded-full border border-white/30 bg-white/10 flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
-                                        +{members.length - 3}
+                        {/* Event Mode: Host avatar + listener count */}
+                        {isEventMode ? (
+                            <div className="flex items-center gap-2">
+                                {members.length > 0 && (
+                                    <div className="flex items-center gap-1.5 text-xs sm:text-sm text-green-300">
+                                        <Users className="w-3.5 h-3.5" />
+                                        <span className="font-medium">{members.length}</span>
                                     </div>
                                 )}
+                                <div className="relative">
+                                    {roomDetails?.host?.image ? (
+                                        <img src={roomDetails.host.image} alt={roomDetails.host.name || 'Host'} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-white/30 object-cover" />
+                                    ) : (
+                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
+                                            {(roomDetails?.host?.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+                        ) : (
+                            <>
+                                {/* Participants (avatars) — normal mode */}
+                                <div className="hidden sm:flex -space-x-2">
+                                    {members.slice(0, 5).map((m) => {
+                                        const isMemberHost = m.id === roomDetails?.host?.id;
+                                        const isCurrentUser = m.id === session?.user?.id;
+                                        const showCrown = (isMemberHost && isHostPremium) || (isCurrentUser && isPremium);
+
+                                        return (
+                                            <div key={m.id} className="relative">
+                                                {m.image ? (
+                                                    <img src={m.image} alt={m.name || 'User'} className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} object-cover`} />
+                                                ) : (
+                                                    <div className={`w-8 h-8 rounded-full border-2 ${showCrown ? 'border-yellow-400' : 'border-white/30'} bg-white/10 flex items-center justify-center text-white text-xs font-bold`}>
+                                                        {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                {showCrown && (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                                                        <Crown className="w-2.5 h-2.5 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    {members.length > 5 && (
+                                        <div className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
+                                            +{members.length - 5}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Mobile: tiny member avatars (only when sync enabled and members exist) */}
+                                {isSyncEnabled && members.length > 0 && (
+                                    <div className="flex sm:hidden -space-x-1.5 flex-shrink-0">
+                                        {members.slice(0, 3).map((m) => (
+                                            <div key={m.id} className="w-5 h-5 rounded-full border border-white/30 overflow-hidden flex-shrink-0 bg-white/10">
+                                                {m.image ? (
+                                                    <img src={m.image} alt={m.name || 'User'} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-white/20 flex items-center justify-center text-white text-[8px] font-bold">
+                                                        {(m.name || '?')[0].toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {members.length > 3 && (
+                                            <div className="w-5 h-5 rounded-full border border-white/30 bg-white/10 flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
+                                                +{members.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Enable Sync Button / Connecting Spinner / Live Indicator */}
-                        {!isSyncEnabled && !isSyncConnecting ? (
+                        {!isSyncEnabled && !isSyncConnecting && !isEventMode ? (
                             <Button
                                 onClick={handleEnableSync}
                                 className="bg-white/10 hover:bg-white/20 text-white font-medium px-2 sm:px-3 py-2 rounded-xl shadow-lg transition-all duration-200 text-sm"
@@ -993,136 +1145,146 @@ export default function RoomPage() {
                             </div>
                         )}
 
-                        {/* Invite Button */}
-                        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                                    onClick={(e) => {
-                                        // Block share for free users
-                                        if (!isPremium) {
-                                            e.preventDefault();
-                                            setPremiumTrigger('sync_limit');
-                                            setShowPremiumModal(true);
-                                            return;
-                                        }
-                                        // Auto-enable sync when sharing - you want to sync with invited users
-                                        if (!isSyncEnabled) {
-                                            handleEnableSync();
-                                        }
-                                        setInviteOpen(true);
-                                    }}
-                                    aria-label="Invite"
-                                >
-                                    <Share2 className="w-5 h-5" />
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
-                                <VisuallyHidden>
-                                    <DialogTitle>Invite to Room with real-time sync</DialogTitle>
-                                </VisuallyHidden>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Share2 className="w-6 h-6 text-red-400" />
-                                    <h2 className="text-lg font-bold">Invite to Room with real-time sync</h2>                                </div>
-                                <div className="flex items-center gap-3 mt-6">
-                                    <input
-                                        type="text"
-                                        value={shareLink}
-                                        readOnly
-                                        className="flex-1 h-12 bg-white/10 border-white/20 text-white text-sm px-4 rounded-xl backdrop-blur-sm"
-                                    />
+                        {/* Invite Button — hidden for event guests (only host can share) */}
+                        {!(isEventMode && !isHost) && (
+                            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                                <DialogTrigger asChild>
                                     <Button
-                                        onClick={async () => {
-                                            await navigator.clipboard.writeText(shareLink);
-                                            setCopied(true);
-                                            setTimeout(() => setCopied(false), 2000);
+                                        variant="ghost"
+                                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                                        onClick={(e) => {
+                                            // In event mode, skip premium check
+                                            if (!isEventMode && !isPremium) {
+                                                e.preventDefault();
+                                                setPremiumTrigger('sync_limit');
+                                                setShowPremiumModal(true);
+                                                return;
+                                            }
+                                            // Auto-enable sync when sharing
+                                            if (!isSyncEnabled) {
+                                                handleEnableSync();
+                                            }
+                                            setInviteOpen(true);
                                         }}
-                                        className={`h-12 px-4 bg-gradient-to-r ${currentTheme.buttonGradient} text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
+                                        aria-label="Invite"
                                     >
-                                        {copied ? 'Copied!' : 'Copy'}
+                                        <Share2 className="w-5 h-5" />
                                     </Button>
-                                </div>
-                                <div className="text-xs text-gray-400 mt-2">Share this link to invite others to your music room.</div>
-                            </DialogContent>
-                        </Dialog>
-                        {/* Profile Avatar + Dropdown */}
-                        <DropdownMenu.Root>
-                            <DropdownMenu.Trigger asChild>
-                                {session?.user?.image ? (
-                                    <img
-                                        src={session.user.image}
-                                        alt={session.user.name || 'Profile'}
-                                        className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
-                                    />
-                                ) : (
-                                    <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
-                                        {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
+                                    <VisuallyHidden>
+                                        <DialogTitle>{isEventMode ? 'Share Event Link' : 'Invite to Room with real-time sync'}</DialogTitle>
+                                    </VisuallyHidden>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Share2 className="w-6 h-6 text-red-400" />
+                                        <h2 className="text-lg font-bold">{isEventMode ? 'Share Event Link' : 'Invite to Room with real-time sync'}</h2>
                                     </div>
-                                )}
-                            </DropdownMenu.Trigger>
-                            <DropdownMenu.Portal>
-                                <DropdownMenu.Content
-                                    sideOffset={8}
-                                    align="end"
-                                    className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-                                >
-                                    <div className="flex flex-col items-center gap-2 px-2 py-3">
-                                        {session?.user?.image ? (
-                                            <img
-                                                src={session.user.image}
-                                                alt={session.user.name || 'Profile'}
-                                                className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
-                                                {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
-                                            </div>
-                                        )}
-                                        <div className="text-center">
-                                            <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                                            <div className={`text-xs ${currentTheme.text}`}>{session?.user?.email || ''}</div>
+                                    <div className="flex items-center gap-3 mt-6">
+                                        <input
+                                            type="text"
+                                            value={isEventMode && eventToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/room/${roomId}?event=${eventToken}` : shareLink}
+                                            readOnly
+                                            className="flex-1 h-12 bg-white/10 border-white/20 text-white text-sm px-4 rounded-xl backdrop-blur-sm"
+                                        />
+                                        <Button
+                                            onClick={async () => {
+                                                const linkToCopy = isEventMode && eventToken
+                                                    ? `${window.location.origin}/room/${roomId}?event=${eventToken}`
+                                                    : shareLink;
+                                                await navigator.clipboard.writeText(linkToCopy);
+                                                setCopied(true);
+                                                setTimeout(() => setCopied(false), 2000);
+                                            }}
+                                            className={`h-12 px-4 bg-gradient-to-r ${currentTheme.buttonGradient} text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
+                                        >
+                                            {copied ? 'Copied!' : 'Copy'}
+                                        </Button>
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-2">
+                                        {isEventMode ? 'Guests can join without signing in.' : 'Share this link to invite others to your music room.'}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                        {/* Profile Avatar + Dropdown — hidden for event guests */}
+                        {session?.user && (
+                            <DropdownMenu.Root>
+                                <DropdownMenu.Trigger asChild>
+                                    {session?.user?.image ? (
+                                        <img
+                                            src={session.user.image}
+                                            alt={session.user.name || 'Profile'}
+                                            className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                                        />
+                                    ) : (
+                                        <div className="ml-4 w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                                            {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
                                         </div>
-                                    </div>
-                                    <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
-                                    <DropdownMenu.Item
-                                        className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'default' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                                        onSelect={() => handleThemeChange('default')}
+                                    )}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Portal>
+                                    <DropdownMenu.Content
+                                        sideOffset={8}
+                                        align="end"
+                                        className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
                                     >
-                                        <span>🎨</span>
-                                        Default Theme
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Item
-                                        className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'love' ? 'bg-pink-500/20 text-pink-400' : 'text-gray-400 hover:text-pink-300 hover:bg-pink-500/10'}`}
-                                        onSelect={() => handleThemeChange('love')}
-                                    >
-                                        <span>❤</span>
-                                        Love Theme
-                                        {!boughtThemes.includes('love') && <span className="text-[10px] bg-pink-500/20 px-1 rounded border border-pink-500/30">PRO</span>}
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Item
-                                        onSelect={() => { window.location.href = '/dashboard'; }}
-                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
-                                    >
-                                        My Dashboard
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Item
-                                        onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
-                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-purple-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
-                                    >
-                                        <span>🎵</span>
-                                        <span>Higher or Lower Game</span>
-                                    </DropdownMenu.Item>
-                                    <ManageBillingButton isPremium={isPremium} />
-                                    <DropdownMenu.Item
-                                        onSelect={() => signOut({ callbackUrl: '/' })}
-                                        className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
-                                    >
-                                        Logout
-                                    </DropdownMenu.Item>
-                                </DropdownMenu.Content>
-                            </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
+                                        <div className="flex flex-col items-center gap-2 px-2 py-3">
+                                            {session?.user?.image ? (
+                                                <img
+                                                    src={session.user.image}
+                                                    alt={session.user.name || 'Profile'}
+                                                    className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                                                    {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                                                </div>
+                                            )}
+                                            <div className="text-center">
+                                                <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                                                <div className={`text-xs ${currentTheme.text}`}>{session?.user?.email || ''}</div>
+                                            </div>
+                                        </div>
+                                        <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+                                        <DropdownMenu.Item
+                                            className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'default' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                            onSelect={() => handleThemeChange('default')}
+                                        >
+                                            <span>🎨</span>
+                                            Default Theme
+                                        </DropdownMenu.Item>
+                                        <DropdownMenu.Item
+                                            className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer outline-none ${theme === 'love' ? 'bg-pink-500/20 text-pink-400' : 'text-gray-400 hover:text-pink-300 hover:bg-pink-500/10'}`}
+                                            onSelect={() => handleThemeChange('love')}
+                                        >
+                                            <span>❤</span>
+                                            Love Theme
+                                            {!boughtThemes.includes('love') && <span className="text-[10px] bg-pink-500/20 px-1 rounded border border-pink-500/30">PRO</span>}
+                                        </DropdownMenu.Item>
+                                        <DropdownMenu.Item
+                                            onSelect={() => { window.location.href = '/dashboard'; }}
+                                            className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium"
+                                        >
+                                            My Dashboard
+                                        </DropdownMenu.Item>
+                                        <DropdownMenu.Item
+                                            onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
+                                            className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                                        >
+                                            <span>🎵</span>
+                                            <span>Higher or Lower Game</span>
+                                        </DropdownMenu.Item>
+                                        <ManageBillingButton isPremium={isPremium} />
+                                        <DropdownMenu.Item
+                                            onSelect={() => signOut({ callbackUrl: '/' })}
+                                            className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium"
+                                        >
+                                            Logout
+                                        </DropdownMenu.Item>
+                                    </DropdownMenu.Content>
+                                </DropdownMenu.Portal>
+                            </DropdownMenu.Root>
+                        )}
                     </div>
                 </div>
             </motion.header>
@@ -1159,16 +1321,18 @@ export default function RoomPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <Button
-                                    onClick={() => {
-                                        setModalOpen(true);
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
-                                >
-                                    <Search className="w-5 h-5 mr-2" />
-                                    Search Music
-                                </Button>
+                                {!(isEventMode && !isHost) && (
+                                    <Button
+                                        onClick={() => {
+                                            setModalOpen(true);
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
+                                    >
+                                        <Search className="w-5 h-5 mr-2" />
+                                        Search Music
+                                    </Button>
+                                )}
 
                                 <div className={`text-sm ${currentTheme.text} pt-4 border-t border-white/10`}>
                                     <div className="flex items-center gap-2 mb-2">
@@ -1188,168 +1352,183 @@ export default function RoomPage() {
             {/* Main content */}
             <main className={`relative z-10 px-2 sm:px-4 pb-6 ${CONFIG.MAINTENANCE_MODE ? 'sm:pt-24' : 'sm:pt-14'}`}>
                 <div className="max-w-7xl mx-auto">
-                    {/* Search Card */}
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="mt-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4"
-                    >
-                        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                            <DialogTrigger asChild>
-                                <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group">
-                                    <CardContent className="p-3 sm:p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                                <div className={`w-12 h-12 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500`}>
-                                                    <Search className="w-6 h-6 text-white" />
+                    {/* Search Card — hidden for non-host event users */}
+                    {!(isEventMode && !isHost) && (
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            className="mt-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+                        >
+                            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                                <DialogTrigger asChild>
+                                    <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group">
+                                        <CardContent className="p-3 sm:p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative">
+                                                    <div className={`w-12 h-12 ${currentTheme.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500`}>
+                                                        <Search className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div className={`absolute -top-1 -right-1 w-5 h-5 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
+                                                        <span className="text-white text-xs font-bold">+</span>
+                                                    </div>
                                                 </div>
-                                                <div className={`absolute -top-1 -right-1 w-5 h-5 ${currentTheme.accent} rounded-full flex items-center justify-center`}>
-                                                    <span className="text-white text-xs font-bold">+</span>
+                                                <div className="flex-1">
+                                                    <h3 className="text-base font-bold text-white mb-0.5">Search & Add Music</h3>
+                                                    <p className={`text-sm ${currentTheme.text} opacity-90`}>Discover new tracks and add them to the queue</p>
+                                                </div>
+                                                <div className="hidden sm:block">
+                                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                                        <ChevronDownIcon className="w-5 h-5 text-white" />
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <h3 className="text-base font-bold text-white mb-0.5">Search & Add Music</h3>
-                                                <p className={`text-sm ${currentTheme.text} opacity-90`}>Discover new tracks and add them to the queue</p>
+                                        </CardContent>
+                                    </Card>
+                                </DialogTrigger>
+                                <DialogContent className="w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 bg-[#1a0d2e] border-white/20 text-white p-2 sm:p-6 rounded-xl">
+                                    <VisuallyHidden>
+                                        <DialogTitle>Search Music Library</DialogTitle>
+                                    </VisuallyHidden>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center transition-colors duration-500`}>
+                                                <Search className="w-5 h-5 text-white" />
                                             </div>
-                                            <div className="hidden sm:block">
-                                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                                    <ChevronDownIcon className="w-5 h-5 text-white" />
-                                                </div>
+                                            <div>
+                                                <h2 className="text-lg sm:text-xl font-bold">Search Music Library</h2>
+                                                <p className={`text-xs sm:text-sm ${currentTheme.text}`}>Find and add songs to your queue</p>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </DialogTrigger>
-                            <DialogContent className="w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 bg-[#1a0d2e] border-white/20 text-white p-2 sm:p-6 rounded-xl">
-                                <VisuallyHidden>
-                                    <DialogTitle>Search Music Library</DialogTitle>
-                                </VisuallyHidden>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className={`w-10 h-10 ${currentTheme.iconBg} rounded-xl flex items-center justify-center transition-colors duration-500`}>
-                                            <Search className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-lg sm:text-xl font-bold">Search Music Library</h2>
-                                            <p className={`text-xs sm:text-sm ${currentTheme.text}`}>Find and add songs to your queue</p>
-                                        </div>
-                                    </div>
 
-                                    <div className="space-y-3">
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 ${theme === 'love' ? 'focus:ring-pink-500' : 'focus:ring-red-500'} focus:border-transparent transition-all text-sm sm:text-base`}
-                                                placeholder="Search for songs, artists, or albums..."
-                                                value={search}
-                                                onChange={e => setSearch(e.target.value)}
-                                                autoFocus
-                                            />
-                                            <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
-                                            {searchLoading && (
-                                                <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
-                                                    <div className={`w-5 h-5 border-2 rounded-full animate-spin ${currentTheme.searchLoading}`}></div>
+                                        <div className="space-y-3">
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 ${theme === 'love' ? 'focus:ring-pink-500' : 'focus:ring-red-500'} focus:border-transparent transition-all text-sm sm:text-base`}
+                                                    placeholder="Search for songs, artists, or albums..."
+                                                    value={search}
+                                                    onChange={e => setSearch(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                                {searchLoading && (
+                                                    <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                                                        <div className={`w-5 h-5 border-2 rounded-full animate-spin ${currentTheme.searchLoading}`}></div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {searchError && (
+                                            <div className={`p-2 sm:p-3 ${currentTheme.subtleBg} border ${currentTheme.border} rounded-lg ${currentTheme.text} text-xs sm:text-sm`}>
+                                                {searchError}
+                                            </div>
+                                        )}
+
+                                        <div className="max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar">
+                                            {searchResults.length === 0 && !searchLoading && !search.trim() && (
+                                                <div className="text-center py-8 sm:py-12">
+                                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <Music className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                                    </div>
+                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>Start typing to search</p>
+                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for songs, artists, or albums</p>
                                                 </div>
                                             )}
-                                        </div>
-                                    </div>
-
-                                    {searchError && (
-                                        <div className={`p-2 sm:p-3 ${currentTheme.subtleBg} border ${currentTheme.border} rounded-lg ${currentTheme.text} text-xs sm:text-sm`}>
-                                            {searchError}
-                                        </div>
-                                    )}
-
-                                    <div className="max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar">
-                                        {searchResults.length === 0 && !searchLoading && !search.trim() && (
-                                            <div className="text-center py-8 sm:py-12">
-                                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Music className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                            {searchResults.length === 0 && !searchLoading && search.trim() && (
+                                                <div className="text-center py-8 sm:py-12">
+                                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                                    </div>
+                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>No results found</p>
+                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Try a different search term</p>
                                                 </div>
-                                                <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>Start typing to search</p>
-                                                <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for songs, artists, or albums</p>
-                                            </div>
-                                        )}
-                                        {searchResults.length === 0 && !searchLoading && search.trim() && (
-                                            <div className="text-center py-8 sm:py-12">
-                                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
-                                                </div>
-                                                <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>No results found</p>
-                                                <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Try a different search term</p>
-                                            </div>
-                                        )}
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {searchResults.map((item, idx) => (
-                                                <motion.div
-                                                    key={item.videoId}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: idx * 0.1 }}
-                                                    className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-all duration-200 group cursor-pointer"
-                                                >
-                                                    <div className="relative flex-shrink-0">
-                                                        <img
-                                                            src={item.thumbnail}
-                                                            alt={item.title}
-                                                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                <div className="w-3 h-3 bg-white rounded-full"></div>
+                                            )}
+                                            <div className="space-y-2 sm:space-y-3">
+                                                {searchResults.map((item, idx) => (
+                                                    <motion.div
+                                                        key={item.videoId}
+                                                        initial={{ opacity: 0, y: 20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: idx * 0.1 }}
+                                                        className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-all duration-200 group cursor-pointer"
+                                                    >
+                                                        <div className="relative flex-shrink-0">
+                                                            <img
+                                                                src={item.thumbnail}
+                                                                alt={item.title}
+                                                                className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg shadow-lg object-cover"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <h4 className="font-semibold text-white text-xs sm:text-base leading-tight line-clamp-2 mb-1">{item.title}</h4>
-                                                        <p className={`text-xs sm:text-sm ${currentTheme.text} opacity-80`}>Click to add to queue</p>
-                                                    </div>
-                                                    <div className="flex-shrink-0">
-                                                        <Button
-                                                            onClick={() => handleAddToQueue(item)}
-                                                            className={`cursor-pointer bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap`}
-                                                        >
-                                                            <span className="text-lg font-bold">+</span>
-                                                            <span>Add</span>
-                                                        </Button>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                            <h4 className="font-semibold text-white text-xs sm:text-base leading-tight line-clamp-2 mb-1">{item.title}</h4>
+                                                            <p className={`text-xs sm:text-sm ${currentTheme.text} opacity-80`}>Click to add to queue</p>
+                                                        </div>
+                                                        <div className="flex-shrink-0">
+                                                            <Button
+                                                                onClick={() => handleAddToQueue(item)}
+                                                                className={`cursor-pointer bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap`}
+                                                            >
+                                                                <span className="text-lg font-bold">+</span>
+                                                                <span>Add</span>
+                                                            </Button>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                                </DialogContent>
+                            </Dialog>
 
-                        {/* Import Playlist Card */}
-                        <Card
-                            onClick={() => setImportModalOpen(true)}
-                            className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group"
+                            {/* Import Playlist Card */}
+                            <Card
+                                onClick={() => setImportModalOpen(true)}
+                                className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white/10 backdrop-blur-md border-white/20 overflow-hidden group"
+                            >
+                                <CardContent className="p-3 sm:p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            <div className="w-12 h-12 bg-white/10 backdrop-blur-md border-white/20 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500">
+                                                <ListMusic className="w-6 h-6 text-white" />
+                                            </div>
+
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-base font-bold text-white mb-0.5">Import Playlist</h3>
+                                            <p className={`text-sm ${currentTheme.text} opacity-90`}>Bulk add songs from YouTube</p>
+                                        </div>
+                                        <div className="hidden sm:block">
+                                            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                                <ChevronDownIcon className="w-5 h-5 text-white -rotate-90" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+
+
+                    {/* Event guest welcome banner */}
+                    {isEventMode && !isHost && (
+                        <motion.div
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.4, delay: 0.15 }}
+                            className="mt-4 mb-4 text-center"
                         >
-                            <CardContent className="p-3 sm:p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                        <div className="w-12 h-12 bg-white/10 backdrop-blur-md border-white/20 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                                            <ListMusic className="w-6 h-6 text-white" />
-                                        </div>
-
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-base font-bold text-white mb-0.5">Import Playlist</h3>
-                                        <p className={`text-sm ${currentTheme.text} opacity-90`}>Bulk add songs from YouTube</p>
-                                    </div>
-                                    <div className="hidden sm:block">
-                                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                            <ChevronDownIcon className="w-5 h-5 text-white -rotate-90" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white">Thanks for joining this event</h2>
+                            <p className={`text-sm sm:text-base ${currentTheme.text} mt-1`}>Hosted by {roomDetails?.host?.name || 'the host'} - Sit back and enjoy the music</p>
+                        </motion.div>
+                    )}
 
                     {/* Player and Queue Grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
@@ -1375,14 +1554,15 @@ export default function RoomPage() {
                                 )}
 
                                 <CardContent className="relative z-10 p-5 sm:p-14">
-                                    <div className="aspect-video sm:aspect-[21/9] pt-6 ">
+                                    <div className="pt-6">
                                         {/* Mount once after initial data load; keep mounted thereafter */}
                                         {playerMounted && (
                                             <SyncAudio
                                                 ref={syncAudioRef}
                                                 roomId={roomId}
                                                 videoId={videoId}
-                                                isHost={true}
+                                                isHost={isHost}
+                                                isEventMode={isEventMode}
                                                 onPlayNext={handlePlayNext}
                                                 onPlayPrev={handlePlayPrev}
                                                 songTitle={currentSong?.title}
@@ -1504,6 +1684,7 @@ export default function RoomPage() {
                                             onRemove={handleRemoveFromQueue}
                                             removingQueueItemId={removingQueueItemId}
                                             setRemovingQueueItemId={setRemovingQueueItemId}
+                                            readOnly={isEventMode && !isHost}
                                         />
                                     </div>
                                 </div>
