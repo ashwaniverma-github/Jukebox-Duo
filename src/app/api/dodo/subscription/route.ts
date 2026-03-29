@@ -69,9 +69,13 @@ export async function POST(req: Request) {
             select: { subscriptionId: true, productId: true, status: true },
         });
 
-        if (existingSub?.status === 'active') {
+        if (existingSub?.status === 'active' || existingSub?.status === 'trialing') {
             if (existingSub.productId === productId) {
                 return NextResponse.json({ error: 'You are already on this plan' }, { status: 400 });
+            }
+
+            if (!existingSub.subscriptionId) {
+                return NextResponse.json({ error: 'Subscription ID missing, please contact support' }, { status: 500 });
             }
 
             // Upgrade or downgrade in-place — prorated charge/credit immediately
@@ -82,14 +86,16 @@ export async function POST(req: Request) {
             });
 
             // Optimistic local DB update — webhook will confirm shortly
-            await prisma.subscription.update({
-                where: { userId: session.user.id },
-                data: { productId, updatedAt: new Date() },
-            });
-            await prisma.user.update({
-                where: { id: session.user.id },
-                data: { subscriptionTier: tier, isPremium: true },
-            });
+            await prisma.$transaction([
+                prisma.subscription.update({
+                    where: { userId: session.user.id },
+                    data: { productId, updatedAt: new Date() },
+                }),
+                prisma.user.update({
+                    where: { id: session.user.id },
+                    data: { subscriptionTier: tier, isPremium: true },
+                }),
+            ]);
 
             return NextResponse.json({ plan_changed: true, new_tier: tier });
         }
