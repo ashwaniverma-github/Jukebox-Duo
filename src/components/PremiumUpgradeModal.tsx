@@ -75,9 +75,20 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 })
             })
 
-            if (!res.ok) throw new Error('Failed to create subscription checkout')
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.error || 'Failed to create subscription checkout')
+            }
 
             const data = await res.json()
+
+            // Plan upgraded/downgraded server-side via changePlan — no redirect needed
+            if (data.plan_changed) {
+                onOpenChange(false)
+                window.location.reload()
+                return
+            }
+
             if (!data?.checkout_url) throw new Error('Missing checkout URL')
 
             onOpenChange(false)

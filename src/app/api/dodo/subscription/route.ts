@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import DodoPayments from 'dodopayments';
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -62,6 +63,38 @@ export async function POST(req: Request) {
             environment,
         });
 
+        // Check for existing active subscription — upgrade/downgrade via changePlan
+        const existingSub = await prisma.subscription.findUnique({
+            where: { userId: session.user.id },
+            select: { subscriptionId: true, productId: true, status: true },
+        });
+
+        if (existingSub?.status === 'active') {
+            if (existingSub.productId === productId) {
+                return NextResponse.json({ error: 'You are already on this plan' }, { status: 400 });
+            }
+
+            // Upgrade or downgrade in-place — prorated charge/credit immediately
+            await client.subscriptions.changePlan(existingSub.subscriptionId, {
+                product_id: productId,
+                proration_billing_mode: 'prorated_immediately',
+                quantity: 1,
+            });
+
+            // Optimistic local DB update — webhook will confirm shortly
+            await prisma.subscription.update({
+                where: { userId: session.user.id },
+                data: { productId, updatedAt: new Date() },
+            });
+            await prisma.user.update({
+                where: { id: session.user.id },
+                data: { subscriptionTier: tier, isPremium: true },
+            });
+
+            return NextResponse.json({ plan_changed: true, new_tier: tier });
+        }
+
+        // No active subscription — create new checkout session
         const email = session.user.email || undefined;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const name = (session.user as any).name || undefined;

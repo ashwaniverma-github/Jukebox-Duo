@@ -381,6 +381,11 @@ export const POST = Webhooks({
                 select: { premiumPurchasedAt: true, boughtThemes: true, subscriptionTier: true },
             });
 
+            if (!user) {
+                console.warn('Webhook subscription.cancelled user not found', { userId });
+                return;
+            }
+
             if (cancelledTier === 'event_pro') {
                 // Event Pro cancelled — clear event hosting, keep premium status intact
                 await prisma.user.update({
@@ -507,6 +512,11 @@ export const POST = Webhooks({
                 where: { id: userId },
                 select: { premiumPurchasedAt: true, boughtThemes: true, subscriptionTier: true },
             });
+
+            if (!user) {
+                console.warn('Webhook subscription.expired user not found', { userId });
+                return;
+            }
 
             if (expiredTier === 'event_pro') {
                 // Event Pro expired — clear event hosting, keep premium status intact
