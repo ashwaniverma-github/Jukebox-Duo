@@ -4,7 +4,6 @@ import SocialProof from "../components/SocialProof";
 import HowItWorks from "../components/HowItWorks";
 import Features from "../components/Features";
 import UseCases from "../components/UseCases";
-import Testimonials from "../components/Testimonials";
 import CTABanner from "../components/CTABanner";
 import FAQ from "../components/FAQ";
 import Footer from "../components/Footer";
@@ -32,7 +31,6 @@ export default function Home() {
         <Features />
         <UseCases />
         <HowItWorks />
-        <Testimonials />
         <FAQ />
         <CTABanner />
         <Footer />

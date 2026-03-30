@@ -53,6 +53,11 @@ const Footer = () => (
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link href="/host-listening-events" className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                  Host Events
+                </Link>
+              </li>
             </ul>
           </div>
 
