@@ -824,9 +824,17 @@ export default function RoomPage() {
                     transition={{ duration: 0.4 }}
                     className="text-center max-w-md"
                 >
-                    <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Music className="w-10 h-10 text-red-400" />
-                    </div>
+                    {roomDetails.host?.image ? (
+                        <img
+                            src={roomDetails.host.image}
+                            alt={roomDetails.host.name || 'Host'}
+                            className="w-20 h-20 rounded-full border-2 border-red-500/30 object-cover mx-auto mb-6"
+                        />
+                    ) : (
+                        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Music className="w-10 h-10 text-red-400" />
+                        </div>
+                    )}
                     <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{roomDetails.name || 'Event'}</h1>
                     <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
                     <button
