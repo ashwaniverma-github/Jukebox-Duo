@@ -1271,13 +1271,7 @@ export default function RoomPage() {
                                         >
                                             My Dashboard
                                         </DropdownMenu.Item>
-                                        <DropdownMenu.Item
-                                            onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
-                                            className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
-                                        >
-                                            <span>🎵</span>
-                                            <span>Higher or Lower Game</span>
-                                        </DropdownMenu.Item>
+
                                         <ManageBillingButton isPremium={isPremium} />
                                         <DropdownMenu.Item
                                             onSelect={() => signOut({ callbackUrl: '/' })}

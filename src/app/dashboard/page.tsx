@@ -225,72 +225,66 @@ export default function Dashboard() {
           </Link>
 
           <div className="flex items-center gap-3">
-          {/* Host Event Button */}
-          <Button
-            onClick={() => setShowEventModal(true)}
-            className="h-9 px-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg border border-white/10 transition-all duration-200 text-sm flex items-center gap-2"
-          >
-            <Radio className="w-4 h-4" />
-            <span className="hidden sm:inline">Host Event</span>
-          </Button>
+            {/* Host Event Button */}
+            <Button
+              onClick={() => setShowEventModal(true)}
+              className="h-9 px-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg border border-white/10 transition-all duration-200 text-sm flex items-center gap-2"
+            >
+              <Radio className="w-4 h-4" />
+              <span className="hidden sm:inline">Host Event</span>
+            </Button>
 
-          {/* Profile Avatar + Dropdown */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              {session?.user?.image ? (
-                <img
-                  src={session.user.image}
-                  alt={session.user.name || 'Profile'}
-                  className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
-                  {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
-                </div>
-              )}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                sideOffset={8}
-                align="end"
-                className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
-              >
-                <div className="flex flex-col items-center gap-2 px-2 py-3">
-                  {session?.user?.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || 'Profile'}
-                      className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
-                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
-                    <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+            {/* Profile Avatar + Dropdown */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name || 'Profile'}
+                    className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg cursor-pointer object-cover hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg bg-white/10 flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-105 transition-transform">
+                    {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
                   </div>
-                </div>
-                <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
-                <DropdownMenu.Item
-                  onSelect={() => { window.open('/games/higher-lower', '_blank', 'noopener,noreferrer'); }}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-red-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                )}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  sideOffset={8}
+                  align="end"
+                  className="z-50 min-w-[200px] rounded-xl bg-[#1a0d2e] border border-white/20 shadow-2xl p-2 text-white animate-fade-in"
                 >
-                  <span>🎵</span>
-                  <span>Higher or Lower Game</span>
-                </DropdownMenu.Item>
-                <ManageBillingButton isPremium={isPremium} />
-                <DropdownMenu.Item
-                  onSelect={handleSignout}
-                  className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  {isSigningout ? 'Signing out...' : 'Sign Out'}
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+                  <div className="flex flex-col items-center gap-2 px-2 py-3">
+                    {session?.user?.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || 'Profile'}
+                        className="w-12 h-12 rounded-full border-2 border-white/30 object-cover mb-1"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold text-xl mb-1">
+                        {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <div className="font-semibold text-base">{session?.user?.name || 'User'}</div>
+                      <div className="text-xs text-red-200">{session?.user?.email || ''}</div>
+                    </div>
+                  </div>
+                  <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+
+                  <ManageBillingButton isPremium={isPremium} />
+                  <DropdownMenu.Item
+                    onSelect={handleSignout}
+                    className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {isSigningout ? 'Signing out...' : 'Sign Out'}
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
           </div>
         </nav>
 
@@ -320,11 +314,11 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-2 text-gray-400">
                   <Zap className="w-5 h-5 text-red-500" />
-                  <span className="text-sm">Zero Latency</span>
+                  <span className="text-sm">Low Latency</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-400">
                   <Heart className="w-5 h-5 text-red-400" />
-                  <span className="text-sm">Unlimited Users</span>
+                  <span className="text-sm">Best for Duo</span>
                 </div>
               </div>
 
