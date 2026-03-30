@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: '/og-image.png',
+                url: 'https://jukeboxduo.com/og-image.png',
                 width: 1200,
                 height: 630,
                 alt: 'Jukebox Duo — Host Music Events Online',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Host a Listening Party Online (2026) — Guests Join Free | Jukebox Duo',
         description: 'Host virtual listening parties for 100+ listeners. Guests join free — no app, no login required.',
-        images: ['/og-image.png'],
+        images: ['https://jukeboxduo.com/og-image.png'],
     },
     alternates: {
         canonical: 'https://jukeboxduo.com/host-listening-events',
