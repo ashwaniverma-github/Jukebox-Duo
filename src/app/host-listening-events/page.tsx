@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, X, ArrowRight, Users, Zap, Shield, Globe, Music, Sparkles, Clock, Radio, Headphones, Share2, Lock, Volume2, PlayCircle, Crown, Monitor } from 'lucide-react';
+import { Check, X, ArrowRight, Users, Zap, Shield, Globe, Music, Sparkles, Radio, Headphones, Share2, Lock, Volume2, PlayCircle, Crown, Monitor } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { CONFIG } from '@/lib/config';
 import AnimatedSection from '@/components/AnimatedSection';
