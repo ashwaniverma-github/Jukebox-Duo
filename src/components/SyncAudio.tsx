@@ -77,6 +77,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
   const [hasStartedPlayback, setHasStartedPlayback] = useState(false); // Track if user has started playback
+  const hasStartedPlaybackRef = useRef(false);
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
   const [showGuestToast, setShowGuestToast] = useState(false);
   const [guestToastMessage, setGuestToastMessage] = useState('Only host can control — sit back and enjoy!');
@@ -98,6 +99,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
 
   // Keep ref in sync with state
   useEffect(() => { hostPausedRef.current = hostPaused; }, [hostPaused]);
+  useEffect(() => { hasStartedPlaybackRef.current = hasStartedPlayback; }, [hasStartedPlayback]);
 
   // Expose playVideo to parent so queue clicks can trigger playback synchronously (iOS requirement)
   useImperativeHandle(ref, () => ({
@@ -208,7 +210,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
                     setTimeout(() => p.playVideo(), 100); // Small delay for mobile
                   }
                 }
-              } else if (!isHost && isEventMode && !hasStartedPlayback) {
+              } else if (!isHost && isEventMode && !hasStartedPlaybackRef.current) {
                 // iOS Chrome (WKWebView) requires playVideo() close to user gesture.
                 // The "Tap to Join" gesture unlocked audio, but by the time onSyncState
                 // fires (2s later via socket callback), iOS Chrome no longer considers
