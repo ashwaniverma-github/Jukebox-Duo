@@ -166,9 +166,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 )}
                             >
                                 Monthly
-                                <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-emerald-500 text-[8px] text-white font-bold tracking-tighter shadow-xl ring-2 ring-zinc-950">
-                                    TRY FREE
-                                </span>
                             </button>
                             <button
                                 onClick={() => setPlan('lifetime')}
@@ -204,12 +201,10 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-bold text-white">$0</span>
-                                            <span className="text-xs font-medium text-emerald-500 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-wider">
-                                                Free for 7 days
-                                            </span>
+                                            <span className="text-2xl font-bold text-white">$2.99</span>
+                                            <span className="text-xs font-medium text-zinc-400">/month</span>
                                         </div>
-                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Then $2.99/mo after 7 days • Cancel anytime</span>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Cancel anytime</span>
                                     </div>
                                 )}
                             </div>
@@ -260,7 +255,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 ) : isEventHosting ? (
                                     "Subscribe to Event Pro"
                                 ) : (
-                                    "Start 7-Day Free Trial"
+                                    "Get Monthly Access"
                                 )
                             )}
                         </Button>

@@ -116,7 +116,7 @@ export async function POST(req: Request) {
                 source: 'jukebox-duo',
             },
             subscription_data: {
-                trial_period_days: tier === 'event_pro' ? 0 : 7,
+                trial_period_days: 0,
             },
         };
 
