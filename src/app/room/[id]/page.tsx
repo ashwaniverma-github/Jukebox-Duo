@@ -692,14 +692,7 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Update backend
-            await fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            });
-
-            // Only emit socket events if sync is enabled
+            // Emit socket event immediately for real-time sync (before PATCH)
             if (isSyncEnabled) {
                 const newVideoId = currentQueue[newIndex].videoId;
                 const socket = getSocket();
@@ -707,6 +700,13 @@ export default function RoomPage() {
                     socket.emit('change-video', { roomId, newVideoId });
                 }
             }
+
+            // Persist to backend (non-blocking)
+            fetch(`/api/rooms/${roomId}/queue`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentIndex: newIndex })
+            });
         } else {
             console.log('[handlePlayNext] Reached end of queue');
         }
@@ -732,14 +732,7 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Update backend
-            await fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            });
-
-            // Only emit socket events if sync is enabled
+            // Emit socket event immediately for real-time sync (before PATCH)
             if (isSyncEnabled) {
                 const newVideoId = currentQueue[newIndex].videoId;
                 const socket = getSocket();
@@ -747,6 +740,13 @@ export default function RoomPage() {
                     socket.emit('change-video', { roomId, newVideoId });
                 }
             }
+
+            // Persist to backend (non-blocking)
+            fetch(`/api/rooms/${roomId}/queue`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentIndex: newIndex })
+            });
         } else {
             console.log('[handlePlayPrev] Already at first song');
         }
@@ -1699,13 +1699,7 @@ export default function RoomPage() {
                                                     // Trigger playVideo synchronously within the click event
                                                     // so iOS recognizes it as a user gesture
                                                     syncAudioRef.current?.playVideo();
-                                                    // Update backend
-                                                    await fetch(`/api/rooms/${roomId}/queue`, {
-                                                        method: 'PATCH',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ currentIndex: idx })
-                                                    });
-                                                    // Only emit socket events if sync is enabled
+                                                    // Emit socket event immediately for real-time sync
                                                     if (isSyncEnabled) {
                                                         const newVideoId = queue[idx].videoId;
                                                         const socket = getSocket();
@@ -1713,6 +1707,12 @@ export default function RoomPage() {
                                                             socket.emit('change-video', { roomId, newVideoId });
                                                         }
                                                     }
+                                                    // Persist to backend (non-blocking)
+                                                    fetch(`/api/rooms/${roomId}/queue`, {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ currentIndex: idx })
+                                                    });
                                                 }
                                             }}
                                             currentVideoId={videoId}

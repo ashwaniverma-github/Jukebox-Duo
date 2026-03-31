@@ -1,7 +1,10 @@
 
-# A/B Testing 
+# A/B Testing
 AB_TEST_LANDING_PAGE.txt
 AB_TEST_SEO.txt
+
+# Internal docs
+SYNC-CHANGES.md
 
 # dependencies
 /emails
