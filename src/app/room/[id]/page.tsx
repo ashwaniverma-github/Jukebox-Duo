@@ -336,6 +336,11 @@ export default function RoomPage() {
     useEffect(() => { guestIdRef.current = guestId; }, [guestId]);
     const eventTokenRef = useRef(eventToken);
     useEffect(() => { eventTokenRef.current = eventToken; }, [eventToken]);
+    const reconnectSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isEventModeRef = useRef(isEventMode);
+    useEffect(() => { isEventModeRef.current = isEventMode; }, [isEventMode]);
+    const isHostRef = useRef(isHost);
+    useEffect(() => { isHostRef.current = isHost; }, [isHost]);
 
     // Consolidated socket effect: connect + ALL listeners in one place.
     // This guarantees listeners are always on the correct socket instance.
@@ -384,6 +389,17 @@ export default function RoomPage() {
             }
             // Refresh queue so onVideoChanged can find the correct videoId
             refreshQueueRef.current();
+
+            // Request playback sync for event-mode guests after reconnection
+            if (isEventModeRef.current && !isHostRef.current) {
+                if (reconnectSyncTimerRef.current) clearTimeout(reconnectSyncTimerRef.current);
+                reconnectSyncTimerRef.current = setTimeout(() => {
+                    if (socket.connected) {
+                        console.log('[Sync] Requesting sync-state after reconnection');
+                        socket.emit('sync-request', { roomId });
+                    }
+                }, 3000);
+            }
         };
 
         // --- Reconnect handler: re-join room after Socket.IO auto-reconnect ---
@@ -493,6 +509,7 @@ export default function RoomPage() {
         // --- Cleanup: remove ALL listeners and disconnect ---
         return () => {
             console.log('[Sync] Cleaning up socket listeners...');
+            if (reconnectSyncTimerRef.current) clearTimeout(reconnectSyncTimerRef.current);
             document.removeEventListener('visibilitychange', onVisibilityChange);
             socket.off('connect', onReconnect);
             socket.off('room-presence', onPresence);
@@ -643,6 +660,16 @@ export default function RoomPage() {
             console.error('Failed to add to queue');
         }
     };
+
+    // Sync-driven track change (reconnection scenario — guest switches to host's track)
+    const handleSyncTrackChange = useCallback((index: number) => {
+        const currentQueue = queueRef.current;
+        if (index >= 0 && index < currentQueue.length) {
+            console.log(`[Sync] Track change from sync-state: switching to index ${index}`);
+            localIndexChangeRef.current = Date.now(); // Prevent refreshQueue from overwriting
+            setCurrentQueueIndex(index);
+        }
+    }, []);
 
     // Play next song handler
     const handlePlayNext = async () => {
@@ -1574,6 +1601,8 @@ export default function RoomPage() {
                                                 songTitle={currentSong?.title}
                                                 thumbnailUrl={currentSong?.thumbnail}
                                                 theme={theme}
+                                                currentQueueIndex={currentQueueIndex}
+                                                onSyncTrackChange={handleSyncTrackChange}
                                             />
                                         )}
 

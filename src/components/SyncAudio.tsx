@@ -48,6 +48,8 @@ interface Props {
   songTitle?: string;
   thumbnailUrl?: string;
   theme?: 'default' | 'love';
+  currentQueueIndex?: number;
+  onSyncTrackChange?: (index: number) => void;
 }
 
 const BUFFER = 1000; // ms buffer for scheduling
@@ -63,7 +65,7 @@ export interface SyncAudioHandle {
   playVideo: () => void;
 }
 
-const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, isEventMode = false, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }, ref) {
+const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, isEventMode = false, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default', currentQueueIndex, onSyncTrackChange }, ref) {
   /* eslint-disable jsx-a11y/media-has-caption */
   const playerRef = useRef<YT.Player | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null); // Silent audio ref
@@ -84,9 +86,15 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const onPlayNextRef = useRef(onPlayNext); // ref to avoid stale closure in YouTube player callback
   const onPlayPrevRef = useRef(onPlayPrev);
 
+  const currentQueueIndexRef = useRef(currentQueueIndex);
+  const onSyncTrackChangeRef = useRef(onSyncTrackChange);
+  const pendingSyncAfterTrackChangeRef = useRef<{ isPlaying: boolean; seekTime: number; timestamp: number } | null>(null);
+
   // Keep refs in sync with latest props/state
   useEffect(() => { onPlayNextRef.current = onPlayNext; }, [onPlayNext]);
   useEffect(() => { onPlayPrevRef.current = onPlayPrev; }, [onPlayPrev]);
+  useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
+  useEffect(() => { onSyncTrackChangeRef.current = onSyncTrackChange; }, [onSyncTrackChange]);
 
   // Keep ref in sync with state
   useEffect(() => { hostPausedRef.current = hostPaused; }, [hostPaused]);
@@ -170,15 +178,49 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
             }
             // Auto-play on mobile after video loads (for queue selection)
             // Event guests: auto-play on track change only if host is currently playing
-            if (e.data === window.YT.PlayerState.CUED && pendingAutoPlayRef.current) {
-              console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
-              pendingAutoPlayRef.current = false;
-              const shouldAutoPlay = isHost || !isEventMode || !hostPausedRef.current;
-              if (shouldAutoPlay) {
+            if (e.data === window.YT.PlayerState.CUED) {
+              // Apply deferred sync after track change (reconnection scenario)
+              const pendingSync = pendingSyncAfterTrackChangeRef.current;
+              if (pendingSync) {
+                pendingSyncAfterTrackChangeRef.current = null;
+                console.log('[SyncAudio] Video cued after track change, applying deferred sync');
+                const elapsed = (Date.now() - pendingSync.timestamp) / 1000;
+                const adjustedTime = elapsed <= 30
+                  ? (pendingSync.isPlaying ? pendingSync.seekTime + elapsed : pendingSync.seekTime)
+                  : pendingSync.seekTime;
+                const p = playerRef.current;
+                if (p && typeof p.seekTo === 'function') {
+                  p.seekTo(adjustedTime, true);
+                }
+                hostPausedRef.current = !pendingSync.isPlaying;
+                setHostPaused(!pendingSync.isPlaying);
+                if (pendingSync.isPlaying && p && typeof p.playVideo === 'function') {
+                  setTimeout(() => p.playVideo(), 100);
+                }
+                setHasStartedPlayback(true);
+              } else if (pendingAutoPlayRef.current) {
+                console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
+                pendingAutoPlayRef.current = false;
+                const shouldAutoPlay = isHost || !isEventMode || !hostPausedRef.current;
+                if (shouldAutoPlay) {
+                  const p = playerRef.current;
+                  if (p && typeof p.playVideo === 'function') {
+                    setTimeout(() => p.playVideo(), 100); // Small delay for mobile
+                  }
+                }
+              } else if (!isHost && isEventMode && !hasStartedPlayback) {
+                // iOS Chrome (WKWebView) requires playVideo() close to user gesture.
+                // The "Tap to Join" gesture unlocked audio, but by the time onSyncState
+                // fires (2s later via socket callback), iOS Chrome no longer considers
+                // it a user gesture and silently blocks playVideo().
+                // Fix: auto-play from CUED (closer to gesture), then let onSyncState
+                // handle seeking once the video is already playing.
+                console.log('[SyncAudio] Event guest initial CUED: auto-playing for iOS compatibility');
                 const p = playerRef.current;
                 if (p && typeof p.playVideo === 'function') {
-                  setTimeout(() => p.playVideo(), 100); // Small delay for mobile
+                  setTimeout(() => p.playVideo(), 100);
                 }
+                setHasStartedPlayback(true);
               }
             }
           },
@@ -452,6 +494,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
         isPlaying,
         seekTime: p.getCurrentTime(),
         timestamp: Date.now(),
+        currentQueueIndex: currentQueueIndexRef.current,
       });
     }, 5000);
     return () => clearInterval(interval);
@@ -461,7 +504,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   useEffect(() => {
     if (isHost || !isEventMode || !socket) return;
 
-    const onSyncState = (data: { isPlaying: boolean; seekTime: number; timestamp: number }) => {
+    const onSyncState = (data: { isPlaying: boolean; seekTime: number; timestamp: number; currentQueueIndex?: number }) => {
       const p = playerRef.current;
       if (!p || typeof p.seekTo !== 'function') return;
 
@@ -469,8 +512,28 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       hostPausedRef.current = !data.isPlaying;
       setHostPaused(!data.isPlaying);
 
-      // Account for time elapsed since heartbeat was sent
+      // If host is on a different track, switch to it first and defer seek
+      if (data.currentQueueIndex !== undefined &&
+          currentQueueIndexRef.current !== undefined &&
+          data.currentQueueIndex !== currentQueueIndexRef.current &&
+          onSyncTrackChangeRef.current) {
+        console.log(`[SyncAudio] Sync-state: track mismatch. Local: ${currentQueueIndexRef.current}, Host: ${data.currentQueueIndex}. Switching track.`);
+        pendingSyncAfterTrackChangeRef.current = {
+          isPlaying: data.isPlaying,
+          seekTime: data.seekTime,
+          timestamp: data.timestamp,
+        };
+        onSyncTrackChangeRef.current(data.currentQueueIndex);
+        return; // Seek will be applied after the new video loads (CUED handler)
+      }
+
+      // Staleness guard: if heartbeat is >30s old, don't trust the seek time
       const elapsed = (Date.now() - data.timestamp) / 1000;
+      if (elapsed > 30) {
+        console.log('[SyncAudio] Sync-state too stale (>30s), skipping seek adjustment');
+        return;
+      }
+
       const adjustedTime = data.isPlaying ? data.seekTime + elapsed : data.seekTime;
 
       p.seekTo(adjustedTime, true);
