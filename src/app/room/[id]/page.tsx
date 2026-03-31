@@ -706,7 +706,7 @@ export default function RoomPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ currentIndex: newIndex })
-            });
+            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
         } else {
             console.log('[handlePlayNext] Reached end of queue');
         }
@@ -746,7 +746,7 @@ export default function RoomPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ currentIndex: newIndex })
-            });
+            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
         } else {
             console.log('[handlePlayPrev] Already at first song');
         }
@@ -1712,7 +1712,7 @@ export default function RoomPage() {
                                                         method: 'PATCH',
                                                         headers: { 'Content-Type': 'application/json' },
                                                         body: JSON.stringify({ currentIndex: idx })
-                                                    });
+                                                    }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
                                                 }
                                             }}
                                             currentVideoId={videoId}
