@@ -200,6 +200,17 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
                   setTimeout(() => p.playVideo(), 100);
                 }
                 setHasStartedPlayback(true);
+              } else if (!isHost && isEventMode && !hasStartedPlaybackRef.current) {
+                // iOS Chrome autoplay: when event guest's video first CUEs,
+                // play immediately — this is close to the "Tap to Join" gesture
+                // so iOS Chrome still considers it user-activated.
+                console.log('[SyncAudio] iOS: First CUED for event guest, auto-playing in gesture window');
+                const p = playerRef.current;
+                if (p && typeof p.playVideo === 'function') {
+                  p.playVideo();
+                }
+                setHasStartedPlayback(true);
+                hasStartedPlaybackRef.current = true;
               } else if (pendingAutoPlayRef.current) {
                 console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
                 pendingAutoPlayRef.current = false;
@@ -527,7 +538,14 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
 
       p.seekTo(adjustedTime, true);
       if (data.isPlaying) {
-        if (typeof p.playVideo === 'function') p.playVideo();
+        // Only call playVideo() if player isn't already playing.
+        // On iOS Chrome, calling playVideo() from a socket callback gets blocked
+        // (not a user gesture). If the player is already playing (from tap gesture
+        // or CUED auto-play), seekTo() alone is enough.
+        const currentState = typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
+        if (currentState !== window.YT.PlayerState.PLAYING) {
+          if (typeof p.playVideo === 'function') p.playVideo();
+        }
         setIsPlaying(true);
         setHasStartedPlayback(true);
       } else {
