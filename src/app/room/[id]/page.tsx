@@ -692,7 +692,14 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Emit socket event immediately for real-time sync (before PATCH)
+            // Persist to backend first
+            await fetch(`/api/rooms/${roomId}/queue`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentIndex: newIndex })
+            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+
+            // Then emit socket event for sync
             if (isSyncEnabled) {
                 const newVideoId = currentQueue[newIndex].videoId;
                 const socket = getSocket();
@@ -700,13 +707,6 @@ export default function RoomPage() {
                     socket.emit('change-video', { roomId, newVideoId });
                 }
             }
-
-            // Persist to backend (non-blocking)
-            fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
         } else {
             console.log('[handlePlayNext] Reached end of queue');
         }
@@ -732,7 +732,14 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Emit socket event immediately for real-time sync (before PATCH)
+            // Persist to backend first
+            await fetch(`/api/rooms/${roomId}/queue`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentIndex: newIndex })
+            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+
+            // Then emit socket event for sync
             if (isSyncEnabled) {
                 const newVideoId = currentQueue[newIndex].videoId;
                 const socket = getSocket();
@@ -740,13 +747,6 @@ export default function RoomPage() {
                     socket.emit('change-video', { roomId, newVideoId });
                 }
             }
-
-            // Persist to backend (non-blocking)
-            fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
         } else {
             console.log('[handlePlayPrev] Already at first song');
         }
@@ -1703,7 +1703,13 @@ export default function RoomPage() {
                                                     // Trigger playVideo synchronously within the click event
                                                     // so iOS recognizes it as a user gesture
                                                     syncAudioRef.current?.playVideo();
-                                                    // Emit socket event immediately for real-time sync
+                                                    // Persist to backend first
+                                                    await fetch(`/api/rooms/${roomId}/queue`, {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ currentIndex: idx })
+                                                    }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+                                                    // Then emit socket event for sync
                                                     if (isSyncEnabled) {
                                                         const newVideoId = queue[idx].videoId;
                                                         const socket = getSocket();
@@ -1711,12 +1717,6 @@ export default function RoomPage() {
                                                             socket.emit('change-video', { roomId, newVideoId });
                                                         }
                                                     }
-                                                    // Persist to backend (non-blocking)
-                                                    fetch(`/api/rooms/${roomId}/queue`, {
-                                                        method: 'PATCH',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ currentIndex: idx })
-                                                    }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
                                                 }
                                             }}
                                             currentVideoId={videoId}
