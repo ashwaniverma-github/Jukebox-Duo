@@ -23,6 +23,9 @@ declare namespace YT {
     pauseVideo(): void;
     mute(): void;
     unMute(): void;
+    isMuted(): boolean;
+    getVolume(): number;
+    setVolume(volume: number): void;
     getCurrentTime(): number;
     getDuration(): number;
     getPlayerState(): number;
@@ -113,8 +116,13 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     unMuteAndPlay: () => {
       const p = playerRef.current;
       if (p) {
+        console.log('[SyncAudio] unMuteAndPlay called. isMuted:', typeof p.isMuted === 'function' ? p.isMuted() : 'N/A', 'volume:', typeof p.getVolume === 'function' ? p.getVolume() : 'N/A', 'state:', typeof p.getPlayerState === 'function' ? p.getPlayerState() : 'N/A');
         if (typeof p.unMute === 'function') p.unMute();
+        if (typeof p.setVolume === 'function') p.setVolume(100);
         if (typeof p.playVideo === 'function') p.playVideo();
+        console.log('[SyncAudio] After unMute. isMuted:', typeof p.isMuted === 'function' ? p.isMuted() : 'N/A', 'volume:', typeof p.getVolume === 'function' ? p.getVolume() : 'N/A');
+      } else {
+        console.log('[SyncAudio] unMuteAndPlay: playerRef is null');
       }
     },
   }));
