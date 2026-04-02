@@ -87,12 +87,7 @@ export default function RoomPage() {
     const [isHost, setIsHost] = useState(false);
     const [audioUnlocked, setAudioUnlocked] = useState(false);
     const guestAudioRef = useRef<HTMLAudioElement | null>(null);
-    // DEBUG: on-screen log for iOS Chrome (no DevTools access)
-    const [debugLogs, setDebugLogs] = useState<string[]>([]);
-    const addDebugLog = useCallback((msg: string) => {
-        setDebugLogs(prev => [...prev.slice(-15), `${new Date().toLocaleTimeString()}: ${msg}`]);
-    }, []);
-    const [guestId, setGuestId] = useState('');
+const [guestId, setGuestId] = useState('');
 
     useEffect(() => {
         const stored = sessionStorage.getItem('guestId');
@@ -920,10 +915,9 @@ export default function RoomPage() {
                         <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
                         <button
                             onClick={() => {
-                                addDebugLog('TAP: button clicked');
                                 // Unlock iOS audio context with user gesture
                                 if (guestAudioRef.current) {
-                                    guestAudioRef.current.play().then(() => addDebugLog('TAP: silent audio played')).catch((e) => addDebugLog(`TAP: silent audio failed: ${e.message}`));
+                                    guestAudioRef.current.play().catch(() => {});
                                 }
                                 // Also create and play an AudioContext to unlock Web Audio
                                 try {
@@ -935,11 +929,9 @@ export default function RoomPage() {
                                     gain.connect(ctx.destination);
                                     osc.start();
                                     osc.stop(ctx.currentTime + 0.1);
-                                    addDebugLog(`TAP: AudioContext state=${ctx.state}`);
-                                } catch (e) { addDebugLog(`TAP: AudioContext error: ${e}`); }
+                                } catch {}
                                 // Play YouTube player in user gesture context
                                 syncAudioRef.current?.playVideo();
-                                addDebugLog('TAP: playVideo called');
                                 setAudioUnlocked(true);
                             }}
                             className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
@@ -1757,12 +1749,6 @@ export default function RoomPage() {
         }
       `}</style>
 
-            {/* DEBUG: On-screen log overlay for iOS Chrome testing — REMOVE AFTER DEBUGGING */}
-            {debugLogs.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-black/90 text-green-400 text-[10px] font-mono p-2 max-h-40 overflow-y-auto">
-                    {debugLogs.map((log, i) => <div key={i}>{log}</div>)}
-                </div>
-            )}
         </div>
     );
 }
