@@ -194,7 +194,16 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           },
           onStateChange: (e: { data: number }) => {
             console.log('StateChange:', e.data);
-            if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+              // iOS Chrome: unmute after muted autoplay trick for track changes
+              const p = playerRef.current;
+              if (p && typeof p.isMuted === 'function' && p.isMuted() && hasStartedPlaybackRef.current) {
+                console.log('[SyncAudio] iOS: video started playing muted, unmuting now');
+                p.unMute();
+                if (typeof p.setVolume === 'function') p.setVolume(100);
+              }
+            }
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
             else if (
@@ -296,6 +305,11 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     // This works because clicking queue item IS a user gesture, and we call playVideo after load
     if (isVideoChange) {
       pendingAutoPlayRef.current = true;
+      // iOS Chrome trick: mute before loading new video so it auto-plays muted,
+      // then unmute once PLAYING state fires (see onStateChange handler below)
+      if (!isHost && isEventMode && hasStartedPlaybackRef.current) {
+        playerRef.current.mute();
+      }
     }
 
     playerRef.current.loadVideoById(videoId);
