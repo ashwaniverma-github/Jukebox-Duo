@@ -23,9 +23,6 @@ declare namespace YT {
     pauseVideo(): void;
     mute(): void;
     unMute(): void;
-    isMuted(): boolean;
-    getVolume(): number;
-    setVolume(volume: number): void;
     getCurrentTime(): number;
     getDuration(): number;
     getPlayerState(): number;
@@ -66,7 +63,6 @@ const formatTime = (seconds: number): string => {
 
 export interface SyncAudioHandle {
   playVideo: () => void;
-  unMuteAndPlay: () => string; // returns debug info
 }
 
 const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, isEventMode = false, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default', currentQueueIndex, onSyncTrackChange }, ref) {
@@ -105,23 +101,13 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   useEffect(() => { hostPausedRef.current = hostPaused; }, [hostPaused]);
   useEffect(() => { hasStartedPlaybackRef.current = hasStartedPlayback; }, [hasStartedPlayback]);
 
-  // Expose playVideo and unMuteAndPlay to parent for iOS gesture requirements
+  // Expose playVideo to parent so queue clicks can trigger playback synchronously
   useImperativeHandle(ref, () => ({
     playVideo: () => {
       const p = playerRef.current;
       if (p && typeof p.playVideo === 'function') {
         p.playVideo();
       }
-    },
-    unMuteAndPlay: () => {
-      const p = playerRef.current;
-      if (!p) return 'player=NULL';
-      const before = `muted=${typeof p.isMuted === 'function' ? p.isMuted() : '?'} vol=${typeof p.getVolume === 'function' ? p.getVolume() : '?'} state=${typeof p.getPlayerState === 'function' ? p.getPlayerState() : '?'}`;
-      if (typeof p.unMute === 'function') p.unMute();
-      if (typeof p.setVolume === 'function') p.setVolume(100);
-      if (typeof p.playVideo === 'function') p.playVideo();
-      const after = `muted=${typeof p.isMuted === 'function' ? p.isMuted() : '?'} vol=${typeof p.getVolume === 'function' ? p.getVolume() : '?'} state=${typeof p.getPlayerState === 'function' ? p.getPlayerState() : '?'}`;
-      return `BEFORE[${before}] AFTER[${after}]`;
     },
   }));
 
@@ -164,27 +150,14 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       if (playerRef.current) return; // Only create one player
       if (!window.YT || !window.YT.Player) return; // Wait until API ready
       console.log('▶️ Creating YT Player instance');
-      // For event guests: start muted with autoplay so the video is already
-      // playing behind the overlay. On "Tap to Join" we just unmute — this
-      // bypasses iOS Chrome's restriction that playVideo() must originate
-      // from a user gesture (postMessage to the iframe loses gesture context).
-      const isEventGuest = !isHost && isEventMode;
       playerRef.current = new window.YT.Player('audio-player', {
         videoId,
-        playerVars: {
-          autoplay: isEventGuest ? 1 : 0,
-          controls: 0, modestbranding: 1, rel: 0, playsinline: 1,
-        },
+        playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0, playsinline: 1 },
         events: {
           onReady: () => {
             console.log('🛠️ YouTube Player Ready');
             const player = playerRef.current;
             if (player) {
-              // Mute immediately for event guests — they'll unmute on tap
-              if (isEventGuest) {
-                player.mute();
-                console.log('[SyncAudio] Event guest: muted player for autoplay');
-              }
               setDuration(player.getDuration());
               const state = player.getPlayerState ? player.getPlayerState() : null;
               if (state !== window.YT.PlayerState.BUFFERING) {
@@ -194,16 +167,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           },
           onStateChange: (e: { data: number }) => {
             console.log('StateChange:', e.data);
-            if (e.data === window.YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-              // iOS Chrome: unmute after muted autoplay trick for track changes
-              const p = playerRef.current;
-              if (p && typeof p.isMuted === 'function' && p.isMuted() && hasStartedPlaybackRef.current) {
-                console.log('[SyncAudio] iOS: video started playing muted, unmuting now');
-                p.unMute();
-                if (typeof p.setVolume === 'function') p.setVolume(100);
-              }
-            }
+            if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
             else if (
@@ -236,17 +200,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
                   setTimeout(() => p.playVideo(), 100);
                 }
                 setHasStartedPlayback(true);
-              } else if (!isHost && isEventMode && !hasStartedPlaybackRef.current) {
-                // iOS Chrome autoplay: when event guest's video first CUEs,
-                // play immediately — this is close to the "Tap to Join" gesture
-                // so iOS Chrome still considers it user-activated.
-                console.log('[SyncAudio] iOS: First CUED for event guest, auto-playing in gesture window');
-                const p = playerRef.current;
-                if (p && typeof p.playVideo === 'function') {
-                  p.playVideo();
-                }
-                setHasStartedPlayback(true);
-                hasStartedPlaybackRef.current = true;
               } else if (pendingAutoPlayRef.current) {
                 console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
                 pendingAutoPlayRef.current = false;
@@ -305,11 +258,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     // This works because clicking queue item IS a user gesture, and we call playVideo after load
     if (isVideoChange) {
       pendingAutoPlayRef.current = true;
-      // iOS Chrome trick: mute before loading new video so it auto-plays muted,
-      // then unmute once PLAYING state fires (see onStateChange handler below)
-      if (!isHost && isEventMode && hasStartedPlaybackRef.current) {
-        playerRef.current.mute();
-      }
     }
 
     playerRef.current.loadVideoById(videoId);
@@ -579,14 +527,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
 
       p.seekTo(adjustedTime, true);
       if (data.isPlaying) {
-        // Only call playVideo() if player isn't already playing.
-        // On iOS Chrome, calling playVideo() from a socket callback gets blocked
-        // (not a user gesture). If the player is already playing (from tap gesture
-        // or CUED auto-play), seekTo() alone is enough.
-        const currentState = typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
-        if (currentState !== window.YT.PlayerState.PLAYING) {
-          if (typeof p.playVideo === 'function') p.playVideo();
-        }
+        if (typeof p.playVideo === 'function') p.playVideo();
         setIsPlaying(true);
         setHasStartedPlayback(true);
       } else {

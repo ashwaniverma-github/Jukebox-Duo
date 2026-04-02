@@ -937,9 +937,9 @@ export default function RoomPage() {
                                     osc.stop(ctx.currentTime + 0.1);
                                     addDebugLog(`TAP: AudioContext state=${ctx.state}`);
                                 } catch (e) { addDebugLog(`TAP: AudioContext error: ${e}`); }
-                                // Unmute and play YouTube player
-                                const dbg = syncAudioRef.current?.unMuteAndPlay();
-                                addDebugLog(`TAP: ${dbg || 'ref=null'}`);
+                                // Play YouTube player in user gesture context
+                                syncAudioRef.current?.playVideo();
+                                addDebugLog('TAP: playVideo called');
                                 setAudioUnlocked(true);
                             }}
                             className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
