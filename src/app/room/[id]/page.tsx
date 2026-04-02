@@ -832,66 +832,6 @@ export default function RoomPage() {
         );
     }
 
-    // iOS audio unlock gate — only for event guests
-    // Desktop/Android auto-play works fine, so we only gate on iOS-like UAs
-    // But to be safe and consistent, we show this for ALL event guests — it's a nice UX anyway
-    if (isEventGuest && !audioUnlocked && roomDetails) {
-        return (
-            <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-6">
-                <audio
-                    ref={guestAudioRef}
-                    src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v/////////////////////////////////"
-                    loop
-                    playsInline
-                    className="hidden"
-                />
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.4 }}
-                    className="text-center max-w-md"
-                >
-                    {roomDetails.host?.image ? (
-                        <img
-                            src={roomDetails.host.image}
-                            alt={roomDetails.host.name || 'Host'}
-                            className="w-20 h-20 rounded-full border-2 border-red-500/30 object-cover mx-auto mb-6"
-                        />
-                    ) : (
-                        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Music className="w-10 h-10 text-red-400" />
-                        </div>
-                    )}
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{roomDetails.name || 'Event'}</h1>
-                    <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
-                    <button
-                        onClick={() => {
-                            // Unlock iOS audio context with user gesture
-                            if (guestAudioRef.current) {
-                                guestAudioRef.current.play().catch(() => {});
-                            }
-                            // Also create and play an AudioContext to unlock Web Audio
-                            try {
-                                const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-                                const osc = ctx.createOscillator();
-                                const gain = ctx.createGain();
-                                gain.gain.value = 0;
-                                osc.connect(gain);
-                                gain.connect(ctx.destination);
-                                osc.start();
-                                osc.stop(ctx.currentTime + 0.1);
-                            } catch {}
-                            setAudioUnlocked(true);
-                        }}
-                        className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
-                    >
-                        Tap to Join
-                    </button>
-                </motion.div>
-            </div>
-        );
-    }
-
     const handleThemeChange = (newTheme: 'default' | 'love') => {
         const updateTheme = () => {
             setTheme(newTheme);
@@ -940,6 +880,70 @@ export default function RoomPage() {
 
     return (
         <div className={`min-h-screen w-full relative overflow-y-auto transition-colors duration-1000 [&::-webkit-scrollbar]:hidden ${currentTheme.bg}`} style={{ scrollbarWidth: 'none' }}>
+            {/* Silent audio for iOS audio unlock */}
+            <audio
+                ref={guestAudioRef}
+                src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v/////////////////////////////////"
+                loop
+                playsInline
+                className="hidden"
+            />
+
+            {/* Tap-to-join overlay — renders ON TOP while YouTube player mounts behind it.
+                This ensures playVideo() is called in a direct user gesture context,
+                bypassing iOS Chrome's autoplay restrictions. */}
+            {isEventGuest && !audioUnlocked && roomDetails && (
+                <div className="fixed inset-0 z-50 bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-6">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.4 }}
+                        className="text-center max-w-md"
+                    >
+                        {roomDetails.host?.image ? (
+                            <img
+                                src={roomDetails.host.image}
+                                alt={roomDetails.host.name || 'Host'}
+                                className="w-20 h-20 rounded-full border-2 border-red-500/30 object-cover mx-auto mb-6"
+                            />
+                        ) : (
+                            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Music className="w-10 h-10 text-red-400" />
+                            </div>
+                        )}
+                        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{roomDetails.name || 'Event'}</h1>
+                        <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
+                        <button
+                            onClick={() => {
+                                // Unlock iOS audio context with user gesture
+                                if (guestAudioRef.current) {
+                                    guestAudioRef.current.play().catch(() => {});
+                                }
+                                // Also create and play an AudioContext to unlock Web Audio
+                                try {
+                                    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+                                    const osc = ctx.createOscillator();
+                                    const gain = ctx.createGain();
+                                    gain.gain.value = 0;
+                                    osc.connect(gain);
+                                    gain.connect(ctx.destination);
+                                    osc.start();
+                                    osc.stop(ctx.currentTime + 0.1);
+                                } catch {}
+                                // Play YouTube player DIRECTLY in user gesture context —
+                                // this "user-activates" the player for the entire page session,
+                                // allowing all future programmatic playVideo() calls to work on iOS
+                                syncAudioRef.current?.playVideo();
+                                setAudioUnlocked(true);
+                            }}
+                            className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                            Tap to Join
+                        </button>
+                    </motion.div>
+                </div>
+            )}
+
             <PlaylistImportModal
                 isOpen={importModalOpen}
                 onOpenChange={setImportModalOpen}

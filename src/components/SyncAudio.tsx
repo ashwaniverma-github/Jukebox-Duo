@@ -210,19 +210,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
                     setTimeout(() => p.playVideo(), 100); // Small delay for mobile
                   }
                 }
-              } else if (!isHost && isEventMode && !hasStartedPlaybackRef.current) {
-                // iOS Chrome (WKWebView) requires playVideo() close to user gesture.
-                // The "Tap to Join" gesture unlocked audio, but by the time onSyncState
-                // fires (2s later via socket callback), iOS Chrome no longer considers
-                // it a user gesture and silently blocks playVideo().
-                // Fix: auto-play from CUED (closer to gesture), then let onSyncState
-                // handle seeking once the video is already playing.
-                console.log('[SyncAudio] Event guest initial CUED: auto-playing for iOS compatibility');
-                const p = playerRef.current;
-                if (p && typeof p.playVideo === 'function') {
-                  setTimeout(() => p.playVideo(), 100);
-                }
-                setHasStartedPlayback(true);
               }
             }
           },
