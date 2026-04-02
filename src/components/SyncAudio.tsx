@@ -63,6 +63,7 @@ const formatTime = (seconds: number): string => {
 
 export interface SyncAudioHandle {
   playVideo: () => void;
+  unMuteAndPlay: () => void;
 }
 
 const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, isEventMode = false, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default', currentQueueIndex, onSyncTrackChange }, ref) {
@@ -101,12 +102,19 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   useEffect(() => { hostPausedRef.current = hostPaused; }, [hostPaused]);
   useEffect(() => { hasStartedPlaybackRef.current = hasStartedPlayback; }, [hasStartedPlayback]);
 
-  // Expose playVideo to parent so queue clicks can trigger playback synchronously (iOS requirement)
+  // Expose playVideo and unMuteAndPlay to parent for iOS gesture requirements
   useImperativeHandle(ref, () => ({
     playVideo: () => {
       const p = playerRef.current;
       if (p && typeof p.playVideo === 'function') {
         p.playVideo();
+      }
+    },
+    unMuteAndPlay: () => {
+      const p = playerRef.current;
+      if (p) {
+        if (typeof p.unMute === 'function') p.unMute();
+        if (typeof p.playVideo === 'function') p.playVideo();
       }
     },
   }));
@@ -150,14 +158,27 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       if (playerRef.current) return; // Only create one player
       if (!window.YT || !window.YT.Player) return; // Wait until API ready
       console.log('▶️ Creating YT Player instance');
+      // For event guests: start muted with autoplay so the video is already
+      // playing behind the overlay. On "Tap to Join" we just unmute — this
+      // bypasses iOS Chrome's restriction that playVideo() must originate
+      // from a user gesture (postMessage to the iframe loses gesture context).
+      const isEventGuest = !isHost && isEventMode;
       playerRef.current = new window.YT.Player('audio-player', {
         videoId,
-        playerVars: { autoplay: 0, controls: 0, modestbranding: 1, rel: 0, playsinline: 1 },
+        playerVars: {
+          autoplay: isEventGuest ? 1 : 0,
+          controls: 0, modestbranding: 1, rel: 0, playsinline: 1,
+        },
         events: {
           onReady: () => {
             console.log('🛠️ YouTube Player Ready');
             const player = playerRef.current;
             if (player) {
+              // Mute immediately for event guests — they'll unmute on tap
+              if (isEventGuest) {
+                player.mute();
+                console.log('[SyncAudio] Event guest: muted player for autoplay');
+              }
               setDuration(player.getDuration());
               const state = player.getPlayerState ? player.getPlayerState() : null;
               if (state !== window.YT.PlayerState.BUFFERING) {

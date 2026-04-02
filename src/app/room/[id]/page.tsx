@@ -930,10 +930,10 @@ export default function RoomPage() {
                                     osc.start();
                                     osc.stop(ctx.currentTime + 0.1);
                                 } catch {}
-                                // Play YouTube player DIRECTLY in user gesture context —
-                                // this "user-activates" the player for the entire page session,
-                                // allowing all future programmatic playVideo() calls to work on iOS
-                                syncAudioRef.current?.playVideo();
+                                // Unmute and play YouTube player — video is already playing
+                                // muted behind the overlay (autoplay:1 + mute). Unmuting from
+                                // a gesture works on iOS Chrome where playVideo() via postMessage doesn't.
+                                syncAudioRef.current?.unMuteAndPlay();
                                 setAudioUnlocked(true);
                             }}
                             className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
