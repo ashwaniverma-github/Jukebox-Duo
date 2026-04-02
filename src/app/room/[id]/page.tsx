@@ -463,6 +463,7 @@ const [guestId, setGuestId] = useState('');
                     }
                 }
                 if (idx !== -1) {
+                    localIndexChangeRef.current = Date.now(); // Prevent stale sync-state heartbeat from overwriting
                     setCurrentQueueIndex(idx);
                 } else {
                     console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);

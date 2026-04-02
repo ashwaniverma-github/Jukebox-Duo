@@ -90,11 +90,17 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const currentQueueIndexRef = useRef(currentQueueIndex);
   const onSyncTrackChangeRef = useRef(onSyncTrackChange);
   const pendingSyncAfterTrackChangeRef = useRef<{ isPlaying: boolean; seekTime: number; timestamp: number } | null>(null);
+  const indexChangedAtRef = useRef(0); // Timestamp of last index change — used to ignore stale heartbeat data
 
   // Keep refs in sync with latest props/state
   useEffect(() => { onPlayNextRef.current = onPlayNext; }, [onPlayNext]);
   useEffect(() => { onPlayPrevRef.current = onPlayPrev; }, [onPlayPrev]);
-  useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
+  useEffect(() => {
+    if (currentQueueIndexRef.current !== currentQueueIndex) {
+      indexChangedAtRef.current = Date.now();
+    }
+    currentQueueIndexRef.current = currentQueueIndex;
+  }, [currentQueueIndex]);
   useEffect(() => { onSyncTrackChangeRef.current = onSyncTrackChange; }, [onSyncTrackChange]);
 
   // Keep ref in sync with state
@@ -501,10 +507,14 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       hostPausedRef.current = !data.isPlaying;
       setHostPaused(!data.isPlaying);
 
-      // If host is on a different track, switch to it first and defer seek
+      // If host is on a different track, switch to it first and defer seek.
+      // Skip if our index was just updated (< 10s ago) — the heartbeat data on the
+      // server is stale and hasn't caught up to the host's latest change-video yet.
+      const indexRecentlyChanged = Date.now() - indexChangedAtRef.current < 10000;
       if (data.currentQueueIndex !== undefined &&
           currentQueueIndexRef.current !== undefined &&
           data.currentQueueIndex !== currentQueueIndexRef.current &&
+          !indexRecentlyChanged &&
           onSyncTrackChangeRef.current) {
         console.log(`[SyncAudio] Sync-state: track mismatch. Local: ${currentQueueIndexRef.current}, Host: ${data.currentQueueIndex}. Switching track.`);
         pendingSyncAfterTrackChangeRef.current = {
