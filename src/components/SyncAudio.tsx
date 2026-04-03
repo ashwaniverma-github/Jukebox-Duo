@@ -91,6 +91,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const onSyncTrackChangeRef = useRef(onSyncTrackChange);
   const pendingSyncAfterTrackChangeRef = useRef<{ isPlaying: boolean; seekTime: number; timestamp: number } | null>(null);
   const indexChangedAtRef = useRef(0); // Timestamp of last index change — used to ignore stale heartbeat data
+  const pendingSyncSeekRef = useRef<{ seekTime: number; timestamp: number } | null>(null); // Deferred seek for when playVideo() is blocked (iOS)
 
   // Keep refs in sync with latest props/state
   useEffect(() => { onPlayNextRef.current = onPlayNext; }, [onPlayNext]);
@@ -173,7 +174,24 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           },
           onStateChange: (e: { data: number }) => {
             console.log('StateChange:', e.data);
-            if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+              // Apply deferred seek from sync-state (iOS: playVideo was blocked,
+              // user manually tapped play — now calculate correct elapsed and seek)
+              const pendingSeek = pendingSyncSeekRef.current;
+              if (pendingSeek) {
+                pendingSyncSeekRef.current = null;
+                const elapsed = (Date.now() - pendingSeek.timestamp) / 1000;
+                if (elapsed <= 30) {
+                  const adjustedTime = pendingSeek.seekTime + elapsed;
+                  const p = playerRef.current;
+                  if (p && typeof p.seekTo === 'function') {
+                    console.log(`[SyncAudio] Applying deferred seek: ${adjustedTime.toFixed(1)}s (elapsed: ${elapsed.toFixed(1)}s)`);
+                    p.seekTo(adjustedTime, true);
+                  }
+                }
+              }
+            }
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
             else if (
@@ -533,17 +551,33 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
         return;
       }
 
-      const adjustedTime = data.isPlaying ? data.seekTime + elapsed : data.seekTime;
+      // If player is already playing, apply seek immediately
+      const currentState = typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
+      const isCurrentlyPlaying = currentState === window.YT.PlayerState.PLAYING || currentState === window.YT.PlayerState.BUFFERING;
 
-      p.seekTo(adjustedTime, true);
-      if (data.isPlaying) {
+      if (isCurrentlyPlaying) {
+        // Player is running — seek to adjusted time directly
+        const adjustedTime = data.isPlaying ? data.seekTime + elapsed : data.seekTime;
+        p.seekTo(adjustedTime, true);
+        if (!data.isPlaying) {
+          if (typeof p.pauseVideo === 'function') p.pauseVideo();
+          setIsPlaying(false);
+        }
+      } else if (data.isPlaying) {
+        // Player not playing yet (e.g. iOS Chrome autoplay blocked).
+        // Store raw sync data — we'll calculate elapsed and seek when
+        // the user actually taps play and PLAYING state fires.
+        pendingSyncSeekRef.current = { seekTime: data.seekTime, timestamp: data.timestamp };
         if (typeof p.playVideo === 'function') p.playVideo();
-        setIsPlaying(true);
-        setHasStartedPlayback(true);
       } else {
-        // Explicitly pause — seekTo can sometimes resume playback
+        // Host is paused, just seek to the static position
+        p.seekTo(data.seekTime, true);
         if (typeof p.pauseVideo === 'function') p.pauseVideo();
         setIsPlaying(false);
+      }
+      if (data.isPlaying) {
+        setIsPlaying(true);
+        setHasStartedPlayback(true);
       }
     };
 
