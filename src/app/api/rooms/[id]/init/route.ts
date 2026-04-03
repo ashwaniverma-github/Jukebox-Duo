@@ -6,7 +6,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
-import { checkEventAccess } from '@/lib/room-auth'
 
 export async function GET(
     _req: NextRequest,
@@ -14,48 +13,9 @@ export async function GET(
 ) {
     const { id: roomId } = await params
 
-    // Try authenticated session first
     const session = await getServerSession(authOptions)
 
-    // If no session, check for event token (guest access)
     if (!session?.user?.id) {
-        const eventToken = _req.nextUrl.searchParams.get('eventToken')
-        if (eventToken) {
-            const { authorized, room: eventRoom } = await checkEventAccess(roomId, eventToken)
-            if (!authorized || !eventRoom) {
-                // Check if the room exists at all to give a better error message
-                const roomExists = await prisma.room.findUnique({
-                    where: { id: roomId },
-                    select: { id: true }
-                })
-                if (!roomExists) {
-                    return NextResponse.json({ error: 'Event ended' }, { status: 404 })
-                }
-                return NextResponse.json({ error: 'Invalid event link' }, { status: 401 })
-            }
-
-            // Fetch queue for event guest
-            const queueItems = await prisma.queueItem.findMany({
-                where: { roomId },
-                orderBy: { order: 'asc' },
-                select: { id: true, videoId: true, title: true, thumbnail: true, order: true }
-            })
-
-            return NextResponse.json({
-                id: eventRoom.id,
-                name: eventRoom.name,
-                createdAt: null,
-                host: eventRoom.host ? { id: eventRoom.host.id, name: eventRoom.host.name, image: eventRoom.host.image } : null,
-                isHost: false,
-                isEventMode: true,
-                isPremium: false,
-                isHostPremium: eventRoom.host?.isPremium ?? false,
-                boughtThemes: ['default'],
-                queue: queueItems,
-                currentQueueIndex: eventRoom.currentQueueIndex ?? 0,
-            })
-        }
-
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
@@ -67,8 +27,6 @@ export async function GET(
             name: true,
             hostId: true,
             currentQueueIndex: true,
-            isEventMode: true,
-            eventToken: true,
             createdAt: true,
             host: {
                 select: { id: true, name: true, email: true, image: true, isPremium: true }
@@ -165,8 +123,6 @@ export async function GET(
             isPremium: room.host.isPremium
         } : null,
         isHost,
-        isEventMode: room.isEventMode,
-        eventToken: isHost ? room.eventToken : undefined,
         isPremium: currentUser?.isPremium ?? false,
         isHostPremium: room.host?.isPremium ?? false,
 

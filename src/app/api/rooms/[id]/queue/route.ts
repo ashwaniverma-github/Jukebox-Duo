@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../../../../../lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
-import { checkRoomAccess, getRoomWithAccess, checkEventAccess } from '../../../../../lib/room-auth'
+import { checkRoomAccess, getRoomWithAccess } from '../../../../../lib/room-auth'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: roomId } = await params
@@ -13,18 +13,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Consolidated auth check: 1 query instead of 2
-  const { authorized, roomExists, isHost } = await checkRoomAccess(roomId, session.user.id)
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
   if (!roomExists) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
   if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
-  }
-
-  // In event mode, only the host can add songs
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { isEventMode: true } })
-  if (room?.isEventMode && !isHost) {
-    return NextResponse.json({ error: 'Only the host can add songs in event mode' }, { status: 403 })
   }
 
   const { videoId, title, thumbnail } = await req.json()
@@ -71,22 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: roomId } = await params
   const session = await getServerSession(authOptions)
-
-  // Allow event guest access via eventToken
   if (!session?.user?.id) {
-    const { searchParams } = new URL(req.url)
-    const eventToken = searchParams.get('eventToken')
-    if (eventToken) {
-      const { authorized } = await checkEventAccess(roomId, eventToken)
-      if (authorized) {
-        const [room, items] = await Promise.all([
-          prisma.room.findUnique({ where: { id: roomId }, select: { currentQueueIndex: true } }),
-          prisma.queueItem.findMany({ where: { roomId }, orderBy: { order: 'asc' } })
-        ])
-        const currentQueueIndex = room?.currentQueueIndex ?? 0
-        return NextResponse.json({ queue: items, currentQueueIndex })
-      }
-    }
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
@@ -122,7 +101,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   // Parallel: auth check + fetch queue item simultaneously (was sequential)
-  const [{ room, authorized, isHost }, queueItem] = await Promise.all([
+  const [{ room, authorized }, queueItem] = await Promise.all([
     getRoomWithAccess(roomId, session.user.id),
     prisma.queueItem.findUnique({
       where: { id: itemId },
@@ -135,12 +114,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
-  }
-
-  // In event mode, only the host can remove songs
-  const roomFull = await prisma.room.findUnique({ where: { id: roomId }, select: { isEventMode: true } })
-  if (roomFull?.isEventMode && !isHost) {
-    return NextResponse.json({ error: 'Only the host can remove songs in event mode' }, { status: 403 })
   }
 
   if (!queueItem || queueItem.roomId !== roomId) {
@@ -212,18 +185,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const { authorized, roomExists, isHost } = await checkRoomAccess(roomId, session.user.id)
+  const { authorized, roomExists } = await checkRoomAccess(roomId, session.user.id)
   if (!roomExists) {
     return NextResponse.json({ error: 'Room not found' }, { status: 404 })
   }
   if (!authorized) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
-  }
-
-  // In event mode, only the host can change the playing index
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { isEventMode: true } })
-  if (room?.isEventMode && !isHost) {
-    return NextResponse.json({ error: 'Only the host can control playback in event mode' }, { status: 403 })
   }
 
   const { currentIndex } = await req.json()

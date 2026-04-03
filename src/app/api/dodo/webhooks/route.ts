@@ -122,14 +122,11 @@ function isLifetimeProduct(data: Record<string, unknown>): boolean {
 function resolveSubscriptionTier(data: Record<string, unknown>): string | null {
     const md = getMetadata(data);
     const metaTier = getString(md, 'tier');
-    if (metaTier === 'event_pro' || metaTier === 'premium') return metaTier;
+    if (metaTier === 'premium') return metaTier;
 
-    // Don't use extractProductId here — its fallback would incorrectly match as 'premium'
     const productId = getString(data, 'product_id') ?? getString(data, 'productId');
     if (!productId) return null;
-    const eventProId = process.env.DODO_EVENT_PRO_PRODUCT_ID_MONTHLY;
     const premiumId = process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
-    if (eventProId && productId === eventProId) return 'event_pro';
     if (premiumId && productId === premiumId) return 'premium';
     return null;
 }
@@ -386,41 +383,18 @@ export const POST = Webhooks({
                 return;
             }
 
-            if (cancelledTier === 'event_pro') {
-                // Event Pro cancelled — clear event hosting, keep premium status intact
+            // Only downgrade if no lifetime purchase
+            if (!user?.premiumPurchasedAt) {
+                const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { subscriptionTier: user?.subscriptionTier === 'event_pro' ? null : user?.subscriptionTier },
+                    data: { isPremium: false, premiumType: null, subscriptionTier: null, boughtThemes: { set: filtered } },
                 });
-            } else if (cancelledTier === 'premium') {
-                // Premium cancelled — only downgrade if no lifetime purchase
-                if (!user?.premiumPurchasedAt) {
-                    // Check if user still has Event Pro active — keep isPremium if so
-                    if (user?.subscriptionTier === 'event_pro') {
-                        // Event Pro still active — keep isPremium, just note premium sub is gone
-                    } else {
-                        const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
-                        await prisma.user.update({
-                            where: { id: userId },
-                            data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
-                        });
-                    }
-                }
-                // Lifetime user — nothing to clear for a premium cancellation
             } else {
-                // Unknown tier — fallback to original behavior
-                if (!user?.premiumPurchasedAt) {
-                    const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
-                    await prisma.user.update({
-                        where: { id: userId },
-                        data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
-                    });
-                } else {
-                    await prisma.user.update({
-                        where: { id: userId },
-                        data: { subscriptionTier: null },
-                    });
-                }
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { subscriptionTier: null },
+                });
             }
 
             console.log('Handled subscription.cancelled', { userId, subscriptionId, cancelledTier });
@@ -518,39 +492,18 @@ export const POST = Webhooks({
                 return;
             }
 
-            if (expiredTier === 'event_pro') {
-                // Event Pro expired — clear event hosting, keep premium status intact
+            // Only downgrade if no lifetime purchase
+            if (!user?.premiumPurchasedAt) {
+                const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { subscriptionTier: user?.subscriptionTier === 'event_pro' ? null : user?.subscriptionTier },
+                    data: { isPremium: false, premiumType: null, subscriptionTier: null, boughtThemes: { set: filtered } },
                 });
-            } else if (expiredTier === 'premium') {
-                // Premium expired — only downgrade if no lifetime purchase
-                if (!user?.premiumPurchasedAt) {
-                    if (user?.subscriptionTier === 'event_pro') {
-                        // Event Pro still active — keep isPremium
-                    } else {
-                        const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
-                        await prisma.user.update({
-                            where: { id: userId },
-                            data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
-                        });
-                    }
-                }
             } else {
-                // Unknown tier — fallback to original behavior
-                if (!user?.premiumPurchasedAt) {
-                    const filtered = (user?.boughtThemes ?? []).filter((t) => t !== 'love');
-                    await prisma.user.update({
-                        where: { id: userId },
-                        data: { isPremium: false, subscriptionTier: null, boughtThemes: { set: filtered } },
-                    });
-                } else {
-                    await prisma.user.update({
-                        where: { id: userId },
-                        data: { subscriptionTier: null },
-                    });
-                }
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { subscriptionTier: null },
+                });
             }
 
             console.log('Handled subscription.expired', { userId, subscriptionId, expiredTier });

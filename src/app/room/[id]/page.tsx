@@ -80,25 +80,7 @@ export default function RoomPage() {
     const [error, setError] = useState<string | null>(null);
     const [loadingText, setLoadingText] = useState('Loading room...');
 
-    // Event Mode State
-    const [isEventGuest, setIsEventGuest] = useState(false);
-    const [isEventMode, setIsEventMode] = useState(false);
-    const [eventToken, setEventToken] = useState<string | null>(null);
     const [isHost, setIsHost] = useState(false);
-    const [audioUnlocked, setAudioUnlocked] = useState(false);
-    const guestAudioRef = useRef<HTMLAudioElement | null>(null);
-const [guestId, setGuestId] = useState('');
-
-    useEffect(() => {
-        const stored = sessionStorage.getItem('guestId');
-        if (stored) {
-            setGuestId(stored);
-        } else {
-            const id = 'guest-' + crypto.randomUUID();
-            sessionStorage.setItem('guestId', id);
-            setGuestId(id);
-        }
-    }, []);
 
     const themeStyles = {
         default: {
@@ -133,30 +115,15 @@ const [guestId, setGuestId] = useState('');
 
     const currentTheme = themeStyles[theme];
 
-    // Check for event token on mount
-    useEffect(() => {
-        const token = searchParams.get('event');
-        if (token) {
-            setEventToken(token);
-        }
-    }, [searchParams]);
-
     useEffect(() => {
         if (status === "unauthenticated") {
-            // If event token is present, allow guest access
-            const token = searchParams.get('event');
-            if (token) {
-                setIsEventGuest(true);
-                setEventToken(token);
-                return;
-            }
             // Include both pathname and search params to preserve ?sync=true in callback
             const callbackUrl = typeof window !== 'undefined'
                 ? window.location.pathname + window.location.search
                 : '/dashboard';
             router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
-    }, [status, router, searchParams]);
+    }, [status, router]);
 
     // Progressive loading text effect
     useEffect(() => {
@@ -169,29 +136,17 @@ const [guestId, setGuestId] = useState('');
     // Consolidated init: Fetch room details + queue in a single call
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
     useEffect(() => {
-        // Allow loading for authenticated users OR event guests
-        const isAuthenticated = status === "authenticated";
-        const isGuest = isEventGuest && eventToken;
-        if (!isAuthenticated && !isGuest) return;
+        if (status !== "authenticated") return;
 
         const abortController = new AbortController();
-        const initUrl = isGuest
-            ? `/api/rooms/${roomId}/init?eventToken=${encodeURIComponent(eventToken!)}`
-            : `/api/rooms/${roomId}/init`;
 
-        fetch(initUrl, { signal: abortController.signal })
+        fetch(`/api/rooms/${roomId}/init`, { signal: abortController.signal })
             .then(r => {
                 if (!r.ok) {
                     if (r.status === 404) {
-                        if (isGuest) {
-                            throw new Error('Event ended');
-                        }
                         throw new Error('Room not found');
                     }
                     if (r.status === 401) {
-                        if (isGuest) {
-                            throw new Error('Invalid event link');
-                        }
                         const callbackUrl = typeof window !== 'undefined'
                             ? window.location.pathname + window.location.search
                             : '/dashboard';
@@ -209,10 +164,7 @@ const [guestId, setGuestId] = useState('');
                     host: data.host
                 });
 
-                // Set event mode state
-                setIsEventMode(data.isEventMode ?? false);
                 setIsHost(data.isHost ?? false);
-                if (data.eventToken) setEventToken(data.eventToken);
 
                 // Set queue data
                 setQueue(data.queue);
@@ -249,13 +201,13 @@ const [guestId, setGuestId] = useState('');
                 if (err.name === 'AbortError') return;
                 console.error('Failed to load room:', err);
                 // Don't report expected errors to Sentry
-                if (err.message !== 'Session expired' && err.message !== 'Room not found' && err.message !== 'Invalid event link' && err.message !== 'Event ended') {
+                if (err.message !== 'Session expired' && err.message !== 'Room not found') {
                     Sentry.captureException(err, {
                         tags: { component: 'room-init', roomId },
                         extra: { userAgent: navigator.userAgent },
                     });
                 }
-                if (err.message === 'Room not found' || err.message === 'Invalid event link' || err.message === 'Event ended') {
+                if (err.message === 'Room not found') {
                     setError(err.message);
                 } else if (err.message !== 'Session expired') {
                     setError("Failed to load room data. Please try refreshing.");
@@ -265,7 +217,7 @@ const [guestId, setGuestId] = useState('');
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
         return () => abortController.abort();
-    }, [roomId, status, session, isEventGuest, eventToken]);
+    }, [roomId, status, session]);
 
     // Restore saved theme from local storage when boughtThemes are available
     useEffect(() => {
@@ -277,22 +229,21 @@ const [guestId, setGuestId] = useState('');
         }
     }, [boughtThemes]);
 
-    // Auto-enable sync if URL has ?sync=true (for shared links) or if event mode
+    // Auto-enable sync if URL has ?sync=true (for shared links)
     useEffect(() => {
-        if (status !== "authenticated" && !isEventGuest) return;
+        if (status !== "authenticated") return;
         const syncParam = searchParams.get('sync');
-        if ((syncParam === 'true' || isEventMode) && !isSyncEnabled) {
-            console.log('[Sync] Auto-enabling sync from URL parameter or event mode');
+        if (syncParam === 'true' && !isSyncEnabled) {
+            console.log('[Sync] Auto-enabling sync from URL parameter');
             setIsSyncEnabled(true);
         }
-    }, [searchParams, status, isSyncEnabled, isEventGuest, isEventMode]);
+    }, [searchParams, status, isSyncEnabled]);
 
     // Handle WebSocket connection when sync is enabled
     const handleEnableSync = useCallback(() => {
         if (isSyncEnabled || isSyncConnecting) return; // Already enabled or connecting
 
-        // Free users cannot use sync (unless in event mode)
-        if (!isPremium && !isEventMode) {
+        if (!isPremium) {
             setPremiumTrigger('sync_limit');
             setShowPremiumModal(true);
             return;
@@ -303,9 +254,8 @@ const [guestId, setGuestId] = useState('');
         const socket = connectSocket();
         socket.emit('join-room', roomId);
 
-        // Emit presence join (use guestId for event guests)
-        const userId = session?.user?.id || guestId;
-        const userName = session?.user?.name || 'Guest';
+        const userId = session?.user?.id;
+        const userName = session?.user?.name;
         const userImage = session?.user?.image;
         if (userId) {
             socket.emit('presence-join', {
@@ -320,7 +270,7 @@ const [guestId, setGuestId] = useState('');
 
         setIsSyncEnabled(true);
         console.log('[Sync] Room sync enabled!');
-    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium, isEventMode, guestId]);
+    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium]);
 
     // Refs for values needed inside the consolidated socket effect (avoids stale closures
     // and prevents the effect from re-running when these change)
@@ -329,25 +279,12 @@ const [guestId, setGuestId] = useState('');
     const isSyncConnectingRef = useRef(isSyncConnecting);
     useEffect(() => { isSyncConnectingRef.current = isSyncConnecting; }, [isSyncConnecting]);
 
-    // Refs for event guest state (avoids stale closures in socket effect)
-    const isEventGuestRef = useRef(isEventGuest);
-    useEffect(() => { isEventGuestRef.current = isEventGuest; }, [isEventGuest]);
-    const guestIdRef = useRef(guestId);
-    useEffect(() => { guestIdRef.current = guestId; }, [guestId]);
-    const eventTokenRef = useRef(eventToken);
-    useEffect(() => { eventTokenRef.current = eventToken; }, [eventToken]);
-    const reconnectSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isEventModeRef = useRef(isEventMode);
-    useEffect(() => { isEventModeRef.current = isEventMode; }, [isEventMode]);
-    const isHostRef = useRef(isHost);
-    useEffect(() => { isHostRef.current = isHost; }, [isHost]);
 
     // Consolidated socket effect: connect + ALL listeners in one place.
     // This guarantees listeners are always on the correct socket instance.
     useEffect(() => {
         if (!isSyncEnabled) return;
-        // Allow for authenticated users or event guests
-        if (status !== "authenticated" && !isEventGuest) return;
+        if (status !== "authenticated") return;
 
         console.log('[Sync] Setting up socket connection and all listeners...');
         const socket = connectSocket();
@@ -355,8 +292,8 @@ const [guestId, setGuestId] = useState('');
 
         // Emit presence join using ref to avoid session dependency
         const sess = sessionRef.current;
-        const userId = sess?.user?.id || guestIdRef.current;
-        const userName = sess?.user?.name || 'Guest';
+        const userId = sess?.user?.id;
+        const userName = sess?.user?.name;
         const userImage = sess?.user?.image;
         if (userId) {
             socket.emit('presence-join', {
@@ -374,8 +311,8 @@ const [guestId, setGuestId] = useState('');
             console.log('[Sync] Re-joining room and refreshing queue...');
             socket.emit('join-room', roomId);
             const sess = sessionRef.current;
-            const userId = sess?.user?.id || guestIdRef.current;
-            const userName = sess?.user?.name || 'Guest';
+            const userId = sess?.user?.id;
+            const userName = sess?.user?.name;
             const userImage = sess?.user?.image;
             if (userId) {
                 socket.emit('presence-join', {
@@ -389,17 +326,6 @@ const [guestId, setGuestId] = useState('');
             }
             // Refresh queue so onVideoChanged can find the correct videoId
             refreshQueueRef.current();
-
-            // Request playback sync for event-mode guests after reconnection
-            if (isEventModeRef.current && !isHostRef.current) {
-                if (reconnectSyncTimerRef.current) clearTimeout(reconnectSyncTimerRef.current);
-                reconnectSyncTimerRef.current = setTimeout(() => {
-                    if (socket.connected) {
-                        console.log('[Sync] Requesting sync-state after reconnection');
-                        socket.emit('sync-request', { roomId });
-                    }
-                }, 3000);
-            }
         };
 
         // --- Reconnect handler: re-join room after Socket.IO auto-reconnect ---
@@ -463,7 +389,6 @@ const [guestId, setGuestId] = useState('');
                     }
                 }
                 if (idx !== -1) {
-                    localIndexChangeRef.current = Date.now(); // Prevent stale sync-state heartbeat from overwriting
                     setCurrentQueueIndex(idx);
                 } else {
                     console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
@@ -510,7 +435,6 @@ const [guestId, setGuestId] = useState('');
         // --- Cleanup: remove ALL listeners and disconnect ---
         return () => {
             console.log('[Sync] Cleaning up socket listeners...');
-            if (reconnectSyncTimerRef.current) clearTimeout(reconnectSyncTimerRef.current);
             document.removeEventListener('visibilitychange', onVisibilityChange);
             socket.off('connect', onReconnect);
             socket.off('room-presence', onPresence);
@@ -519,13 +443,13 @@ const [guestId, setGuestId] = useState('');
             socket.off('queue-removed', onQueueRemoved);
             socket.off('theme-changed', onThemeChanged);
             const sess = sessionRef.current;
-            const leaveUserId = sess?.user?.id || guestIdRef.current;
+            const leaveUserId = sess?.user?.id;
             if (leaveUserId) {
                 socket.emit('leave-room', { roomId, userId: leaveUserId });
             }
             disconnectSocket();
         };
-    }, [isSyncEnabled, roomId, status, isEventGuest]);
+    }, [isSyncEnabled, roomId, status]);
 
 
     // When queue or currentQueueIndex changes, update currentSong and videoId
@@ -541,9 +465,7 @@ const [guestId, setGuestId] = useState('');
 
     // Helper: refetch queue from backend to ensure canonical IDs/order
     const refreshQueue = useCallback(async () => {
-        const queueUrl = eventTokenRef.current && isEventGuestRef.current
-            ? `/api/rooms/${roomId}/queue?eventToken=${encodeURIComponent(eventTokenRef.current)}`
-            : `/api/rooms/${roomId}/queue`;
+        const queueUrl = `/api/rooms/${roomId}/queue`;
         const res = await fetch(queueUrl);
         if (!res.ok) return null;
         const data = await res.json();
@@ -662,16 +584,6 @@ const [guestId, setGuestId] = useState('');
         }
     };
 
-    // Sync-driven track change (reconnection scenario — guest switches to host's track)
-    const handleSyncTrackChange = useCallback((index: number) => {
-        const currentQueue = queueRef.current;
-        if (index >= 0 && index < currentQueue.length) {
-            console.log(`[Sync] Track change from sync-state: switching to index ${index}`);
-            localIndexChangeRef.current = Date.now(); // Prevent refreshQueue from overwriting
-            setCurrentQueueIndex(index);
-        }
-    }, []);
-
     // Play next song handler
     const handlePlayNext = async () => {
         // Always use the most current queue state
@@ -770,7 +682,7 @@ const [guestId, setGuestId] = useState('');
         setRemovingQueueItemId(null);
     };
 
-    if (status === "loading" || (status === "unauthenticated" && !isEventGuest) || (!roomDetails && !error)) {
+    if (status === "loading" || status === "unauthenticated" || (!roomDetails && !error)) {
         return (
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -785,15 +697,11 @@ const [guestId, setGuestId] = useState('');
 
     if (error) {
         const isRoomDeleted = error === 'Room not found';
-        const isEventEnded = error === 'Event ended';
-        const showHomeLink = isRoomDeleted || isEventEnded;
         return (
             <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center text-red-500">
                 <div className="text-center p-6 bg-white/5 rounded-2xl border border-red-500/20 backdrop-blur-sm max-w-sm">
                     <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        {isEventEnded ? (
-                            <Music className="w-6 h-6" />
-                        ) : isRoomDeleted ? (
+                        {isRoomDeleted ? (
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                             </svg>
@@ -804,16 +712,14 @@ const [guestId, setGuestId] = useState('');
                         )}
                     </div>
                     <p className="text-lg font-bold text-red-400 mb-2">
-                        {isEventEnded ? 'Event Ended' : isRoomDeleted ? 'Room Deleted' : 'Error'}
+                        {isRoomDeleted ? 'Room Deleted' : 'Error'}
                     </p>
                     <p className="text-sm text-red-200/70 mb-6">
-                        {isEventEnded
-                            ? 'This event has been ended by the host. Thanks for listening!'
-                            : isRoomDeleted
+                        {isRoomDeleted
                             ? 'This room has been deleted by the host.'
                             : error}
                     </p>
-                    {showHomeLink ? (
+                    {isRoomDeleted ? (
                         <Link
                             href="/"
                             className="inline-block px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
@@ -881,68 +787,6 @@ const [guestId, setGuestId] = useState('');
 
     return (
         <div className={`min-h-screen w-full relative overflow-y-auto transition-colors duration-1000 [&::-webkit-scrollbar]:hidden ${currentTheme.bg}`} style={{ scrollbarWidth: 'none' }}>
-            {/* Silent audio for iOS audio unlock */}
-            <audio
-                ref={guestAudioRef}
-                src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v/////////////////////////////////"
-                loop
-                playsInline
-                className="hidden"
-            />
-
-            {/* Tap-to-join overlay — renders ON TOP while YouTube player mounts behind it.
-                This ensures playVideo() is called in a direct user gesture context,
-                bypassing iOS Chrome's autoplay restrictions. */}
-            {isEventGuest && !audioUnlocked && roomDetails && (
-                <div className="fixed inset-0 z-50 bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-6">
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.4 }}
-                        className="text-center max-w-md"
-                    >
-                        {roomDetails.host?.image ? (
-                            <img
-                                src={roomDetails.host.image}
-                                alt={roomDetails.host.name || 'Host'}
-                                className="w-20 h-20 rounded-full border-2 border-red-500/30 object-cover mx-auto mb-6"
-                            />
-                        ) : (
-                            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Music className="w-10 h-10 text-red-400" />
-                            </div>
-                        )}
-                        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{roomDetails.name || 'Event'}</h1>
-                        <p className="text-red-200/70 text-sm sm:text-base mb-8">Hosted by {roomDetails.host?.name || 'the host'}</p>
-                        <button
-                            onClick={() => {
-                                // Unlock iOS audio context with user gesture
-                                if (guestAudioRef.current) {
-                                    guestAudioRef.current.play().catch(() => {});
-                                }
-                                // Also create and play an AudioContext to unlock Web Audio
-                                try {
-                                    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-                                    const osc = ctx.createOscillator();
-                                    const gain = ctx.createGain();
-                                    gain.gain.value = 0;
-                                    osc.connect(gain);
-                                    gain.connect(ctx.destination);
-                                    osc.start();
-                                    osc.stop(ctx.currentTime + 0.1);
-                                } catch {}
-                                // Play YouTube player in user gesture context
-                                syncAudioRef.current?.playVideo();
-                                setAudioUnlocked(true);
-                            }}
-                            className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-105 active:scale-95"
-                        >
-                            Tap to Join
-                        </button>
-                    </motion.div>
-                </div>
-            )}
-
             <PlaylistImportModal
                 isOpen={importModalOpen}
                 onOpenChange={setImportModalOpen}
@@ -1090,28 +934,8 @@ const [guestId, setGuestId] = useState('');
                     </div>
                     {/* Right: Participants + Invite Button + Profile Avatar */}
                     <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Event Mode: Host avatar + listener count */}
-                        {isEventMode ? (
-                            <div className="flex items-center gap-2">
-                                {members.length > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs sm:text-sm text-green-300">
-                                        <Users className="w-3.5 h-3.5" />
-                                        <span className="font-medium">{members.length}</span>
-                                    </div>
-                                )}
-                                <div className="relative">
-                                    {roomDetails?.host?.image ? (
-                                        <img src={roomDetails.host.image} alt={roomDetails.host.name || 'Host'} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-white/30 object-cover" />
-                                    ) : (
-                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white text-xs font-bold">
-                                            {(roomDetails?.host?.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Participants (avatars) — normal mode */}
+                        {/* Participants (avatars) */}
+                        <>
                                 <div className="hidden sm:flex -space-x-2">
                                     {members.slice(0, 5).map((m) => {
                                         const isMemberHost = m.id === roomDetails?.host?.id;
@@ -1163,11 +987,10 @@ const [guestId, setGuestId] = useState('');
                                         )}
                                     </div>
                                 )}
-                            </>
-                        )}
+                        </>
 
                         {/* Enable Sync Button / Connecting Spinner / Live Indicator */}
-                        {!isSyncEnabled && !isSyncConnecting && !isEventMode ? (
+                        {!isSyncEnabled && !isSyncConnecting ? (
                             <Button
                                 onClick={handleEnableSync}
                                 className="bg-white/10 hover:bg-white/20 text-white font-medium px-2 sm:px-3 py-2 rounded-xl shadow-lg transition-all duration-200 text-sm"
@@ -1187,16 +1010,14 @@ const [guestId, setGuestId] = useState('');
                             </div>
                         )}
 
-                        {/* Invite Button — hidden for event guests (only host can share) */}
-                        {!(isEventMode && !isHost) && (
-                            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                        {/* Invite Button */}
+                        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                                 <DialogTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
                                         onClick={(e) => {
-                                            // In event mode, skip premium check
-                                            if (!isEventMode && !isPremium) {
+                                            if (!isPremium) {
                                                 e.preventDefault();
                                                 setPremiumTrigger('sync_limit');
                                                 setShowPremiumModal(true);
@@ -1215,25 +1036,22 @@ const [guestId, setGuestId] = useState('');
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
                                     <VisuallyHidden>
-                                        <DialogTitle>{isEventMode ? 'Share Event Link' : 'Invite to Room with real-time sync'}</DialogTitle>
+                                        <DialogTitle>Invite to Room with real-time sync</DialogTitle>
                                     </VisuallyHidden>
                                     <div className="flex items-center gap-3 mb-4">
                                         <Share2 className="w-6 h-6 text-red-400" />
-                                        <h2 className="text-lg font-bold">{isEventMode ? 'Share Event Link' : 'Invite to Room with real-time sync'}</h2>
+                                        <h2 className="text-lg font-bold">Invite to Room with real-time sync</h2>
                                     </div>
                                     <div className="flex items-center gap-3 mt-6">
                                         <input
                                             type="text"
-                                            value={isEventMode && eventToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/room/${roomId}?event=${eventToken}` : shareLink}
+                                            value={shareLink}
                                             readOnly
                                             className="flex-1 h-12 bg-white/10 border-white/20 text-white text-sm px-4 rounded-xl backdrop-blur-sm"
                                         />
                                         <Button
                                             onClick={async () => {
-                                                const linkToCopy = isEventMode && eventToken
-                                                    ? `${window.location.origin}/room/${roomId}?event=${eventToken}`
-                                                    : shareLink;
-                                                await navigator.clipboard.writeText(linkToCopy);
+                                                await navigator.clipboard.writeText(shareLink);
                                                 setCopied(true);
                                                 setTimeout(() => setCopied(false), 2000);
                                             }}
@@ -1243,11 +1061,10 @@ const [guestId, setGuestId] = useState('');
                                         </Button>
                                     </div>
                                     <div className="text-xs text-gray-400 mt-2">
-                                        {isEventMode ? 'Guests can join without signing in.' : 'Share this link to invite others to your music room.'}
+                                        Share this link to invite others to your music room.
                                     </div>
                                 </DialogContent>
                             </Dialog>
-                        )}
                         {/* Profile Avatar + Dropdown — hidden for event guests */}
                         {session?.user && (
                             <DropdownMenu.Root>
@@ -1357,18 +1174,16 @@ const [guestId, setGuestId] = useState('');
                             </div>
 
                             <div className="space-y-4">
-                                {!(isEventMode && !isHost) && (
-                                    <Button
-                                        onClick={() => {
-                                            setModalOpen(true);
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
-                                    >
-                                        <Search className="w-5 h-5 mr-2" />
-                                        Search Music
-                                    </Button>
-                                )}
+                                <Button
+                                    onClick={() => {
+                                        setModalOpen(true);
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
+                                >
+                                    <Search className="w-5 h-5 mr-2" />
+                                    Search Music
+                                </Button>
 
                                 <div className={`text-sm ${currentTheme.text} pt-4 border-t border-white/10`}>
                                     <div className="flex items-center gap-2 mb-2">
@@ -1388,9 +1203,8 @@ const [guestId, setGuestId] = useState('');
             {/* Main content */}
             <main className={`relative z-10 px-2 sm:px-4 pb-6 ${CONFIG.MAINTENANCE_MODE ? 'sm:pt-24' : 'sm:pt-14'}`}>
                 <div className="max-w-7xl mx-auto">
-                    {/* Search Card — hidden for non-host event users */}
-                    {!(isEventMode && !isHost) && (
-                        <motion.div
+                    {/* Search Card */}
+                    <motion.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ duration: 0.5, delay: 0.2 }}
@@ -1549,22 +1363,6 @@ const [guestId, setGuestId] = useState('');
                                 </CardContent>
                             </Card>
                         </motion.div>
-                    )}
-
-
-
-                    {/* Event guest welcome banner */}
-                    {isEventMode && !isHost && (
-                        <motion.div
-                            initial={{ y: 10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ duration: 0.4, delay: 0.15 }}
-                            className="mt-4 mb-4 text-center"
-                        >
-                            <h2 className="text-2xl sm:text-3xl font-bold text-white">Thanks for joining this event</h2>
-                            <p className={`text-sm sm:text-base ${currentTheme.text} mt-1`}>Hosted by {roomDetails?.host?.name || 'the host'} - Sit back and enjoy the music</p>
-                        </motion.div>
-                    )}
 
                     {/* Player and Queue Grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
@@ -1598,14 +1396,11 @@ const [guestId, setGuestId] = useState('');
                                                 roomId={roomId}
                                                 videoId={videoId}
                                                 isHost={isHost}
-                                                isEventMode={isEventMode}
                                                 onPlayNext={handlePlayNext}
                                                 onPlayPrev={handlePlayPrev}
                                                 songTitle={currentSong?.title}
                                                 thumbnailUrl={currentSong?.thumbnail}
                                                 theme={theme}
-                                                currentQueueIndex={currentQueueIndex}
-                                                onSyncTrackChange={handleSyncTrackChange}
                                             />
                                         )}
 
@@ -1722,7 +1517,6 @@ const [guestId, setGuestId] = useState('');
                                             onRemove={handleRemoveFromQueue}
                                             removingQueueItemId={removingQueueItemId}
                                             setRemovingQueueItemId={setRemovingQueueItemId}
-                                            readOnly={isEventMode && !isHost}
                                         />
                                     </div>
                                 </div>

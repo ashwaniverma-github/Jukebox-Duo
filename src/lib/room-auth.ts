@@ -59,37 +59,6 @@ export async function checkRoomAccess(
 }
 
 /**
- * Check if an event token grants access to a room
- * Used for unauthenticated guest access in event mode
- */
-export async function checkEventAccess(
-    roomId: string,
-    eventToken: string
-) {
-    const room = await prisma.room.findFirst({
-        where: {
-            id: roomId,
-            eventToken,
-            isEventMode: true,
-        },
-        select: {
-            id: true,
-            name: true,
-            hostId: true,
-            currentQueueIndex: true,
-            host: {
-                select: { id: true, name: true, image: true, isPremium: true }
-            }
-        }
-    });
-
-    return {
-        authorized: !!room,
-        room,
-    };
-}
-
-/**
  * Combined room existence and access check in a single query
  * More efficient when you need to know both room existence and user access
  * 

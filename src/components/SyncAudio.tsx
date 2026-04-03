@@ -42,14 +42,11 @@ interface Props {
   roomId: string;
   videoId: string;  // initial video
   isHost: boolean;
-  isEventMode?: boolean;
   onPlayNext?: () => void;
   onPlayPrev?: () => void;
   songTitle?: string;
   thumbnailUrl?: string;
   theme?: 'default' | 'love';
-  currentQueueIndex?: number;
-  onSyncTrackChange?: (index: number) => void;
 }
 
 const BUFFER = 1000; // ms buffer for scheduling
@@ -65,7 +62,7 @@ export interface SyncAudioHandle {
   playVideo: () => void;
 }
 
-const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, isEventMode = false, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default', currentQueueIndex, onSyncTrackChange }, ref) {
+const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId, videoId, isHost, onPlayNext, onPlayPrev, songTitle, thumbnailUrl, theme = 'default' }, ref) {
   /* eslint-disable jsx-a11y/media-has-caption */
   const playerRef = useRef<YT.Player | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null); // Silent audio ref
@@ -77,36 +74,13 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const [isSeeking, setIsSeeking] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
   const [hasStartedPlayback, setHasStartedPlayback] = useState(false); // Track if user has started playback
-  const hasStartedPlaybackRef = useRef(false);
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
-  const [showGuestToast, setShowGuestToast] = useState(false);
-  const [guestToastMessage, setGuestToastMessage] = useState('Only host can control — sit back and enjoy!');
-  const guestToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [hostPaused, setHostPaused] = useState(false); // event mode: true when host has intentionally paused
-  const hostPausedRef = useRef(false); // ref mirror so closures always read latest value
   const onPlayNextRef = useRef(onPlayNext); // ref to avoid stale closure in YouTube player callback
   const onPlayPrevRef = useRef(onPlayPrev);
-
-  const currentQueueIndexRef = useRef(currentQueueIndex);
-  const onSyncTrackChangeRef = useRef(onSyncTrackChange);
-  const pendingSyncAfterTrackChangeRef = useRef<{ isPlaying: boolean; seekTime: number; timestamp: number } | null>(null);
-  const indexChangedAtRef = useRef(0); // Timestamp of last index change — used to ignore stale heartbeat data
-  const pendingSyncSeekRef = useRef<{ seekTime: number; timestamp: number } | null>(null); // Deferred seek for when playVideo() is blocked (iOS)
 
   // Keep refs in sync with latest props/state
   useEffect(() => { onPlayNextRef.current = onPlayNext; }, [onPlayNext]);
   useEffect(() => { onPlayPrevRef.current = onPlayPrev; }, [onPlayPrev]);
-  useEffect(() => {
-    if (currentQueueIndexRef.current !== currentQueueIndex) {
-      indexChangedAtRef.current = Date.now();
-    }
-    currentQueueIndexRef.current = currentQueueIndex;
-  }, [currentQueueIndex]);
-  useEffect(() => { onSyncTrackChangeRef.current = onSyncTrackChange; }, [onSyncTrackChange]);
-
-  // Keep ref in sync with state
-  useEffect(() => { hostPausedRef.current = hostPaused; }, [hostPaused]);
-  useEffect(() => { hasStartedPlaybackRef.current = hasStartedPlayback; }, [hasStartedPlayback]);
 
   // Expose playVideo to parent so queue clicks can trigger playback synchronously
   useImperativeHandle(ref, () => ({
@@ -176,21 +150,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
             console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) {
               setIsPlaying(true);
-              // Apply deferred seek from sync-state (iOS: playVideo was blocked,
-              // user manually tapped play — now calculate correct elapsed and seek)
-              const pendingSeek = pendingSyncSeekRef.current;
-              if (pendingSeek) {
-                pendingSyncSeekRef.current = null;
-                const elapsed = (Date.now() - pendingSeek.timestamp) / 1000;
-                if (elapsed <= 30) {
-                  const adjustedTime = pendingSeek.seekTime + elapsed;
-                  const p = playerRef.current;
-                  if (p && typeof p.seekTo === 'function') {
-                    console.log(`[SyncAudio] Applying deferred seek: ${adjustedTime.toFixed(1)}s (elapsed: ${elapsed.toFixed(1)}s)`);
-                    p.seekTo(adjustedTime, true);
-                  }
-                }
-              }
             }
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
@@ -203,36 +162,13 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
               onPlayNextRef.current();
             }
             // Auto-play on mobile after video loads (for queue selection)
-            // Event guests: auto-play on track change only if host is currently playing
             if (e.data === window.YT.PlayerState.CUED) {
-              // Apply deferred sync after track change (reconnection scenario)
-              const pendingSync = pendingSyncAfterTrackChangeRef.current;
-              if (pendingSync) {
-                pendingSyncAfterTrackChangeRef.current = null;
-                console.log('[SyncAudio] Video cued after track change, applying deferred sync');
-                const elapsed = (Date.now() - pendingSync.timestamp) / 1000;
-                const adjustedTime = elapsed <= 30
-                  ? (pendingSync.isPlaying ? pendingSync.seekTime + elapsed : pendingSync.seekTime)
-                  : pendingSync.seekTime;
-                const p = playerRef.current;
-                if (p && typeof p.seekTo === 'function') {
-                  p.seekTo(adjustedTime, true);
-                }
-                hostPausedRef.current = !pendingSync.isPlaying;
-                setHostPaused(!pendingSync.isPlaying);
-                if (pendingSync.isPlaying && p && typeof p.playVideo === 'function') {
-                  setTimeout(() => p.playVideo(), 100);
-                }
-                setHasStartedPlayback(true);
-              } else if (pendingAutoPlayRef.current) {
+              if (pendingAutoPlayRef.current) {
                 console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
                 pendingAutoPlayRef.current = false;
-                const shouldAutoPlay = isHost || !isEventMode || !hostPausedRef.current;
-                if (shouldAutoPlay) {
-                  const p = playerRef.current;
-                  if (p && typeof p.playVideo === 'function') {
-                    setTimeout(() => p.playVideo(), 100); // Small delay for mobile
-                  }
+                const p = playerRef.current;
+                if (p && typeof p.playVideo === 'function') {
+                  setTimeout(() => p.playVideo(), 100); // Small delay for mobile
                 }
               }
             }
@@ -296,11 +232,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     if (!socket) return;
 
     const onSync = ({ cmd, timestamp, seekTime }: { cmd: string; timestamp: number; seekTime: number }) => {
-      // Track host's intentional pause/play for event guests
-      if (!isHost && isEventMode) {
-        hostPausedRef.current = cmd === 'pause';
-        setHostPaused(cmd === 'pause');
-      }
       const execAt = timestamp + offset;
       const delay = Math.max(execAt - Date.now(), 0);
       console.log(`🔄 Scheduling ${cmd} in ${delay}ms`);
@@ -358,8 +289,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     // Play handler
     navigator.mediaSession.setActionHandler('play', () => {
       console.log('[MediaSession] Play clicked');
-      // Event guests cannot override host pause from lock screen
-      if (!isHost && isEventMode && hostPaused) return;
       if (audioRef.current) {
         audioRef.current.play().catch(e => console.error('Silent audio play failed', e));
       }
@@ -391,14 +320,11 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       }
     });
 
-    // Previous/Next track handlers (all users in normal rooms, host-only in event mode)
-    if (isHost || !isEventMode) {
-      if (onPlayPrev) navigator.mediaSession.setActionHandler('previoustrack', () => onPlayPrevRef.current?.());
-      if (onPlayNext) navigator.mediaSession.setActionHandler('nexttrack', () => onPlayNextRef.current?.());
-    }
+    // Previous/Next track handlers
+    if (onPlayPrev) navigator.mediaSession.setActionHandler('previoustrack', () => onPlayPrevRef.current?.());
+    if (onPlayNext) navigator.mediaSession.setActionHandler('nexttrack', () => onPlayNextRef.current?.());
 
-    // Seek handlers (all users in normal rooms, host-only in event mode)
-    if (isHost || !isEventMode) {
+    // Seek handlers
       // Seek to specific time handler (for lock screen progress scrubbing)
       navigator.mediaSession.setActionHandler('seekto', (details) => {
         console.log('[MediaSession] Seek to:', details.seekTime);
@@ -444,7 +370,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           }
         }
       });
-    }
 
     return () => {
       // Clean up all handlers
@@ -496,115 +421,10 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
     }
   }, [isPlaying]);
 
-  // Host: send playback heartbeat every 5s so server can relay to late-joining guests
-  useEffect(() => {
-    if (!isHost || !isEventMode || !socket) return;
-    const interval = setInterval(() => {
-      const p = playerRef.current;
-      if (!p || typeof p.getCurrentTime !== 'function') return;
-      socket.emit('sync-heartbeat', {
-        roomId,
-        isPlaying,
-        seekTime: p.getCurrentTime(),
-        timestamp: Date.now(),
-        currentQueueIndex: currentQueueIndexRef.current,
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [isHost, isEventMode, socket, roomId, isPlaying]);
-
-  // Guest: request current playback state on mount to sync mid-song
-  useEffect(() => {
-    if (isHost || !isEventMode || !socket) return;
-
-    const onSyncState = (data: { isPlaying: boolean; seekTime: number; timestamp: number; currentQueueIndex?: number }) => {
-      const p = playerRef.current;
-      if (!p || typeof p.seekTo !== 'function') return;
-
-      // Track host's pause state for late-joining / refreshing guests
-      hostPausedRef.current = !data.isPlaying;
-      setHostPaused(!data.isPlaying);
-
-      // If host is on a different track, switch to it first and defer seek.
-      // Skip if our index was just updated (< 10s ago) — the heartbeat data on the
-      // server is stale and hasn't caught up to the host's latest change-video yet.
-      const indexRecentlyChanged = Date.now() - indexChangedAtRef.current < 10000;
-      if (data.currentQueueIndex !== undefined &&
-          currentQueueIndexRef.current !== undefined &&
-          data.currentQueueIndex !== currentQueueIndexRef.current &&
-          !indexRecentlyChanged &&
-          onSyncTrackChangeRef.current) {
-        console.log(`[SyncAudio] Sync-state: track mismatch. Local: ${currentQueueIndexRef.current}, Host: ${data.currentQueueIndex}. Switching track.`);
-        pendingSyncAfterTrackChangeRef.current = {
-          isPlaying: data.isPlaying,
-          seekTime: data.seekTime,
-          timestamp: data.timestamp,
-        };
-        onSyncTrackChangeRef.current(data.currentQueueIndex);
-        return; // Seek will be applied after the new video loads (CUED handler)
-      }
-
-      // Staleness guard: if heartbeat is >30s old, don't trust the seek time
-      const elapsed = (Date.now() - data.timestamp) / 1000;
-      if (elapsed > 30) {
-        console.log('[SyncAudio] Sync-state too stale (>30s), skipping seek adjustment');
-        return;
-      }
-
-      // If player is already playing, apply seek immediately
-      const currentState = typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
-      const isCurrentlyPlaying = currentState === window.YT.PlayerState.PLAYING || currentState === window.YT.PlayerState.BUFFERING;
-
-      if (isCurrentlyPlaying) {
-        // Player is running — seek to adjusted time directly
-        const adjustedTime = data.isPlaying ? data.seekTime + elapsed : data.seekTime;
-        p.seekTo(adjustedTime, true);
-        if (!data.isPlaying) {
-          if (typeof p.pauseVideo === 'function') p.pauseVideo();
-          setIsPlaying(false);
-        }
-      } else if (data.isPlaying) {
-        // Player not playing yet (e.g. iOS Chrome autoplay blocked).
-        // Store raw sync data — we'll calculate elapsed and seek when
-        // the user actually taps play and PLAYING state fires.
-        pendingSyncSeekRef.current = { seekTime: data.seekTime, timestamp: data.timestamp };
-        if (typeof p.playVideo === 'function') p.playVideo();
-      } else {
-        // Host is paused, just seek to the static position
-        p.seekTo(data.seekTime, true);
-        if (typeof p.pauseVideo === 'function') p.pauseVideo();
-        setIsPlaying(false);
-      }
-      if (data.isPlaying) {
-        setIsPlaying(true);
-        setHasStartedPlayback(true);
-      }
-    };
-
-    socket.on('sync-state', onSyncState);
-    // Request state after a short delay to let player initialize
-    const timer = setTimeout(() => {
-      socket.emit('sync-request', { roomId });
-    }, 2000);
-
-    return () => {
-      socket.off('sync-state', onSyncState);
-      clearTimeout(timer);
-    };
-  }, [isHost, isEventMode, socket, roomId]);
-
-  // Show guest toast when non-host taps controls in event mode
-  const triggerGuestToast = (message = 'Only host can control — sit back and enjoy!') => {
-    if (guestToastTimerRef.current) clearTimeout(guestToastTimerRef.current);
-    setGuestToastMessage(message);
-    setShowGuestToast(true);
-    guestToastTimerRef.current = setTimeout(() => setShowGuestToast(false), 3000);
-  };
-
   // Handle seek bar change
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const player = playerRef.current;
-    if (!player || (!isHost && isEventMode)) return;
+    if (!player) return;
 
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
@@ -614,7 +434,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   // Handle seek bar mouse up (when user finishes seeking)
   const handleSeekEnd = () => {
     const player = playerRef.current;
-    if (!player || (!isHost && isEventMode)) return;
+    if (!player) return;
 
     setIsSeeking(false);
     player.seekTo(currentTime, true);
@@ -645,26 +465,13 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
         className="fixed opacity-0 pointer-events-none top-0 left-0"
       />
 
-      {/* Player controls — shown for all users, guest taps show toast */}
+      {/* Player controls */}
       <div className="mt-4 space-y-4 relative">
-        {/* Guest toast popup */}
-        {!isHost && isEventMode && showGuestToast && (
-          <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <div className="bg-black/90 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-xl border border-white/20 shadow-2xl whitespace-nowrap flex items-center gap-2">
-              <span className="text-lg">{hostPaused ? '⏸️' : '🎧'}</span>
-              <span>{guestToastMessage}</span>
-            </div>
-          </div>
-        )}
-
         {/* Play controls */}
         <div className="flex justify-center items-center gap-6">
           <button
             className={`flex items-center cursor-pointer justify-center w-16 h-16 rounded-full ${currentTheme.buttonBg} ${currentTheme.buttonText} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors`}
-            onClick={() => {
-              if (!isHost && isEventMode) { triggerGuestToast(); return; }
-              onPlayPrevRef.current?.();
-            }}
+            onClick={() => onPlayPrevRef.current?.()}
             aria-label="Previous"
             type="button"
           >
@@ -672,34 +479,8 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           </button>
           {!isPlaying && (
             <button
-              className={`flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentTheme.playButtonGradient} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors shadow-lg relative ${!isHost && isEventMode && hostPaused ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentTheme.playButtonGradient} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors shadow-lg relative`}
               onClick={() => {
-                // Event guest: blocked if host has paused
-                if (!isHost && isEventMode) {
-                  if (hostPaused) {
-                    triggerGuestToast('Host paused the music — wait for them to resume');
-                    return;
-                  }
-                  const p = playerRef.current;
-                  if (!p || !videoId) return;
-
-                  // Unlock audio on user gesture
-                  if (audioRef.current) {
-                    audioRef.current.play().catch(() => {});
-                  }
-
-                  // Request host's current position from server
-                  if (socket) {
-                    socket.emit('sync-request', { roomId });
-                  }
-
-                  // Start playback immediately (sync-state will adjust position)
-                  if (typeof p.playVideo === 'function') p.playVideo();
-                  setIsPlaying(true);
-                  setHasStartedPlayback(true);
-                  return;
-                }
-
                 const p = playerRef.current;
                 if (!p || !videoId) return console.error('Player not ready or no video');
                 if (typeof p.playVideo !== 'function') return console.error('playVideo not available');
@@ -717,9 +498,9 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
               }}
               aria-label="Play"
               type="button"
-              disabled={(isHost || !isEventMode) && (isLoading || !videoId)}
+              disabled={isLoading || !videoId}
             >
-              {(isHost || !isEventMode) && isLoading ? (
+              {isLoading ? (
                 <span className="absolute inset-0 flex items-center justify-center">
                   <svg className={`animate-spin h-8 w-8 ${currentTheme.spinner}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -735,14 +516,6 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
             <button
               className={`flex items-center cursor-pointer justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentTheme.playButtonGradient} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors shadow-lg relative`}
               onClick={() => {
-                // Event guest: pause locally only (no sync command)
-                if (!isHost && isEventMode) {
-                  const p = playerRef.current;
-                  if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-                  setIsPlaying(false);
-                  return;
-                }
-
                 const p = playerRef.current;
                 if (!p) return console.error('Player not ready');
                 if (typeof p.pauseVideo !== 'function') return console.error('pauseVideo not available');
@@ -754,9 +527,9 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
               }}
               aria-label="Pause"
               type="button"
-              disabled={(isHost || !isEventMode) && isLoading}
+              disabled={isLoading}
             >
-              {(isHost || !isEventMode) && isLoading ? (
+              {isLoading ? (
                 <span className="absolute inset-0 flex items-center justify-center">
                   <svg className={`animate-spin h-8 w-8 ${currentTheme.spinner}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -770,10 +543,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           )}
           <button
             className={`flex items-center cursor-pointer justify-center w-16 h-16 rounded-full ${currentTheme.buttonBg} ${currentTheme.buttonText} focus:outline-none focus:ring-2 ${currentTheme.buttonRing} transition-colors`}
-            onClick={() => {
-              if (!isHost && isEventMode) { triggerGuestToast(); return; }
-              onPlayNextRef.current?.();
-            }}
+            onClick={() => onPlayNextRef.current?.()}
             aria-label="Next"
             type="button"
           >
@@ -781,8 +551,8 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           </button>
         </div>
 
-        {/* Mobile hint - shows only for host on mobile before first playback */}
-        {(isHost || !isEventMode) && !hasStartedPlayback && !isPlaying && (
+        {/* Mobile hint - shows on mobile before first playback */}
+        {!hasStartedPlayback && !isPlaying && (
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 md:hidden mt-2 animate-pulse">
             ▶️ Tap the play button to start
           </p>
@@ -795,29 +565,19 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
               {formatTime(currentTime)}
             </span>
             <div className="flex-1 relative min-w-0">
-              {(isHost || !isEventMode) ? (
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 100}
-                  value={currentTime}
-                  onChange={handleSeek}
-                  onMouseUp={handleSeekEnd}
-                  onTouchEnd={handleSeekEnd}
-                  className={`w-full h-3 ${currentTheme.seekBarBg} rounded-lg appearance-none cursor-pointer slider`}
-                  style={{
-                    background: `linear-gradient(to right, ${currentTheme.seekBarColor} 0%, ${currentTheme.seekBarColor} ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
-                  }}
-                />
-              ) : (
-                <div
-                  onClick={isEventMode ? () => triggerGuestToast() : undefined}
-                  className={`w-full h-3 ${currentTheme.seekBarBg} rounded-lg relative overflow-hidden cursor-pointer`}
-                  style={{
-                    background: `linear-gradient(to right, ${currentTheme.seekBarColor} 0%, ${currentTheme.seekBarColor} ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
-                  }}
-                />
-              )}
+              <input
+                type="range"
+                min="0"
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                onMouseUp={handleSeekEnd}
+                onTouchEnd={handleSeekEnd}
+                className={`w-full h-3 ${currentTheme.seekBarBg} rounded-lg appearance-none cursor-pointer slider`}
+                style={{
+                  background: `linear-gradient(to right, ${currentTheme.seekBarColor} 0%, ${currentTheme.seekBarColor} ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.5) 100%)`
+                }}
+              />
             </div>
             <span className={`text-xs font-mono ${currentTheme.timerText} min-w-[30px]`}>
               {formatTime(duration)}

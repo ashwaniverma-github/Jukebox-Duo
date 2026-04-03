@@ -27,11 +27,9 @@ export async function POST(req: Request) {
   })
 
   let name: string
-  let isEventMode: boolean | undefined
   try {
     const body = await req.json()
     name = body.name
-    isEventMode = body.isEventMode
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
@@ -40,29 +38,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Room name is required' }, { status: 400 })
   }
 
-  // Event hosting requires an active Event Pro subscription ($9.99/mo)
-  // Lifetime users get core premium features but NOT event hosting
-  if (isEventMode) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { subscriptionTier: true }
-    })
-    const canHostEvents = user?.subscriptionTier === 'event_pro'
-    if (!canHostEvents) {
-      return NextResponse.json({
-        error: 'Event hosting requires Event Pro subscription',
-        isPremiumRequired: true,
-        requiredTier: 'event_pro'
-      }, { status: 403 })
-    }
-  }
-
   const room = await prisma.room.create({
     data: {
       name,
       hostId: userId,
-      isEventMode: isEventMode || false,
-      eventToken: isEventMode ? crypto.randomUUID() : null,
     }
   })
   // auto-join host
@@ -95,8 +74,6 @@ export async function GET() {
       id: true,
       name: true,
       createdAt: true,
-      isEventMode: true,
-      eventToken: true,
     }
   })
   return NextResponse.json(rooms)

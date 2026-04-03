@@ -18,13 +18,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing DODO_PAYMENTS_API_KEY' }, { status: 500 });
         }
 
-        // Support tier selection: "premium" ($2.99/mo) or "event_pro" ($9.99/mo)
-        const tier = body?.tier === 'event_pro' ? 'event_pro' : 'premium';
-        const productId = tier === 'event_pro'
-            ? process.env.DODO_EVENT_PRO_PRODUCT_ID_MONTHLY
-            : process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
+        const tier = 'premium';
+        const productId = process.env.DODO_PREMIUM_PRODUCT_ID_MONTHLY;
         if (!productId) {
-            return NextResponse.json({ error: `Missing product ID for ${tier}` }, { status: 500 });
+            return NextResponse.json({ error: 'Missing product ID for premium' }, { status: 500 });
         }
 
         const environment =

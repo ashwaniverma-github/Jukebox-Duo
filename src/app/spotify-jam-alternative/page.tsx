@@ -407,12 +407,6 @@ export default function SpotifyJamAlternativePage() {
                             </div>
                         ))}
                     </div>
-                    <p className="text-center text-gray-400 mt-12 font-medium">
-                        Need to host large-scale music events with 100+ listeners?{' '}
-                        <Link href="/host-listening-events" className="text-red-400 hover:text-red-300 underline underline-offset-2 font-bold">
-                            Check out our event hosting platform
-                        </Link>.
-                    </p>
                 </AnimatedSection>
 
                 {/* ============================================ */}

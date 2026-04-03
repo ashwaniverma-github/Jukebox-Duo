@@ -1,7 +1,7 @@
 "use client"
 import React from "react";
 import { motion } from "framer-motion";
-import { Zap, ListMusic, Globe, Github, Headphones, Radio } from "lucide-react";
+import { Zap, ListMusic, Globe, Github, Headphones } from "lucide-react";
 
 const features = [
   {
@@ -27,12 +27,6 @@ const features = [
     desc: "Start a solo room for distraction-free listening. Perfect for deep work, studying, or just vibing on your own.",
     icon: <Headphones className="w-6 h-6 text-amber-400" />,
     gradient: "from-amber-500/10 to-yellow-500/10",
-  },
-  {
-    title: "Host Listening Events",
-    desc: "Go live with Event Mode and host listening sessions for 100+ listeners. You control the music, they enjoy the vibe.",
-    icon: <Radio className="w-6 h-6 text-pink-400" />,
-    gradient: "from-pink-500/10 to-rose-500/10",
   },
   {
     title: "Open Source",

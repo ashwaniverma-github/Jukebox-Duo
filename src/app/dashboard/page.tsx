@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
-import { Music, Plus, Users, Play, Radio, Zap, Heart, LogOut, Share2 } from "lucide-react";
+import { Music, Plus, Users, Play, Radio, Zap, Heart, LogOut } from "lucide-react";
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import Link from "next/link";
 import { ManageBillingButton } from '../../components/ManageBillingButton';
-import { PremiumUpgradeModal } from '../../components/PremiumUpgradeModal';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -25,8 +24,6 @@ interface Room {
   name: string;
   createdAt?: string;
   participantCount?: number;
-  isEventMode?: boolean;
-  eventToken?: string;
 }
 
 export default function Dashboard() {
@@ -41,15 +38,6 @@ export default function Dashboard() {
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
-  const [canHostEvents, setCanHostEvents] = useState(false)
-  const [showEventUpgradeModal, setShowEventUpgradeModal] = useState(false)
-  const [showEventModal, setShowEventModal] = useState(false)
-  const [eventName, setEventName] = useState("")
-  const [isCreatingEvent, setIsCreatingEvent] = useState(false)
-  const [createdEventLink, setCreatedEventLink] = useState("")
-  const [createdEventRoomId, setCreatedEventRoomId] = useState("")
-  const [eventLinkCopied, setEventLinkCopied] = useState(false)
-  const [copiedRoomId, setCopiedRoomId] = useState<string | null>(null)
   const router = useRouter();
 
   useEffect(() => {
@@ -64,7 +52,7 @@ export default function Dashboard() {
       // Fetch premium status
       fetch('/api/user/premium-status')
         .then(res => res.ok ? res.json() : null)
-        .then(data => { if (data) { setIsPremium(data.isPremium); setCanHostEvents(data.canHostEvents ?? false); } })
+        .then(data => { if (data) { setIsPremium(data.isPremium); } })
         .catch(() => { });
     }
   }, [status]);
@@ -161,51 +149,6 @@ export default function Dashboard() {
     }
   }
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!eventName.trim()) return;
-    if (!canHostEvents) {
-      setShowEventModal(false);
-      setShowEventUpgradeModal(true);
-      return;
-    }
-    setIsCreatingEvent(true);
-    try {
-      const res = await fetch("/api/rooms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: eventName.trim(), isEventMode: true }),
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Failed to create event:", errorData.error || res.statusText);
-        return;
-      }
-      const room = await res.json();
-      if (room?.id && room?.eventToken) {
-        const link = `${window.location.origin}/room/${room.id}?event=${room.eventToken}`;
-        setCreatedEventLink(link);
-        setCreatedEventRoomId(room.id);
-        setEventName("");
-        setTimeout(() => loadRooms(), 100);
-      }
-    } catch (error) {
-      console.error("Failed to create event:", error);
-    } finally {
-      setIsCreatingEvent(false);
-    }
-  };
-
-  const handleCopyEventLink = async (link: string) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      setEventLinkCopied(true);
-      setTimeout(() => setEventLinkCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy link:", error);
-    }
-  };
-
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white overflow-auto lg:overflow-hidden flex flex-col">
       {/* Animated Background */}
@@ -225,15 +168,6 @@ export default function Dashboard() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {/* Host Event Button */}
-            <Button
-              onClick={() => setShowEventModal(true)}
-              className="h-9 px-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg border border-white/10 transition-all duration-200 text-sm flex items-center gap-2"
-            >
-              <Radio className="w-4 h-4" />
-              <span className="hidden sm:inline">Host Event</span>
-            </Button>
-
             {/* Profile Avatar + Dropdown */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
@@ -396,17 +330,12 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   rooms.map((room) => (
-                    <div key={room.id} className={`bg-white/5 backdrop-blur-xl rounded-xl border ${room.isEventMode ? 'border-red-500/30' : 'border-white/10'} p-4 hover:bg-white/10 transition-all duration-300 group`}>
+                    <div key={room.id} className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all duration-300 group">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                           <h4 className="font-semibold text-white truncate">
                             {room.name || "Unnamed Room"}
                           </h4>
-                          {room.isEventMode && (
-                            <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full">
-                              Event
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -423,25 +352,6 @@ export default function Dashboard() {
                           <Play className="w-4 h-4 mr-2" />
                           <span>Join</span>
                         </Button>
-                        {room.isEventMode && room.eventToken && (
-                          <Button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const link = `${window.location.origin}/room/${room.id}?event=${room.eventToken}`;
-                              navigator.clipboard.writeText(link);
-                              setCopiedRoomId(room.id);
-                              setTimeout(() => setCopiedRoomId(null), 2000);
-                            }}
-                            className="px-4 h-10 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200"
-                          >
-                            {copiedRoomId === room.id ? (
-                              <span className="text-xs text-green-400">Copied!</span>
-                            ) : (
-                              <Share2 className="w-4 h-4" />
-                            )}
-                          </Button>
-                        )}
                         {/* Delete button for host */}
                         <Button
                           onClick={() => setRoomToDelete(room)}
@@ -491,116 +401,6 @@ export default function Dashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Event Creation Modal */}
-      <Dialog open={showEventModal} onOpenChange={(open) => {
-        if (!open) {
-          setShowEventModal(false);
-          setCreatedEventLink("");
-          setCreatedEventRoomId("");
-          setEventLinkCopied(false);
-        }
-      }}>
-        <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
-          <DialogHeaderUI>
-            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-red-400 to-red-300 bg-clip-text text-transparent">
-              {createdEventLink ? 'Event Created!' : 'Create Event'}
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              {createdEventLink
-                ? 'Share this link with your audience - no sign-in required.'
-                : 'Perfect for public listening sessions, watch parties, and group events.'}
-            </DialogDescription>
-          </DialogHeaderUI>
-
-          {!createdEventLink ? (
-            <form onSubmit={handleCreateEvent} className="space-y-4 mt-2">
-              <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <span>Handles large audiences - built for 100+ listeners</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <span>You control everything - guests just listen along</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <span>No sign-in required - share the link and they&apos;re in</span>
-                </div>
-              </div>
-              <Input
-                placeholder="Event name..."
-                value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
-                required
-                className="h-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-red-500 focus:ring-red-500/20 text-base rounded-xl"
-              />
-              <DialogFooter className="flex gap-3">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setShowEventModal(false)}
-                  className="flex-1 h-11 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isCreatingEvent || !eventName.trim()}
-                  className="flex-1 h-11 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
-                >
-                  {isCreatingEvent ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Creating...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Radio className="w-4 h-4" />
-                      Create Event
-                    </div>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : (
-            <div className="space-y-4 mt-2">
-              <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                <p className="text-xs text-gray-400 mb-1">Event Link</p>
-                <p className="text-sm text-white break-all font-mono">{createdEventLink}</p>
-              </div>
-              <DialogFooter className="flex gap-3">
-                <Button
-                  onClick={() => handleCopyEventLink(createdEventLink)}
-                  className="flex-1 h-11 bg-white/10 border border-white/20 text-white hover:bg-white/20 rounded-xl"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  {eventLinkCopied ? 'Copied!' : 'Copy Link'}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowEventModal(false);
-                    setCreatedEventLink("");
-                    joinRoom(createdEventRoomId);
-                  }}
-                  className="flex-1 h-11 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Go to Event
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Event Pro Upgrade Modal */}
-      <PremiumUpgradeModal
-        open={showEventUpgradeModal}
-        onOpenChange={setShowEventUpgradeModal}
-        trigger="event_hosting"
-      />
 
       {/* Delete Confirmation Modal */}
       <Dialog open={!!roomToDelete} onOpenChange={(open) => { if (!open) setRoomToDelete(null); }}>
