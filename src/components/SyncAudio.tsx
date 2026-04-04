@@ -83,6 +83,21 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   useEffect(() => { onPlayNextRef.current = onPlayNext; }, [onPlayNext]);
   useEffect(() => { onPlayPrevRef.current = onPlayPrev; }, [onPlayPrev]);
 
+  // Safety: if loading stays stuck for 8s, force it off and show tap prompt on mobile
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => {
+      console.warn('[SyncAudio] Loading timeout — forcing spinner off');
+      setIsLoading(false);
+      const p = playerRef.current;
+      const state = p?.getPlayerState?.();
+      if (state !== window.YT?.PlayerState?.PLAYING && state !== window.YT?.PlayerState?.BUFFERING) {
+        setNeedsTap(true);
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   // Expose playVideo to parent so queue clicks can trigger playback synchronously
   useImperativeHandle(ref, () => ({
     playVideo: () => {

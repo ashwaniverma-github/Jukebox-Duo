@@ -386,21 +386,24 @@ export default function RoomPage() {
         // --- Video changed listener ---
         const onVideoChanged = async (newVideoId: string) => {
             try {
-                const currentQueue = queueRef.current;
-                let idx = currentQueue.findIndex(item => item.videoId === newVideoId);
+                let activeQueue = queueRef.current;
+                let idx = activeQueue.findIndex(item => item.videoId === newVideoId);
                 console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
                 if (idx === -1) {
                     // Queue might not be synced yet — refresh and retry once
                     console.log(`[video-changed] VideoId not in local queue, refreshing...`);
                     const refreshedData = await refreshQueueRef.current();
                     if (refreshedData) {
-                        idx = refreshedData.queue.findIndex((item: { videoId: string }) => item.videoId === newVideoId);
+                        activeQueue = refreshedData.queue;
+                        idx = activeQueue.findIndex((item: { videoId: string }) => item.videoId === newVideoId);
                     }
                 }
                 if (idx !== -1) {
                     // Guard against stale refreshQueue overwriting this change
                     localIndexChangeRef.current = Date.now();
                     setCurrentQueueIndex(idx);
+                    setVideoId(activeQueue[idx].videoId);
+                    setCurrentSong(activeQueue[idx]);
                 } else {
                     console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
                 }
@@ -464,16 +467,10 @@ export default function RoomPage() {
     }, [isSyncEnabled, roomId, status]);
 
 
-    // When queue or currentQueueIndex changes, update currentSong and videoId
-    useEffect(() => {
-        if (queue.length > 0 && queue[currentQueueIndex]) {
-            setCurrentSong(queue[currentQueueIndex]);
-            setVideoId(queue[currentQueueIndex].videoId);
-        } else {
-            setCurrentSong(null);
-            setVideoId('');
-        }
-    }, [queue, currentQueueIndex]);
+    // REMOVED: derivation useEffect [queue, currentQueueIndex] → setVideoId
+    // This was the root cause of song mismatch on iOS. Any setQueue() call created
+    // a new array reference, triggering this effect with potentially stale currentQueueIndex.
+    // Instead, videoId and currentSong are now set DIRECTLY at every mutation site.
 
     // Helper: refetch queue from backend to ensure canonical IDs/order
     // Mutex: only one in-flight at a time. Skips entirely if a song change PATCH is pending.
@@ -488,10 +485,17 @@ export default function RoomPage() {
             const data = await res.json();
             // Double-check pending change hasn't started while fetch was in-flight
             if (pendingChangeRef.current) return data;
-            const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 5000;
+
+            // Only call setQueue if items actually changed (prevents unnecessary re-renders
+            // that used to trigger the now-removed derivation useEffect)
+            const oldIds = queueRef.current.map(q => q.videoId).join(',');
+            const newIds = (data.queue as { videoId: string }[]).map(q => q.videoId).join(',');
+            const queueItemsChanged = oldIds !== newIds;
+
+            const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 8000;
             if (!isLocalActionRecent) {
                 // Safe to apply full server state
-                setQueue(data.queue);
+                if (queueItemsChanged) setQueue(data.queue);
                 setCurrentQueueIndex(data.currentQueueIndex);
                 if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
                     setVideoId(data.queue[data.currentQueueIndex].videoId);
@@ -500,7 +504,7 @@ export default function RoomPage() {
                     setVideoId('');
                     setCurrentSong(null);
                 }
-            } else {
+            } else if (queueItemsChanged) {
                 // Local action recent — only update queue items (adds/removes), NOT the current index/video
                 setQueue(data.queue);
             }
@@ -609,9 +613,10 @@ export default function RoomPage() {
     };
 
     // Helper: persist currentIndex to backend with retry (replaces fire-and-forget PATCH)
+    // Keeps pendingChangeRef true to block refreshQueue from overwriting local state
     const persistCurrentIndex = async (index: number) => {
         pendingChangeRef.current = true;
-        for (let attempt = 0; attempt < 2; attempt++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const res = await fetch(`/api/rooms/${roomId}/queue`, {
                     method: 'PATCH',
@@ -620,7 +625,9 @@ export default function RoomPage() {
                 });
                 if (res.ok) break;
             } catch (err) {
-                if (attempt === 1) console.error('[Queue] Failed to persist currentIndex after retry:', err);
+                if (attempt === 2) console.error('[Queue] Failed to persist currentIndex after retries:', err);
+                // Wait before retrying (iOS network may need time after tab return)
+                await new Promise(r => setTimeout(r, 500));
             }
         }
         pendingChangeRef.current = false;
@@ -668,6 +675,8 @@ export default function RoomPage() {
 
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
+            setVideoId(currentQueue[newIndex].videoId);
+            setCurrentSong(currentQueue[newIndex]);
 
             // Emit socket event immediately for real-time sync
             emitChangeVideo(currentQueue[newIndex].videoId);
@@ -698,6 +707,8 @@ export default function RoomPage() {
 
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
+            setVideoId(currentQueue[newIndex].videoId);
+            setCurrentSong(currentQueue[newIndex]);
 
             // Emit socket event immediately for real-time sync
             emitChangeVideo(currentQueue[newIndex].videoId);
@@ -1538,6 +1549,8 @@ export default function RoomPage() {
                                                 if (idx !== -1) {
                                                     localIndexChangeRef.current = Date.now();
                                                     setCurrentQueueIndex(idx);
+                                                    setVideoId(queue[idx].videoId);
+                                                    setCurrentSong(queue[idx]);
                                                     // Trigger playVideo synchronously within the click event
                                                     // so iOS recognizes it as a user gesture
                                                     syncAudioRef.current?.playVideo();
