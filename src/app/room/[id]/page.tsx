@@ -146,6 +146,7 @@ export default function RoomPage() {
     // If session were a dependency, this effect would re-fire on every tab return, fetching stale
     // server state and overwriting the user's current videoId — causing the song revert bug on iOS.
     const initDoneRef = useRef(false);
+    useEffect(() => { initDoneRef.current = false; }, [roomId]); // Reset on room change (client-side navigation)
     useEffect(() => {
         if (status !== "authenticated") return;
 
