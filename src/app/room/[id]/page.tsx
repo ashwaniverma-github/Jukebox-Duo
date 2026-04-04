@@ -43,6 +43,8 @@ export default function RoomPage() {
     const localIndexChangeRef = useRef(0); // Timestamp of last index change (local or remote video-changed) — guards refreshQueue from overwriting
     const pendingChangeRef = useRef(false); // True while a song change PATCH is in-flight — blocks refreshQueue from overwriting
     const refreshInFlightRef = useRef(false); // Mutex to prevent concurrent refreshQueue calls
+    const pendingEmitVideoRef = useRef<string | null>(null); // Pending change-video emit for when socket reconnects
+    const emitOnConnectRegisteredRef = useRef(false); // Whether we already have a once('connect') handler queued
     useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
     useEffect(() => { queueRef.current = queue; }, [queue]);
     const [search, setSearch] = useState('');
@@ -625,16 +627,24 @@ export default function RoomPage() {
     };
 
     // Helper: emit change-video with reconnect resilience
+    // Uses a ref so multiple calls while disconnected only emit the LATEST videoId on reconnect
     const emitChangeVideo = (newVideoId: string) => {
         if (!isSyncEnabled) return;
         const socket = getSocket();
         if (socket?.connected) {
             socket.emit('change-video', { roomId, newVideoId });
         } else if (socket) {
-            // Socket not connected yet (iOS tab return) — queue emit for when it reconnects
-            socket.once('connect', () => {
-                socket.emit('change-video', { roomId, newVideoId });
-            });
+            pendingEmitVideoRef.current = newVideoId;
+            if (!emitOnConnectRegisteredRef.current) {
+                emitOnConnectRegisteredRef.current = true;
+                socket.once('connect', () => {
+                    emitOnConnectRegisteredRef.current = false;
+                    if (pendingEmitVideoRef.current) {
+                        socket.emit('change-video', { roomId, newVideoId: pendingEmitVideoRef.current });
+                        pendingEmitVideoRef.current = null;
+                    }
+                });
+            }
         }
     };
 
