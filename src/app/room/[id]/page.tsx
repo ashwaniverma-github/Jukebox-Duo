@@ -384,8 +384,20 @@ export default function RoomPage() {
         socket.on('room-presence', onPresence);
 
         // --- Video changed listener ---
+        // Guards: ignore if a local song change is pending/recent (prevents revert on iOS tab return)
         const onVideoChanged = async (newVideoId: string) => {
             try {
+                // If a local song change PATCH is in-flight, ignore server events entirely
+                if (pendingChangeRef.current) {
+                    console.log(`[video-changed] Ignored (pending local change in-flight)`);
+                    return;
+                }
+                // If a local action was very recent, ignore — our PATCH may not have reached server yet
+                if (Date.now() - localIndexChangeRef.current < 8000) {
+                    console.log(`[video-changed] Ignored (local action recent, ${Date.now() - localIndexChangeRef.current}ms ago)`);
+                    return;
+                }
+
                 let activeQueue = queueRef.current;
                 let idx = activeQueue.findIndex(item => item.videoId === newVideoId);
                 console.log(`[video-changed] Received newVideoId: ${newVideoId}, found at index: ${idx}`);
@@ -399,7 +411,6 @@ export default function RoomPage() {
                     }
                 }
                 if (idx !== -1) {
-                    // Guard against stale refreshQueue overwriting this change
                     localIndexChangeRef.current = Date.now();
                     setCurrentQueueIndex(idx);
                     setVideoId(activeQueue[idx].videoId);
@@ -415,6 +426,12 @@ export default function RoomPage() {
 
         // --- Queue updated listener ---
         const onQueueUpdated = async () => {
+            // refreshQueue already has pendingChangeRef + localIndexChangeRef guards,
+            // but skip the call entirely if a local change is in-flight to avoid any fetch race
+            if (pendingChangeRef.current) {
+                console.log('[Socket] queue-updated ignored (pending local change)');
+                return;
+            }
             console.log('[Socket] received queue-updated; refreshing queue');
             await refreshQueueRef.current();
         };
