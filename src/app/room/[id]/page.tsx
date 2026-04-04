@@ -41,6 +41,8 @@ export default function RoomPage() {
     const currentQueueIndexRef = useRef(currentQueueIndex);
     const queueRef = useRef(queue);
     const localIndexChangeRef = useRef(0); // Timestamp of last index change (local or remote video-changed) — guards refreshQueue from overwriting
+    const pendingChangeRef = useRef(false); // True while a song change PATCH is in-flight — blocks refreshQueue from overwriting
+    const refreshInFlightRef = useRef(false); // Mutex to prevent concurrent refreshQueue calls
     useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
     useEffect(() => { queueRef.current = queue; }, [queue]);
     const [search, setSearch] = useState('');
@@ -472,26 +474,38 @@ export default function RoomPage() {
     }, [queue, currentQueueIndex]);
 
     // Helper: refetch queue from backend to ensure canonical IDs/order
+    // Mutex: only one in-flight at a time. Skips entirely if a song change PATCH is pending.
     const refreshQueue = useCallback(async () => {
-        const queueUrl = `/api/rooms/${roomId}/queue`;
-        const res = await fetch(queueUrl);
-        if (!res.ok) return null;
-        const data = await res.json();
-        setQueue(data.queue);
-        // Skip overwriting currentQueueIndex if a local action (play next/prev/queue select)
-        // happened recently — the server may not have processed the PATCH yet
-        const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 5000;
-        if (!isLocalActionRecent) {
-            setCurrentQueueIndex(data.currentQueueIndex);
-            if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
-                setVideoId(data.queue[data.currentQueueIndex].videoId);
-                setCurrentSong(data.queue[data.currentQueueIndex]);
+        if (refreshInFlightRef.current) return null;
+        if (pendingChangeRef.current) return null;
+        refreshInFlightRef.current = true;
+        try {
+            const queueUrl = `/api/rooms/${roomId}/queue`;
+            const res = await fetch(queueUrl);
+            if (!res.ok) return null;
+            const data = await res.json();
+            // Double-check pending change hasn't started while fetch was in-flight
+            if (pendingChangeRef.current) return data;
+            const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 5000;
+            if (!isLocalActionRecent) {
+                // Safe to apply full server state
+                setQueue(data.queue);
+                setCurrentQueueIndex(data.currentQueueIndex);
+                if (data.queue.length > 0 && data.queue[data.currentQueueIndex]) {
+                    setVideoId(data.queue[data.currentQueueIndex].videoId);
+                    setCurrentSong(data.queue[data.currentQueueIndex]);
+                } else {
+                    setVideoId('');
+                    setCurrentSong(null);
+                }
             } else {
-                setVideoId('');
-                setCurrentSong(null);
+                // Local action recent — only update queue items (adds/removes), NOT the current index/video
+                setQueue(data.queue);
             }
+            return data;
+        } finally {
+            refreshInFlightRef.current = false;
         }
-        return data;
     }, [roomId]);
 
     // Keep a stable ref to refreshQueue so socket listeners never need it as a dependency
@@ -592,6 +606,38 @@ export default function RoomPage() {
         }
     };
 
+    // Helper: persist currentIndex to backend with retry (replaces fire-and-forget PATCH)
+    const persistCurrentIndex = async (index: number) => {
+        pendingChangeRef.current = true;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const res = await fetch(`/api/rooms/${roomId}/queue`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentIndex: index })
+                });
+                if (res.ok) break;
+            } catch (err) {
+                if (attempt === 1) console.error('[Queue] Failed to persist currentIndex after retry:', err);
+            }
+        }
+        pendingChangeRef.current = false;
+    };
+
+    // Helper: emit change-video with reconnect resilience
+    const emitChangeVideo = (newVideoId: string) => {
+        if (!isSyncEnabled) return;
+        const socket = getSocket();
+        if (socket?.connected) {
+            socket.emit('change-video', { roomId, newVideoId });
+        } else if (socket) {
+            // Socket not connected yet (iOS tab return) — queue emit for when it reconnects
+            socket.once('connect', () => {
+                socket.emit('change-video', { roomId, newVideoId });
+            });
+        }
+    };
+
     // Play next song handler
     const handlePlayNext = async () => {
         // Always use the most current queue state
@@ -613,21 +659,11 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Emit socket event immediately for real-time sync (before PATCH)
-            if (isSyncEnabled) {
-                const newVideoId = currentQueue[newIndex].videoId;
-                const socket = getSocket();
-                if (socket) {
-                    socket.emit('change-video', { roomId, newVideoId });
-                }
-            }
+            // Emit socket event immediately for real-time sync
+            emitChangeVideo(currentQueue[newIndex].videoId);
 
-            // Persist to backend (non-blocking)
-            fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+            // Persist to backend with retry (blocks refreshQueue from overwriting)
+            persistCurrentIndex(newIndex);
         } else {
             console.log('[handlePlayNext] Reached end of queue');
         }
@@ -653,21 +689,11 @@ export default function RoomPage() {
             localIndexChangeRef.current = Date.now();
             setCurrentQueueIndex(newIndex);
 
-            // Emit socket event immediately for real-time sync (before PATCH)
-            if (isSyncEnabled) {
-                const newVideoId = currentQueue[newIndex].videoId;
-                const socket = getSocket();
-                if (socket) {
-                    socket.emit('change-video', { roomId, newVideoId });
-                }
-            }
+            // Emit socket event immediately for real-time sync
+            emitChangeVideo(currentQueue[newIndex].videoId);
 
-            // Persist to backend (non-blocking)
-            fetch(`/api/rooms/${roomId}/queue`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentIndex: newIndex })
-            }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+            // Persist to backend with retry (blocks refreshQueue from overwriting)
+            persistCurrentIndex(newIndex);
         } else {
             console.log('[handlePlayPrev] Already at first song');
         }
@@ -1505,20 +1531,10 @@ export default function RoomPage() {
                                                     // Trigger playVideo synchronously within the click event
                                                     // so iOS recognizes it as a user gesture
                                                     syncAudioRef.current?.playVideo();
-                                                    // Emit socket event immediately for real-time sync (before PATCH)
-                                                    if (isSyncEnabled) {
-                                                        const newVideoId = queue[idx].videoId;
-                                                        const socket = getSocket();
-                                                        if (socket) {
-                                                            socket.emit('change-video', { roomId, newVideoId });
-                                                        }
-                                                    }
-                                                    // Persist to backend (non-blocking)
-                                                    fetch(`/api/rooms/${roomId}/queue`, {
-                                                        method: 'PATCH',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ currentIndex: idx })
-                                                    }).catch(err => console.error('[Queue] Failed to persist currentIndex:', err));
+                                                    // Emit socket event immediately for real-time sync
+                                                    emitChangeVideo(queue[idx].videoId);
+                                                    // Persist to backend with retry (blocks refreshQueue from overwriting)
+                                                    persistCurrentIndex(idx);
                                                 }
                                             }}
                                             currentVideoId={videoId}
