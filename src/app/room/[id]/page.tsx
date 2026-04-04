@@ -40,7 +40,7 @@ export default function RoomPage() {
     const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
     const currentQueueIndexRef = useRef(currentQueueIndex);
     const queueRef = useRef(queue);
-    const localIndexChangeRef = useRef(0); // Timestamp of last local index change (play next/prev/queue select)
+    const localIndexChangeRef = useRef(0); // Timestamp of last index change (local or remote video-changed) — guards refreshQueue from overwriting
     useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
     useEffect(() => { queueRef.current = queue; }, [queue]);
     const [search, setSearch] = useState('');
@@ -306,7 +306,8 @@ export default function RoomPage() {
             });
         }
 
-        // --- Helper: re-join room and refresh state ---
+        // --- Helper: re-join room and refresh state (debounced to prevent double refresh) ---
+        let rejoinTimer: ReturnType<typeof setTimeout> | null = null;
         const rejoinRoom = () => {
             console.log('[Sync] Re-joining room and refreshing queue...');
             socket.emit('join-room', roomId);
@@ -324,8 +325,12 @@ export default function RoomPage() {
                     }
                 });
             }
-            // Refresh queue so onVideoChanged can find the correct videoId
-            refreshQueueRef.current();
+            // Debounce refresh — reconnect + visibility change can fire back-to-back
+            if (rejoinTimer) clearTimeout(rejoinTimer);
+            rejoinTimer = setTimeout(() => {
+                refreshQueueRef.current();
+                rejoinTimer = null;
+            }, 300);
         };
 
         // --- Reconnect handler: re-join room after Socket.IO auto-reconnect ---
@@ -389,6 +394,8 @@ export default function RoomPage() {
                     }
                 }
                 if (idx !== -1) {
+                    // Guard against stale refreshQueue overwriting this change
+                    localIndexChangeRef.current = Date.now();
                     setCurrentQueueIndex(idx);
                 } else {
                     console.warn(`[video-changed] VideoId ${newVideoId} not found even after refresh`);
@@ -435,6 +442,7 @@ export default function RoomPage() {
         // --- Cleanup: remove ALL listeners and disconnect ---
         return () => {
             console.log('[Sync] Cleaning up socket listeners...');
+            if (rejoinTimer) clearTimeout(rejoinTimer);
             document.removeEventListener('visibilitychange', onVisibilityChange);
             socket.off('connect', onReconnect);
             socket.off('room-presence', onPresence);

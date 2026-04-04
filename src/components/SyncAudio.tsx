@@ -75,6 +75,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   const [isLoading, setIsLoading] = useState(true); // true on initial mount
   const [hasStartedPlayback, setHasStartedPlayback] = useState(false); // Track if user has started playback
   const pendingAutoPlayRef = useRef(false); // Track if we should auto-play after video loads
+  const [needsTap, setNeedsTap] = useState(false); // Mobile: remote play arrived but autoplay blocked
   const onPlayNextRef = useRef(onPlayNext); // ref to avoid stale closure in YouTube player callback
   const onPlayPrevRef = useRef(onPlayPrev);
 
@@ -150,6 +151,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
             console.log('StateChange:', e.data);
             if (e.data === window.YT.PlayerState.PLAYING) {
               setIsPlaying(true);
+              setNeedsTap(false);
             }
             else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
             if (e.data === window.YT.PlayerState.BUFFERING) setIsLoading(true);
@@ -161,14 +163,26 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
             if (e.data === window.YT.PlayerState.ENDED && isHost && onPlayNextRef.current) {
               onPlayNextRef.current();
             }
-            // Auto-play on mobile after video loads (for queue selection)
+            // Auto-play on mobile after video loads (for queue selection or remote change)
             if (e.data === window.YT.PlayerState.CUED) {
               if (pendingAutoPlayRef.current) {
-                console.log('[SyncAudio] Video cued, attempting auto-play for queue selection');
+                console.log('[SyncAudio] Video cued, attempting auto-play');
                 pendingAutoPlayRef.current = false;
                 const p = playerRef.current;
                 if (p && typeof p.playVideo === 'function') {
-                  setTimeout(() => p.playVideo(), 100); // Small delay for mobile
+                  // Try to play — will succeed if triggered by user gesture, fail silently on mobile otherwise
+                  setTimeout(() => {
+                    p.playVideo();
+                    // Check if playback actually started after a short delay
+                    setTimeout(() => {
+                      const state = p.getPlayerState?.();
+                      if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+                        console.log('[SyncAudio] Auto-play blocked by browser, showing tap prompt');
+                        setNeedsTap(true);
+                        setIsLoading(false);
+                      }
+                    }, 500);
+                  }, 100);
                 }
               }
             }
@@ -239,7 +253,19 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
         const p = playerRef.current;
         if (!p || typeof p.seekTo !== 'function') return;
         p.seekTo(seekTime, true);
-        if (cmd === 'play') p.playVideo(); else p.pauseVideo();
+        if (cmd === 'play') {
+          p.playVideo();
+          // Check if play was blocked by mobile autoplay policy
+          setTimeout(() => {
+            const state = p.getPlayerState?.();
+            if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+              setNeedsTap(true);
+              setIsLoading(false);
+            }
+          }, 500);
+        } else {
+          p.pauseVideo();
+        }
       }, delay);
     };
     socket.on('sync-command', onSync);
@@ -551,10 +577,10 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           </button>
         </div>
 
-        {/* Mobile hint - shows on mobile before first playback */}
-        {!hasStartedPlayback && !isPlaying && (
+        {/* Mobile hint - shows when autoplay is blocked or before first playback */}
+        {!isPlaying && (needsTap || !hasStartedPlayback) && (
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 md:hidden mt-2 animate-pulse">
-            ▶️ Tap the play button to start
+            Tap play to start listening
           </p>
         )}
 
