@@ -172,9 +172,11 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
                 if (p && typeof p.playVideo === 'function') {
                   // Try to play — will succeed if triggered by user gesture, fail silently on mobile otherwise
                   setTimeout(() => {
+                    if (destroyed) return;
                     p.playVideo();
                     // Check if playback actually started after a short delay
                     setTimeout(() => {
+                      if (destroyed) return;
                       const state = p.getPlayerState?.();
                       if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
                         console.log('[SyncAudio] Auto-play blocked by browser, showing tap prompt');
@@ -244,12 +246,14 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
   useEffect(() => {
     // Only set up socket listeners if socket is connected
     if (!socket) return;
+    let active = true;
 
     const onSync = ({ cmd, timestamp, seekTime }: { cmd: string; timestamp: number; seekTime: number }) => {
       const execAt = timestamp + offset;
       const delay = Math.max(execAt - Date.now(), 0);
       console.log(`🔄 Scheduling ${cmd} in ${delay}ms`);
       setTimeout(() => {
+        if (!active) return;
         const p = playerRef.current;
         if (!p || typeof p.seekTo !== 'function') return;
         p.seekTo(seekTime, true);
@@ -257,6 +261,7 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
           p.playVideo();
           // Check if play was blocked by mobile autoplay policy
           setTimeout(() => {
+            if (!active) return;
             const state = p.getPlayerState?.();
             if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
               setNeedsTap(true);
@@ -269,7 +274,10 @@ const SyncAudio = forwardRef<SyncAudioHandle, Props>(function SyncAudio({ roomId
       }, delay);
     };
     socket.on('sync-command', onSync);
-    return () => void socket.off('sync-command', onSync);
+    return () => {
+      active = false;
+      socket.off('sync-command', onSync);
+    };
   }, [socket, offset]);
 
   // 5) Update current time and duration
