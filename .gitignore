@@ -47,6 +47,7 @@ next-env.d.ts
 
 # Change log
 improved_changes.md
+Core-App-Changes.md
 
 # Sentry Config File
 .env.sentry-build-plugin
