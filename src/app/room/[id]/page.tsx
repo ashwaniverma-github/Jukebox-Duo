@@ -423,7 +423,8 @@ export default function RoomPage() {
                     }
                 }
                 if (idx !== -1) {
-                    localIndexChangeRef.current = Date.now();
+                    // Do NOT set localIndexChangeRef here — it guards LOCAL actions only.
+                    // Setting it here would block all subsequent remote events for 8s.
                     setCurrentQueueIndex(idx);
                     setVideoId(activeQueue[idx].videoId);
                     setCurrentSong(activeQueue[idx]);
