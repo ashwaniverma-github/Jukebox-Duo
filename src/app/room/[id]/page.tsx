@@ -45,6 +45,8 @@ export default function RoomPage() {
     const refreshInFlightRef = useRef(false); // Mutex to prevent concurrent refreshQueue calls
     const pendingEmitVideoRef = useRef<string | null>(null); // Pending change-video emit for when socket reconnects
     const emitOnConnectRegisteredRef = useRef(false); // Whether we already have a once('connect') handler queued
+    const sessionRef = useRef(session); // Stable ref — avoids session object in effect deps (re-validates on tab focus)
+    useEffect(() => { sessionRef.current = session; }, [session]);
     useEffect(() => { currentQueueIndexRef.current = currentQueueIndex; }, [currentQueueIndex]);
     useEffect(() => { queueRef.current = queue; }, [queue]);
     const [search, setSearch] = useState('');
@@ -139,8 +141,16 @@ export default function RoomPage() {
 
     // Consolidated init: Fetch room details + queue in a single call
     // Reduces 2 HTTP requests + 4 DB queries to 1 HTTP request + 1 DB query
+    // IMPORTANT: depends on [roomId, status] only — NOT session.
+    // next-auth's useSession() re-validates on tab focus, creating a new session object reference.
+    // If session were a dependency, this effect would re-fire on every tab return, fetching stale
+    // server state and overwriting the user's current videoId — causing the song revert bug on iOS.
+    const initDoneRef = useRef(false);
     useEffect(() => {
         if (status !== "authenticated") return;
+
+        // Only run once per room — subsequent state updates come from refreshQueue / socket events
+        if (initDoneRef.current) return;
 
         const abortController = new AbortController();
 
@@ -162,6 +172,8 @@ export default function RoomPage() {
                 return r.json();
             })
             .then((data) => {
+                initDoneRef.current = true;
+
                 // Set room details
                 setRoomDetails({
                     name: data.name,
@@ -192,10 +204,11 @@ export default function RoomPage() {
                 setPlayerMounted(true);
 
                 // Track user and room join for PostHog analytics (active users)
-                if (session?.user?.id) {
-                    identifyUser(session.user.id, {
-                        name: session.user.name,
-                        email: session.user.email,
+                const sess = sessionRef.current;
+                if (sess?.user?.id) {
+                    identifyUser(sess.user.id, {
+                        name: sess.user.name,
+                        email: sess.user.email,
                     });
                     trackRoomJoin(roomId);
                 }
@@ -221,7 +234,7 @@ export default function RoomPage() {
         // NOTE: Socket connection is now handled separately based on sync state without queue dependency
         // This prevents unnecessary WebSocket connections for solo listeners
         return () => abortController.abort();
-    }, [roomId, status, session]);
+    }, [roomId, status]);
 
     // Restore saved theme from local storage when boughtThemes are available
     useEffect(() => {
@@ -278,8 +291,6 @@ export default function RoomPage() {
 
     // Refs for values needed inside the consolidated socket effect (avoids stale closures
     // and prevents the effect from re-running when these change)
-    const sessionRef = useRef(session);
-    useEffect(() => { sessionRef.current = session; }, [session]);
     const isSyncConnectingRef = useRef(isSyncConnecting);
     useEffect(() => { isSyncConnectingRef.current = isSyncConnecting; }, [isSyncConnecting]);
 
