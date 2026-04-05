@@ -49,7 +49,11 @@ class CacheService {
   private readonly SEARCH_CACHE_PREFIX = 'youtube_search:';
   private readonly PLAYLIST_CACHE_PREFIX = 'youtube_playlist:';
   private readonly PLAYLIST_CACHE_TTL = 30 * 24 * 60 * 60; // 30 days - playlists barely change
-  private readonly SUGGESTION_INDEX_KEY = 'suggestion_index';
+  // Two parallel sorted sets: ZRANGEBYLEX only returns reliable results when all
+  // members share the same score, so we separate the prefix-search structure
+  // (uniform score) from the LRU-tracking structure (timestamp score).
+  private readonly SUGGESTION_LEX_KEY = 'suggestion_lex';   // score=0 for all, for ZRANGEBYLEX
+  private readonly SUGGESTION_LRU_KEY = 'suggestion_lru';   // score=timestamp, for LRU eviction
   private readonly SUGGESTION_INDEX_MAX = 2000; // cap size, LRU-evict oldest beyond this
 
   constructor() {
@@ -145,9 +149,22 @@ class CacheService {
   async addToSuggestionIndex(canonical: string): Promise<void> {
     if (!this.redis || !canonical) return;
     try {
-      await this.redis.zadd(this.SUGGESTION_INDEX_KEY, Date.now(), canonical);
-      // Trim to cap: remove lowest-scored (oldest) entries so size <= MAX
-      await this.redis.zremrangebyrank(this.SUGGESTION_INDEX_KEY, 0, -(this.SUGGESTION_INDEX_MAX + 1));
+      // Insert/refresh into both structures.
+      // LEX set uses uniform score=0 so ZRANGEBYLEX returns reliable prefix ranges.
+      // LRU set uses timestamp score so we can evict the oldest entries when over cap.
+      await this.redis.zadd(this.SUGGESTION_LEX_KEY, 0, canonical);
+      await this.redis.zadd(this.SUGGESTION_LRU_KEY, Date.now(), canonical);
+
+      // If LRU set exceeds the cap, evict the oldest entries from both structures.
+      const size = await this.redis.zcard(this.SUGGESTION_LRU_KEY);
+      if (size > this.SUGGESTION_INDEX_MAX) {
+        const overflow = size - this.SUGGESTION_INDEX_MAX;
+        const evict = await this.redis.zrange(this.SUGGESTION_LRU_KEY, 0, overflow - 1);
+        if (evict.length) {
+          await this.redis.zrem(this.SUGGESTION_LRU_KEY, ...evict);
+          await this.redis.zrem(this.SUGGESTION_LEX_KEY, ...evict);
+        }
+      }
     } catch (error) {
       console.error('suggestion_index add failed:', error);
     }
@@ -156,9 +173,9 @@ class CacheService {
   async getSuggestions(prefix: string, limit = 10): Promise<string[]> {
     if (!this.redis || !prefix) return [];
     try {
-      // ZRANGEBYLEX finds all members starting with prefix (alphabetic range query)
+      // ZRANGEBYLEX returns reliable results because all LEX entries have score=0.
       const raw = await this.redis.zrangebylex(
-        this.SUGGESTION_INDEX_KEY,
+        this.SUGGESTION_LEX_KEY,
         `[${prefix}`,
         `[${prefix}\xff`,
         'LIMIT', 0, limit

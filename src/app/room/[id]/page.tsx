@@ -62,7 +62,6 @@ export default function RoomPage() {
     const lastSearchedRef = useRef<string>('');
     const [submittedQuery, setSubmittedQuery] = useState('');
     const [suggestions, setSuggestions] = useState<{ label: string; source: 'library' | 'cached' }[]>([]);
-    const suggestionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const syncAudioRef = useRef<SyncAudioHandle>(null);
     const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string; image?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
@@ -611,22 +610,29 @@ export default function RoomPage() {
     // Debounced zero-API suggestions: fetches from local library + Redis cached-query index.
     // Never touches YouTube. Guides users toward queries we can serve for free.
     useEffect(() => {
-        if (suggestionTimeoutRef.current) clearTimeout(suggestionTimeoutRef.current);
         const q = search.trim();
         if (q.length < 2) { setSuggestions([]); return; }
         // Don't show suggestions when input matches the query we just searched
         if (q === lastSearchedRef.current) { setSuggestions([]); return; }
 
-        suggestionTimeoutRef.current = setTimeout(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/suggestions?q=${encodeURIComponent(q)}`);
+                const res = await fetch(`/api/suggestions?q=${encodeURIComponent(q)}`, {
+                    signal: controller.signal,
+                });
                 if (!res.ok) return;
                 const data = await res.json();
                 setSuggestions(data.suggestions || []);
             } catch {
-                // Suggestions are non-critical - silent fail
+                // Suggestions are non-critical - silent fail (includes AbortError)
             }
         }, 150);
+
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
     }, [search]);
 
     const handleSuggestionClick = (label: string, source: 'library' | 'cached') => {

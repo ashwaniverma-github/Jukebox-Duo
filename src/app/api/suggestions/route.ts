@@ -41,8 +41,9 @@ export async function GET(req: Request) {
     const cached = await cacheService.getSuggestions(canonical, MAX_SUGGESTIONS)
     for (const c of cached) {
       if (suggestions.length >= MAX_SUGGESTIONS) break
-      if (!seen.has(c)) {
-        seen.add(c)
+      const cKey = c.toLowerCase()
+      if (!seen.has(cKey)) {
+        seen.add(cKey)
         suggestions.push({ label: c, source: 'cached' })
       }
     }
