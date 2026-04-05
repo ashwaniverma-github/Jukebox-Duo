@@ -16,7 +16,7 @@ const QUERY_STOPWORDS = new Set([
  */
 export function canonicalizeQuery(query: string): string {
   const tokens = query.toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ') // Unicode letters/numbers — preserves é, ñ, CJK, Cyrillic, Devanagari, etc.
     .split(/\s+/)
     .filter(w => w && !QUERY_STOPWORDS.has(w));
   return Array.from(new Set(tokens)).sort().join(' ');

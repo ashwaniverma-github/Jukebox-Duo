@@ -234,26 +234,43 @@ async function checkAndIncrementFreeUserQuota(
 
   const now = new Date()
   const DAY_MS = 24 * 60 * 60 * 1000
+  const windowCutoff = new Date(now.getTime() - DAY_MS)
   const needsReset = !dailySearchResetAt || (now.getTime() - dailySearchResetAt.getTime()) >= DAY_MS
 
   if (needsReset) {
-    await prisma.user.update({
-      where: { id: userId },
+    // Atomic reset: only succeeds if the DB still shows an expired window.
+    // If a concurrent request already reset it, updated.count === 0 and we fall through
+    // to the increment path, keeping the total correct.
+    const updated = await prisma.user.updateMany({
+      where: {
+        id: userId,
+        OR: [
+          { dailySearchResetAt: null },
+          { dailySearchResetAt: { lte: windowCutoff } }
+        ]
+      },
       data: { dailySearchCount: 1, dailySearchResetAt: now }
     })
-    return { allowed: true }
+    if (updated.count === 1) return { allowed: true }
+    // Someone else reset concurrently — treat as count=1 already, fall through to increment.
   }
 
-  if (dailySearchCount >= FREE_USER_DAILY_SEARCH_LIMIT) {
-    const resetInHours = Math.ceil((DAY_MS - (now.getTime() - dailySearchResetAt!.getTime())) / (60 * 60 * 1000))
-    return { allowed: false, resetInHours }
-  }
-
-  await prisma.user.update({
-    where: { id: userId },
+  // Atomic increment: only succeeds if count is still under the cap.
+  // Cannot overshoot the limit even under concurrent requests.
+  const incremented = await prisma.user.updateMany({
+    where: { id: userId, dailySearchCount: { lt: FREE_USER_DAILY_SEARCH_LIMIT } },
     data: { dailySearchCount: { increment: 1 } }
   })
-  return { allowed: true }
+  if (incremented.count === 1) return { allowed: true }
+
+  // At cap. Recompute resetInHours from fresh DB state in case window rolled over.
+  const fresh = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { dailySearchResetAt: true }
+  })
+  const resetAt = fresh?.dailySearchResetAt ?? now
+  const resetInHours = Math.max(1, Math.ceil((DAY_MS - (now.getTime() - resetAt.getTime())) / (60 * 60 * 1000)))
+  return { allowed: false, resetInHours }
 }
 
 export async function GET(
@@ -341,21 +358,24 @@ export async function GET(
     where: { id: session.user.id },
     select: { isPremium: true, dailySearchCount: true, dailySearchResetAt: true }
   })
-  if (userRecord) {
-    const quotaCheck = await checkAndIncrementFreeUserQuota(
-      session.user.id,
-      userRecord.isPremium,
-      userRecord.dailySearchCount,
-      userRecord.dailySearchResetAt
-    )
-    if (!quotaCheck.allowed) {
-      metrics.quotaBlocks++
-      return NextResponse.json({
-        error: `Daily search limit reached (${FREE_USER_DAILY_SEARCH_LIMIT} API searches). Upgrade to premium for unlimited searches.`,
-        upgradeRequired: true,
-        resetInHours: quotaCheck.resetInHours
-      }, { status: 429 })
-    }
+  if (!userRecord) {
+    // Valid session but no user row — stale session or deleted account.
+    // Fail closed: do not let this bypass the quota check.
+    return NextResponse.json({ error: 'User not found' }, { status: 401 })
+  }
+  const quotaCheck = await checkAndIncrementFreeUserQuota(
+    session.user.id,
+    userRecord.isPremium,
+    userRecord.dailySearchCount,
+    userRecord.dailySearchResetAt
+  )
+  if (!quotaCheck.allowed) {
+    metrics.quotaBlocks++
+    return NextResponse.json({
+      error: `Daily search limit reached (${FREE_USER_DAILY_SEARCH_LIMIT} API searches). Upgrade to premium for unlimited searches.`,
+      upgradeRequired: true,
+      resetInHours: quotaCheck.resetInHours
+    }, { status: 429 })
   }
 
   // In-flight dedupe for foreground request

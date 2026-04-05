@@ -106,18 +106,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 };
             }
 
+            // Private/deleted videos lose their thumbnails regardless of API locale,
+            // so thumbnail presence is the reliable cross-locale heuristic. We also keep
+            // the English string match as a fast-path and guard videoId presence.
             normalizedItems = (items as YouTubePlaylistItem[])
-                .filter((item) =>
-                    item.snippet &&
-                    item.snippet.resourceId &&
-                    item.snippet.resourceId.videoId &&
-                    item.snippet.title !== 'Private video' &&
-                    item.snippet.title !== 'Deleted video'
-                )
+                .filter((item) => {
+                    if (!item.snippet?.resourceId?.videoId) return false
+                    const thumbUrl = item.snippet.thumbnails?.default?.url
+                    if (!thumbUrl) return false // private/deleted/unavailable — works in any locale
+                    const title = item.snippet.title
+                    if (title === 'Private video' || title === 'Deleted video') return false
+                    return true
+                })
                 .map((item) => ({
                     videoId: item.snippet.resourceId.videoId,
                     title: item.snippet.title,
-                    thumbnail: item.snippet.thumbnails?.default?.url || ''
+                    thumbnail: item.snippet.thumbnails!.default!.url
                 }));
 
             // Cache for 7 days
