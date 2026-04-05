@@ -22,6 +22,8 @@ model User {
   subscriptionTier String? // null | "premium"
   isPremium  Boolean     @default(false)
   premiumPurchasedAt DateTime?
+  dailySearchCount   Int       @default(0)
+  dailySearchResetAt DateTime?
   createdAt  DateTime    @default(now())
   subscription Subscription?
 }

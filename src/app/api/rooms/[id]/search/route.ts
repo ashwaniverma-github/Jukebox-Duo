@@ -4,14 +4,28 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
 import { checkRoomAccess } from '../../../../../lib/room-auth'
 import youtubeKeyManager, { YouTubeAPIError } from '@/lib/youtube-keys'
-import cacheService from '@/lib/cache'
+import cacheService, { canonicalizeQuery } from '@/lib/cache'
+import prisma from '../../../../../lib/prisma'
+import { songsDatabase } from '../../../../../lib/songs-data'
 
 // Simple in-memory rate limiter per user or IP
 type Bucket = { count: number; resetAt: number }
 const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 50 // Increased since we have multiple API keys
 const buckets = new Map<string, Bucket>()
-const SWR_STALE_AFTER_MS = 12 * 60 * 60 * 1000 // 12 hours
+const SWR_STALE_AFTER_MS = 3 * 24 * 60 * 60 * 1000 // 3 days — background refresh popular queries
+const FREE_USER_DAILY_SEARCH_LIMIT = 20 // API-hitting searches; cache hits don't count
+const LIBRARY_MATCH_THRESHOLD = 0.75 // fraction of query tokens that must appear in song title+artist
+
+// Process-scoped counters to measure cache efficacy. Reset on deploy.
+const metrics = { cacheHits: 0, libraryHits: 0, apiCalls: 0, quotaBlocks: 0 }
+// Periodic log so metrics show up in Vercel/Sentry logs without a debug endpoint
+setInterval(() => {
+  const total = metrics.cacheHits + metrics.libraryHits + metrics.apiCalls
+  if (total === 0) return
+  const hitRate = ((metrics.cacheHits + metrics.libraryHits) / total * 100).toFixed(1)
+  console.log(`📊 Search metrics — cache:${metrics.cacheHits} library:${metrics.libraryHits} api:${metrics.apiCalls} blocked:${metrics.quotaBlocks} hitRate:${hitRate}%`)
+}, 60 * 60 * 1000).unref()
 
 // Periodic cleanup of expired rate limit buckets to prevent memory leak
 setInterval(() => {
@@ -61,7 +75,9 @@ type SearchResultItem = { videoId: string; title: string; thumbnail: string }
 const inFlightSearches = new Map<string, Promise<SearchResultItem[]>>()
 
 function normalizeQueryForKey(q: string) {
-  return q.toLowerCase().trim().replace(/\s+/g, ' ')
+  // Must match cache.ts normalization so in-flight dedupe and Redis keys align
+  const canonical = canonicalizeQuery(q)
+  return canonical || q.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
 function scheduleBackgroundRefresh(q: string, runner: (q: string) => Promise<SearchResultItem[]>) {
@@ -71,13 +87,6 @@ function scheduleBackgroundRefresh(q: string, runner: (q: string) => Promise<Sea
     .catch(() => [] as SearchResultItem[])
     .finally(() => { inFlightSearches.delete(key) })
   inFlightSearches.set(key, promise)
-}
-
-// Minimal shape for videos.list response items we care about
-interface VideosListItem {
-  id: string;
-  contentDetails?: { duration?: string };
-  statistics?: { viewCount?: string };
 }
 
 // Comprehensive YouTube Shorts filtering
@@ -124,26 +133,12 @@ function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
       description.includes('viral video') ||
       description.includes('tiktok');
 
-    // 6. Additional title patterns that indicate shorts
-    const hasShortContentIndicators =
-      title.includes('viral') ||
-      title.includes('trending') ||
-      title.includes('meme') ||
-      title.includes('funny moment') ||
-      title.includes('quick') ||
-      title.includes('30 sec') ||
-      title.includes('60 sec') ||
-      title.includes('1 min') ||
-      title.includes('under 1') ||
-      title.includes('vs ') && title.length < 50; // Short comparison videos
-
     // Filter out if ANY shorts indicator is found
     const isShort = hasShortsUrl ||
       hasShortsKeywords ||
       hasVerticalAspect ||
       isShortsChannel ||
-      hasShortsDescription ||
-      hasShortContentIndicators;
+      hasShortsDescription;
 
     // Log filtered shorts for debugging
     if (isShort) {
@@ -151,23 +146,12 @@ function filterShorts(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
           hasShortsKeywords ? 'Keywords' :
             hasVerticalAspect ? 'Aspect' :
               isShortsChannel ? 'Channel' :
-                hasShortsDescription ? 'Description' :
-                  'Content'
+                'Description'
         }`);
     }
 
     return !isShort;
   });
-}
-
-// Parse ISO 8601 duration (e.g., PT3M25S) to total seconds
-function parseISODurationToSeconds(iso: string): number {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 0;
-  const hours = Number(match[1] || 0);
-  const minutes = Number(match[2] || 0);
-  const seconds = Number(match[3] || 0);
-  return hours * 3600 + minutes * 60 + seconds;
 }
 
 // Core search runner used by GET and SWR background refresh
@@ -196,83 +180,12 @@ async function performSearchAndCache(query: string): Promise<SearchResultItem[]>
       }
 
       const json = await res.json()
-      const ids = (json.items || [])
-        .map((i: YouTubeSearchItem) => i?.id?.videoId)
-        .filter(Boolean)
-        .slice(0, 50)
-        .join(',')
-
-      let itemsToReturn: SearchResultItem[] = []
-
-      if (ids) {
-        try {
-          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos` +
-            `?part=contentDetails,statistics&id=${ids}&key=${apiKey}`
-          const detailsRes = await fetch(detailsUrl)
-          if (detailsRes.ok) {
-            const detailsJson = await detailsRes.json()
-            const durationById: Record<string, number> = {}
-            const viewCountById: Record<string, number> = {}
-            for (const v of (detailsJson.items || []) as VideosListItem[]) {
-              const id = v?.id
-              const dur = v?.contentDetails?.duration
-              if (id && dur) durationById[id] = parseISODurationToSeconds(dur)
-              const vc = v?.statistics?.viewCount
-              if (id && typeof vc === 'string') {
-                const n = Number(vc)
-                if (!Number.isNaN(n)) viewCountById[id] = n
-              }
-            }
-
-            const MIN_DURATION_SECONDS = 90
-            const MAX_DURATION_SECONDS = 540
-
-            const filteredByDuration = (json.items || []).filter((i: YouTubeSearchItem) => {
-              const id = i?.id?.videoId
-              if (!id) return false
-              const secs = durationById[id]
-              if (typeof secs === 'number') {
-                return secs >= MIN_DURATION_SECONDS && secs <= MAX_DURATION_SECONDS
-              }
-              return filterShorts([i]).length > 0
-            })
-
-            let finalItems = filteredByDuration.length > 0 ? filteredByDuration : filterShorts(json.items || [])
-            finalItems = finalItems.sort((a: YouTubeSearchItem, b: YouTubeSearchItem) => {
-              const av = viewCountById[a.id.videoId] ?? -1
-              const bv = viewCountById[b.id.videoId] ?? -1
-              return bv - av
-            })
-
-            itemsToReturn = finalItems.slice(0, 10).map((i: YouTubeSearchItem) => ({
-              videoId: i.id.videoId,
-              title: i.snippet.title,
-              thumbnail: i.snippet.thumbnails.default.url
-            }))
-          } else {
-            const heuristics = filterShorts(json.items || [])
-            itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
-              videoId: i.id.videoId,
-              title: i.snippet.title,
-              thumbnail: i.snippet.thumbnails.default.url
-            }))
-          }
-        } catch {
-          const heuristics = filterShorts(json.items || [])
-          itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
-            videoId: i.id.videoId,
-            title: i.snippet.title,
-            thumbnail: i.snippet.thumbnails.default.url
-          }))
-        }
-      } else {
-        const heuristics = filterShorts(json.items || [])
-        itemsToReturn = heuristics.slice(0, 10).map((i: YouTubeSearchItem) => ({
-          videoId: i.id.videoId,
-          title: i.snippet.title,
-          thumbnail: i.snippet.thumbnails.default.url
-        }))
-      }
+      const filtered = filterShorts(json.items || [])
+      const itemsToReturn: SearchResultItem[] = filtered.slice(0, 10).map((i: YouTubeSearchItem) => ({
+        videoId: i.id.videoId,
+        title: i.snippet.title,
+        thumbnail: i.snippet.thumbnails.default.url
+      }))
 
       try { youtubeKeyManager.updateQuotaUsage(apiKey, 100) } catch { }
       try { await cacheService.cacheSearchResults(query, itemsToReturn) } catch { }
@@ -284,6 +197,63 @@ async function performSearchAndCache(query: string): Promise<SearchResultItem[]>
   }
 
   return []
+}
+
+// Fuzzy match the canonicalized query against the local songs library.
+// Returns up to 10 matches sorted by token-overlap score, then view count.
+// Zero YouTube API cost when this hits.
+function matchLocalLibrary(canonicalQ: string): SearchResultItem[] {
+  const qTokens = canonicalQ.split(' ').filter(Boolean)
+  if (qTokens.length === 0) return []
+  const scored = songsDatabase
+    .map(s => {
+      const hay = `${s.title} ${s.artist}`.toLowerCase()
+      const hits = qTokens.filter(t => hay.includes(t)).length
+      return { song: s, score: hits / qTokens.length }
+    })
+    .filter(x => x.score >= LIBRARY_MATCH_THRESHOLD)
+    .sort((a, b) => b.score - a.score || b.song.views - a.song.views)
+    .slice(0, 10)
+  return scored.map(x => ({
+    videoId: x.song.videoId,
+    title: `${x.song.title} - ${x.song.artist}`,
+    thumbnail: `https://img.youtube.com/vi/${x.song.videoId}/default.jpg`
+  }))
+}
+
+// Check free user's daily search quota and increment atomically if allowed.
+// Premium users bypass entirely. Only called on true API-hitting searches.
+// Returns { allowed: true } or { allowed: false, resetInHours }.
+async function checkAndIncrementFreeUserQuota(
+  userId: string,
+  isPremium: boolean,
+  dailySearchCount: number,
+  dailySearchResetAt: Date | null
+): Promise<{ allowed: boolean; resetInHours?: number }> {
+  if (isPremium) return { allowed: true }
+
+  const now = new Date()
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const needsReset = !dailySearchResetAt || (now.getTime() - dailySearchResetAt.getTime()) >= DAY_MS
+
+  if (needsReset) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { dailySearchCount: 1, dailySearchResetAt: now }
+    })
+    return { allowed: true }
+  }
+
+  if (dailySearchCount >= FREE_USER_DAILY_SEARCH_LIMIT) {
+    const resetInHours = Math.ceil((DAY_MS - (now.getTime() - dailySearchResetAt!.getTime())) / (60 * 60 * 1000))
+    return { allowed: false, resetInHours }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { dailySearchCount: { increment: 1 } }
+  })
+  return { allowed: true }
 }
 
 export async function GET(
@@ -330,11 +300,13 @@ export async function GET(
   }
 
   // SWR: return cache immediately if present, then refresh in background
+  // Cache hits don't count against free-user daily quota — free experience for popular searches.
   console.log(`🔍 Checking cache for: "${q}"`)
   try {
     const cachedWithMeta = await cacheService.getCachedSearchResultsWithMeta(q)
     if (cachedWithMeta?.results?.length) {
       console.log(`🎯 Returning cached results for: "${q}" (SWR)`)
+      metrics.cacheHits++
       const ageMs = Date.now() - cachedWithMeta.timestamp
       if (ageMs >= SWR_STALE_AFTER_MS) {
         // Trigger background refresh only when cache is stale
@@ -352,6 +324,40 @@ export async function GET(
     // Continue with API call if cache fails
   }
 
+  // Local library fallback — zero API cost. Match against ~900 curated songs.
+  const canonicalQ = canonicalizeQuery(q)
+  const libraryMatches = matchLocalLibrary(canonicalQ)
+  if (libraryMatches.length > 0) {
+    console.log(`📚 Library match for "${q}" → ${libraryMatches.length} results`)
+    metrics.libraryHits++
+    // Write to Redis so SWR keeps this fresh and subsequent users skip the match work
+    try { await cacheService.cacheSearchResults(q, libraryMatches) } catch { }
+    return NextResponse.json(libraryMatches)
+  }
+
+  // Enforce free-user daily API-search cap BEFORE burning YouTube quota.
+  // Premium users bypass. Cache/library hits above already returned without checking this.
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isPremium: true, dailySearchCount: true, dailySearchResetAt: true }
+  })
+  if (userRecord) {
+    const quotaCheck = await checkAndIncrementFreeUserQuota(
+      session.user.id,
+      userRecord.isPremium,
+      userRecord.dailySearchCount,
+      userRecord.dailySearchResetAt
+    )
+    if (!quotaCheck.allowed) {
+      metrics.quotaBlocks++
+      return NextResponse.json({
+        error: `Daily search limit reached (${FREE_USER_DAILY_SEARCH_LIMIT} API searches). Upgrade to premium for unlimited searches.`,
+        upgradeRequired: true,
+        resetInHours: quotaCheck.resetInHours
+      }, { status: 429 })
+    }
+  }
+
   // In-flight dedupe for foreground request
   const inflightKey = normalizeQueryForKey(q)
   if (inFlightSearches.has(inflightKey)) {
@@ -359,6 +365,7 @@ export async function GET(
     return NextResponse.json(results)
   }
 
+  metrics.apiCalls++
   const promise = (async () => await performSearchAndCache(q))()
   inFlightSearches.set(inflightKey, promise)
   const results = await promise.finally(() => inFlightSearches.delete(inflightKey))

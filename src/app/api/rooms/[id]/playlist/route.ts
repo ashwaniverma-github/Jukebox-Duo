@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/options'
 import { checkRoomAccess } from '../../../../../lib/room-auth'
 import youtubeKeyManager from '@/lib/youtube-keys'
+import cacheService, { PlaylistCacheItem } from '@/lib/cache'
 
 // We will return success and let the CLIENT (who called this API) emit the socket event to notify others.
 
@@ -55,56 +56,79 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Could not find playlist ID in URL' }, { status: 400 })
     }
 
-    // Fetch from YouTube
-    const apiKey = youtubeKeyManager.getNextKey();
-    if (!apiKey) {
-        return NextResponse.json({ error: 'Service temporarily unavailable (Quota)' }, { status: 503 })
-    }
-
     try {
-        const ytUrl = `https://www.googleapis.com/youtube/v3/playlistItems` +
-            `?part=snippet` +
-            `&maxResults=50` + // Limit to 50 for now
-            `&playlistId=${playlistId}` +
-            `&key=${apiKey}`;
+        // Check playlist cache first to avoid burning quota on repeat imports
+        const cachedItems = await cacheService.getCachedPlaylistItems(playlistId);
+        let normalizedItems: PlaylistCacheItem[];
 
-        const res = await fetch(ytUrl);
+        if (cachedItems && cachedItems.length > 0) {
+            normalizedItems = cachedItems;
+        } else {
+            // Fetch from YouTube
+            const apiKey = youtubeKeyManager.getNextKey();
+            if (!apiKey) {
+                return NextResponse.json({ error: 'Service temporarily unavailable (Quota)' }, { status: 503 })
+            }
 
-        if (!res.ok) {
-            const errorData = await res.json();
-            youtubeKeyManager.handleApiError(apiKey, res, errorData);
-            return NextResponse.json({ error: 'Failed to fetch playlist from YouTube' }, { status: res.status })
-        }
+            const ytUrl = `https://www.googleapis.com/youtube/v3/playlistItems` +
+                `?part=snippet` +
+                `&maxResults=50` + // Limit to 50 for now
+                `&playlistId=${playlistId}` +
+                `&key=${apiKey}`;
 
-        const data = await res.json();
-        const items = data.items || [];
+            const res = await fetch(ytUrl);
 
-        if (items.length === 0) {
-            return NextResponse.json({ error: 'Playlist is empty or private' }, { status: 400 })
-        }
+            if (!res.ok) {
+                const errorData = await res.json();
+                youtubeKeyManager.handleApiError(apiKey, res, errorData);
+                return NextResponse.json({ error: 'Failed to fetch playlist from YouTube' }, { status: res.status })
+            }
 
-        // Filter valid items and map to QueueItem format
-        interface YouTubePlaylistItem {
-            snippet: {
-                title: string;
-                resourceId: {
-                    videoId: string;
-                };
-                thumbnails?: {
-                    default?: {
-                        url: string;
+            const data = await res.json();
+            const items = data.items || [];
+
+            if (items.length === 0) {
+                return NextResponse.json({ error: 'Playlist is empty or private' }, { status: 400 })
+            }
+
+            // Filter valid items and normalize to PlaylistCacheItem shape
+            interface YouTubePlaylistItem {
+                snippet: {
+                    title: string;
+                    resourceId: {
+                        videoId: string;
+                    };
+                    thumbnails?: {
+                        default?: {
+                            url: string;
+                        };
                     };
                 };
-            };
+            }
+
+            normalizedItems = (items as YouTubePlaylistItem[])
+                .filter((item) =>
+                    item.snippet &&
+                    item.snippet.resourceId &&
+                    item.snippet.resourceId.videoId &&
+                    item.snippet.title !== 'Private video' &&
+                    item.snippet.title !== 'Deleted video'
+                )
+                .map((item) => ({
+                    videoId: item.snippet.resourceId.videoId,
+                    title: item.snippet.title,
+                    thumbnail: item.snippet.thumbnails?.default?.url || ''
+                }));
+
+            // Cache for 7 days
+            if (normalizedItems.length > 0) {
+                try { await cacheService.cachePlaylistItems(playlistId, normalizedItems) } catch { }
+            }
         }
 
-        const validItems = (items as YouTubePlaylistItem[]).filter((item) =>
-            item.snippet &&
-            item.snippet.resourceId &&
-            item.snippet.resourceId.videoId &&
-            item.snippet.title !== 'Private video' &&
-            item.snippet.title !== 'Deleted video'
-        );
+        if (normalizedItems.length === 0) {
+            return NextResponse.json({ error: 'Playlist is empty or private' }, { status: 400 })
+        }
 
         // Safe assignment since we checked session.user.id earlier
         const userId = session.user.id;
@@ -113,11 +137,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const newItemCount = await prisma.$transaction(async (tx) => {
             const currentCount = await tx.queueItem.count({ where: { roomId: roomId } });
 
-            const newItemsData = validItems.map((item, index: number) => ({
+            const newItemsData = normalizedItems.map((item, index: number) => ({
                 roomId: roomId,
-                videoId: item.snippet.resourceId.videoId,
-                title: item.snippet.title.slice(0, 500),
-                thumbnail: item.snippet.thumbnails?.default?.url || '',
+                videoId: item.videoId,
+                title: item.title.slice(0, 500),
+                thumbnail: item.thumbnail,
                 order: currentCount + index,
                 addedById: userId
             }));

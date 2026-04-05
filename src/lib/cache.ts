@@ -1,5 +1,27 @@
 import Redis from 'ioredis';
 
+// Stopwords stripped from queries to collapse semantically-equivalent searches
+// into a single cache entry (e.g. "arijit singh songs" == "best arijit singh").
+const QUERY_STOPWORDS = new Set([
+  'songs', 'song', 'music', 'best', 'top', 'new', 'latest', 'old',
+  'all', 'of', 'by', 'the', 'a', 'an', 'video', 'videos', 'hits',
+  'full', 'official', 'hd', 'remix', 'lyrics',
+  '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'
+]);
+
+/**
+ * Canonicalize a user query into a stable cache key.
+ * Strips punctuation, lowercases, removes stopwords, dedupes, alphabetizes.
+ * "arijit singh songs", "best arijit singh", "arijit singh new hits" → "arijit singh"
+ */
+export function canonicalizeQuery(query: string): string {
+  const tokens = query.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w && !QUERY_STOPWORDS.has(w));
+  return Array.from(new Set(tokens)).sort().join(' ');
+}
+
 interface CachedSearchResult {
   query: string;
   results: Array<{
@@ -23,8 +45,10 @@ interface YouTubeSearchResult {
 
 class CacheService {
   private redis: Redis.Redis | null = null;
-  private readonly CACHE_TTL = 24 * 60 * 60; // 24 hours
+  private readonly CACHE_TTL = 30 * 24 * 60 * 60; // 30 days — max allowed by YouTube ToS
   private readonly SEARCH_CACHE_PREFIX = 'youtube_search:';
+  private readonly PLAYLIST_CACHE_PREFIX = 'youtube_playlist:';
+  private readonly PLAYLIST_CACHE_TTL = 30 * 24 * 60 * 60; // 30 days — playlists barely change
 
   constructor() {
     console.log('🔍 CacheService constructor - checking env vars:');
@@ -140,8 +164,53 @@ class CacheService {
   }
 
   private normalizeQuery(query: string): string {
+    // Fall back to light normalization if canonicalization drops everything
+    // (e.g. query is entirely stopwords/punctuation)
+    const canonical = canonicalizeQuery(query);
+    if (canonical) return canonical;
     return query.toLowerCase().trim().replace(/\s+/g, ' ');
   }
+
+  async cachePlaylistItems(playlistId: string, items: PlaylistCacheItem[]): Promise<void> {
+    if (!this.redis) {
+      console.log('❌ Redis not initialized, skipping playlist cache');
+      return;
+    }
+
+    try {
+      const cacheKey = this.PLAYLIST_CACHE_PREFIX + playlistId;
+      await this.redis.setex(cacheKey, this.PLAYLIST_CACHE_TTL, JSON.stringify(items));
+      console.log(`💾 Cached playlist: "${playlistId}" (${items.length} items)`);
+    } catch (error) {
+      console.error('Playlist cache failed:', error);
+    }
+  }
+
+  async getCachedPlaylistItems(playlistId: string): Promise<PlaylistCacheItem[] | null> {
+    if (!this.redis) {
+      console.log('❌ Redis not initialized, skipping playlist cache check');
+      return null;
+    }
+
+    try {
+      const cacheKey = this.PLAYLIST_CACHE_PREFIX + playlistId;
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        console.log(`🎯 Playlist cache hit: "${playlistId}"`);
+        return JSON.parse(cached) as PlaylistCacheItem[];
+      }
+      return null;
+    } catch (error) {
+      console.error('Get playlist cache failed:', error);
+      return null;
+    }
+  }
+}
+
+export interface PlaylistCacheItem {
+  videoId: string;
+  title: string;
+  thumbnail: string;
 }
 
 export const cacheService = new CacheService();

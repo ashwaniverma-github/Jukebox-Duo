@@ -82,7 +82,7 @@ export default function RoomPage() {
     const [isPremium, setIsPremium] = useState(false);
     const [isHostPremium, setIsHostPremium] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
-    const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'general'>('general');
+    const [premiumTrigger, setPremiumTrigger] = useState<'queue_limit' | 'sync_limit' | 'search_limit' | 'general'>('general');
     const [error, setError] = useState<string | null>(null);
     const [loadingText, setLoadingText] = useState('Loading room...');
 
@@ -563,7 +563,27 @@ export default function RoomPage() {
                 setSearchError('');
                 try {
                     const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(searchTerm)}`);
-                    if (!res.ok) throw new Error('Search failed');
+                    if (!res.ok) {
+                        // Parse error body to show the right UX
+                        const errData = await res.json().catch(() => ({}));
+                        if (res.status === 429 && errData.upgradeRequired) {
+                            // Free user hit daily search cap → push upgrade modal
+                            setPremiumTrigger('search_limit');
+                            setShowPremiumModal(true);
+                            const hrs = errData.resetInHours ?? 24;
+                            setSearchError(`Daily limit reached. Resets in ${hrs}h — or upgrade for unlimited search + playlist import.`);
+                            setSearchResults([]);
+                            return;
+                        }
+                        if (res.status === 503 && errData.quotaExceeded) {
+                            // All YouTube keys exhausted (affects everyone — premium too)
+                            const hrs = errData.estimatedResetHours ?? 24;
+                            setSearchError(`Search temporarily unavailable (resumes in ~${hrs}h). Tip: use Playlist Import to bulk-add songs instead.`);
+                            setSearchResults([]);
+                            return;
+                        }
+                        throw new Error('Search failed');
+                    }
                     const data = await res.json();
                     setSearchResults(data);
                 } catch (err) {

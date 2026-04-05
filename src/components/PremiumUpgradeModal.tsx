@@ -10,7 +10,7 @@ import { trackPremiumModalOpen, trackPremiumPurchaseClick } from './PostHogProvi
 interface PremiumUpgradeModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    trigger?: 'queue_limit' | 'sync_limit' | 'general'
+    trigger?: 'queue_limit' | 'sync_limit' | 'search_limit' | 'general'
 }
 
 export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }: PremiumUpgradeModalProps) {
@@ -104,6 +104,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                 return "You've reached the free queue limit of 5 songs."
             case 'sync_limit':
                 return "Real-time sync is a premium feature."
+            case 'search_limit':
+                return "You've used your 20 free daily searches. Upgrade for unlimited search + bulk playlist import."
             default:
                 return "Unlock the full Jukebox Duo experience."
         }
