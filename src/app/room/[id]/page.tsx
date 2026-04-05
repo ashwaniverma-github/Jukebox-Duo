@@ -19,7 +19,7 @@ import { Button } from '../../../components/ui/button';
 import { Search, Users, Music, X, Share2, ListMusic, Crown } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { PlaylistImportModal } from '../../../components/PlaylistImportModal';
-import { trackRoomJoin, identifyUser } from '../../../components/PostHogProvider';
+import { trackRoomJoin, identifyUser, trackEvent } from '../../../components/PostHogProvider';
 import { PremiumUpgradeModal } from '../../../components/PremiumUpgradeModal';
 import { PremiumWelcomeModal } from '../../../components/PremiumWelcomeModal';
 import { ManageBillingButton } from '../../../components/ManageBillingButton';
@@ -57,8 +57,10 @@ export default function RoomPage() {
     const [isQueueCollapsed, setIsQueueCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [removingQueueItemId, setRemovingQueueItemId] = useState<string | null>(null);
-    // Debounce timer for search
-    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Tracks last submitted query. Ref is read inside executeSearch to skip duplicate
+    // submits; state drives the "pending submit" vs "no results" empty-state copy.
+    const lastSearchedRef = useRef<string>('');
+    const [submittedQuery, setSubmittedQuery] = useState('');
     const syncAudioRef = useRef<SyncAudioHandle>(null);
     const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string; image?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
@@ -548,63 +550,59 @@ export default function RoomPage() {
     const refreshQueueRef = useRef(refreshQueue);
     useEffect(() => { refreshQueueRef.current = refreshQueue; }, [refreshQueue]);
 
-    // Debounced search function
-    const debouncedSearch = useCallback(
-        (searchTerm: string) => {
-            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-            searchTimeoutRef.current = setTimeout(async () => {
-                if (!searchTerm.trim()) {
+    // Explicit-trigger search: fires only on Enter / button click, not on typing.
+    // Cuts quota burn from intermediate keystrokes (e.g. "arij" → "arijit" → "arijit singh").
+    const executeSearch = useCallback(async (q: string) => {
+        const trimmed = q.trim();
+        if (trimmed.length < 3) return;
+        if (trimmed === lastSearchedRef.current) return; // no-op if unchanged from last submit
+        lastSearchedRef.current = trimmed;
+        setSubmittedQuery(trimmed);
+
+        setSearchLoading(true);
+        setSearchError('');
+        try {
+            const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(trimmed)}`);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                if (res.status === 429 && errData.upgradeRequired) {
+                    // Free user hit daily search cap → push upgrade modal
+                    setPremiumTrigger('search_limit');
+                    setShowPremiumModal(true);
+                    const hrs = errData.resetInHours ?? 24;
+                    setSearchError(`Daily limit reached. Resets in ${hrs}h — or upgrade for unlimited search + playlist import.`);
                     setSearchResults([]);
-                    setSearchLoading(false);
-                    setSearchError('');
                     return;
                 }
-                setSearchLoading(true);
-                setSearchError('');
-                try {
-                    const res = await fetch(`/api/rooms/${roomId}/search?q=${encodeURIComponent(searchTerm)}`);
-                    if (!res.ok) {
-                        // Parse error body to show the right UX
-                        const errData = await res.json().catch(() => ({}));
-                        if (res.status === 429 && errData.upgradeRequired) {
-                            // Free user hit daily search cap → push upgrade modal
-                            setPremiumTrigger('search_limit');
-                            setShowPremiumModal(true);
-                            const hrs = errData.resetInHours ?? 24;
-                            setSearchError(`Daily limit reached. Resets in ${hrs}h — or upgrade for unlimited search + playlist import.`);
-                            setSearchResults([]);
-                            return;
-                        }
-                        if (res.status === 503 && errData.quotaExceeded) {
-                            // All YouTube keys exhausted (affects everyone — premium too)
-                            const hrs = errData.estimatedResetHours ?? 24;
-                            setSearchError(`Search temporarily unavailable (resumes in ~${hrs}h). Tip: use Playlist Import to bulk-add songs instead.`);
-                            setSearchResults([]);
-                            return;
-                        }
-                        throw new Error('Search failed');
-                    }
-                    const data = await res.json();
-                    setSearchResults(data);
-                } catch (err) {
-                    setSearchError('Failed to search. Try again.');
-                    console.error('Search failed:', err);
-                } finally {
-                    setSearchLoading(false);
+                if (res.status === 503 && errData.quotaExceeded) {
+                    // All YouTube keys exhausted (affects everyone — premium too)
+                    const hrs = errData.estimatedResetHours ?? 24;
+                    setSearchError(`Search temporarily unavailable (resumes in ~${hrs}h). Tip: use Playlist Import to bulk-add songs instead.`);
+                    setSearchResults([]);
+                    return;
                 }
-            }, 300);
-        },
-        [roomId]
-    );
-
-    // Effect to trigger search when search term changes
-    useEffect(() => {
-        if (status !== "authenticated") return;
-        if (search.trim()) {
-            setSearchLoading(true);
+                throw new Error('Search failed');
+            }
+            const data = await res.json();
+            setSearchResults(data);
+            trackEvent('search_submitted', { query_length: trimmed.length, result_count: data.length });
+        } catch (err) {
+            setSearchError('Failed to search. Try again.');
+            console.error('Search failed:', err);
+        } finally {
+            setSearchLoading(false);
         }
-        debouncedSearch(search);
-    }, [search, debouncedSearch, status]);
+    }, [roomId]);
+
+    // Clear stale results/errors when the user empties the input (no API call fired).
+    useEffect(() => {
+        if (!search.trim()) {
+            setSearchResults([]);
+            setSearchError('');
+            lastSearchedRef.current = '';
+            setSubmittedQuery('');
+        }
+    }, [search]);
 
     // Add to queue handler (server-first; then sync via socket if enabled)
     const handleAddToQueue = async (item: { videoId: string; title: string; thumbnail?: string }) => {
@@ -1357,22 +1355,38 @@ export default function RoomPage() {
                                         </div>
 
                                         <div className="space-y-3">
-                                            <div className="relative">
+                                            <form
+                                                onSubmit={(e) => { e.preventDefault(); executeSearch(search); }}
+                                                className="relative"
+                                            >
                                                 <input
                                                     type="text"
-                                                    className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 ${theme === 'love' ? 'focus:ring-pink-500' : 'focus:ring-red-500'} focus:border-transparent transition-all text-sm sm:text-base`}
-                                                    placeholder="Search for songs, artists, or albums..."
+                                                    className={`w-full rounded-xl px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 pr-20 sm:pr-24 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 ${theme === 'love' ? 'focus:ring-pink-500' : 'focus:ring-red-500'} focus:border-transparent transition-all text-sm sm:text-base`}
+                                                    placeholder="Type a song or artist, then press Enter..."
                                                     value={search}
                                                     onChange={e => setSearch(e.target.value)}
                                                     autoFocus
                                                 />
                                                 <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
-                                                {searchLoading && (
-                                                    <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                                                <div className="absolute right-2 sm:right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                                                    {searchLoading ? (
                                                         <div className={`w-5 h-5 border-2 rounded-full animate-spin ${currentTheme.searchLoading}`}></div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                    ) : (
+                                                        <button
+                                                            type="submit"
+                                                            disabled={search.trim().length < 3 || searchLoading}
+                                                            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${search.trim().length < 3 || searchLoading
+                                                                ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                                                                : theme === 'love'
+                                                                    ? 'bg-pink-500 text-white hover:bg-pink-600'
+                                                                    : 'bg-red-500 text-white hover:bg-red-600'
+                                                                }`}
+                                                        >
+                                                            Search
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </form>
                                         </div>
 
                                         {searchError && (
@@ -1387,17 +1401,30 @@ export default function RoomPage() {
                                                     <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                                         <Music className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
                                                     </div>
-                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>Start typing to search</p>
-                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for songs, artists, or albums</p>
+                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>What are we listening to?</p>
+                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for any song, artist, or album</p>
                                                 </div>
                                             )}
-                                            {searchResults.length === 0 && !searchLoading && search.trim() && (
+                                            {searchResults.length === 0 && !searchLoading && search.trim() && search.trim() !== submittedQuery && (
                                                 <div className="text-center py-8 sm:py-12">
                                                     <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                                         <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
                                                     </div>
-                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>No results found</p>
-                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Try a different search term</p>
+                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>
+                                                        Press Enter to search for &ldquo;{search.trim()}&rdquo;
+                                                    </p>
+                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Or click the Search button</p>
+                                                </div>
+                                            )}
+                                            {searchResults.length === 0 && !searchLoading && search.trim() === submittedQuery && submittedQuery !== '' && (
+                                                <div className="text-center py-8 sm:py-12">
+                                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                                    </div>
+                                                    <p className={`${currentTheme.text} font-medium text-sm sm:text-base`}>
+                                                        No results for &ldquo;{submittedQuery}&rdquo;
+                                                    </p>
+                                                    <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Try different keywords or check spelling</p>
                                                 </div>
                                             )}
                                             <div className="space-y-2 sm:space-y-3">
