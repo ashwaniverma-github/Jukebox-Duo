@@ -48,7 +48,9 @@ class CacheService {
   private readonly CACHE_TTL = 30 * 24 * 60 * 60; // 30 days — max allowed by YouTube ToS
   private readonly SEARCH_CACHE_PREFIX = 'youtube_search:';
   private readonly PLAYLIST_CACHE_PREFIX = 'youtube_playlist:';
-  private readonly PLAYLIST_CACHE_TTL = 30 * 24 * 60 * 60; // 30 days — playlists barely change
+  private readonly PLAYLIST_CACHE_TTL = 30 * 24 * 60 * 60; // 30 days - playlists barely change
+  private readonly SUGGESTION_INDEX_KEY = 'suggestion_index';
+  private readonly SUGGESTION_INDEX_MAX = 2000; // cap size, LRU-evict oldest beyond this
 
   constructor() {
     console.log('🔍 CacheService constructor - checking env vars:');
@@ -131,9 +133,40 @@ class CacheService {
       };
 
       await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(cachedData));
+      // Register canonical in the suggestion index (LRU by timestamp score)
+      const canonical = this.normalizeQuery(query);
+      await this.addToSuggestionIndex(canonical);
       console.log(`💾 Cached: "${query}"`);
     } catch (error) {
       console.error('Cache failed:', error);
+    }
+  }
+
+  async addToSuggestionIndex(canonical: string): Promise<void> {
+    if (!this.redis || !canonical) return;
+    try {
+      await this.redis.zadd(this.SUGGESTION_INDEX_KEY, Date.now(), canonical);
+      // Trim to cap: remove lowest-scored (oldest) entries so size <= MAX
+      await this.redis.zremrangebyrank(this.SUGGESTION_INDEX_KEY, 0, -(this.SUGGESTION_INDEX_MAX + 1));
+    } catch (error) {
+      console.error('suggestion_index add failed:', error);
+    }
+  }
+
+  async getSuggestions(prefix: string, limit = 10): Promise<string[]> {
+    if (!this.redis || !prefix) return [];
+    try {
+      // ZRANGEBYLEX finds all members starting with prefix (alphabetic range query)
+      const raw = await this.redis.zrangebylex(
+        this.SUGGESTION_INDEX_KEY,
+        `[${prefix}`,
+        `[${prefix}\xff`,
+        'LIMIT', 0, limit
+      );
+      return raw;
+    } catch (error) {
+      console.error('suggestion_index query failed:', error);
+      return [];
     }
   }
 

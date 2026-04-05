@@ -61,6 +61,8 @@ export default function RoomPage() {
     // submits; state drives the "pending submit" vs "no results" empty-state copy.
     const lastSearchedRef = useRef<string>('');
     const [submittedQuery, setSubmittedQuery] = useState('');
+    const [suggestions, setSuggestions] = useState<{ label: string; source: 'library' | 'cached' }[]>([]);
+    const suggestionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const syncAudioRef = useRef<SyncAudioHandle>(null);
     const [roomDetails, setRoomDetails] = useState<{ name?: string; host?: { id?: string; name?: string; email?: string; image?: string } } | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
@@ -585,6 +587,7 @@ export default function RoomPage() {
             }
             const data = await res.json();
             setSearchResults(data);
+            setSuggestions([]);
             trackEvent('search_submitted', { query_length: trimmed.length, result_count: data.length });
         } catch (err) {
             setSearchError('Failed to search. Try again.');
@@ -601,8 +604,37 @@ export default function RoomPage() {
             setSearchError('');
             lastSearchedRef.current = '';
             setSubmittedQuery('');
+            setSuggestions([]);
         }
     }, [search]);
+
+    // Debounced zero-API suggestions: fetches from local library + Redis cached-query index.
+    // Never touches YouTube. Guides users toward queries we can serve for free.
+    useEffect(() => {
+        if (suggestionTimeoutRef.current) clearTimeout(suggestionTimeoutRef.current);
+        const q = search.trim();
+        if (q.length < 2) { setSuggestions([]); return; }
+        // Don't show suggestions when input matches the query we just searched
+        if (q === lastSearchedRef.current) { setSuggestions([]); return; }
+
+        suggestionTimeoutRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/suggestions?q=${encodeURIComponent(q)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                setSuggestions(data.suggestions || []);
+            } catch {
+                // Suggestions are non-critical - silent fail
+            }
+        }, 150);
+    }, [search]);
+
+    const handleSuggestionClick = (label: string, source: 'library' | 'cached') => {
+        setSearch(label);
+        setSuggestions([]);
+        trackEvent('suggestion_clicked', { source, query_length: label.length });
+        executeSearch(label);
+    };
 
     // Add to queue handler (server-first; then sync via socket if enabled)
     const handleAddToQueue = async (item: { videoId: string; title: string; thumbnail?: string }) => {
@@ -1386,6 +1418,28 @@ export default function RoomPage() {
                                                         </button>
                                                     )}
                                                 </div>
+                                                {suggestions.length > 0 && !searchLoading && searchResults.length === 0 && (
+                                                    <div className={`absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-xl border ${theme === 'love' ? 'border-pink-500/30' : 'border-red-500/30'} rounded-xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto custom-scrollbar`}>
+                                                        {suggestions.map((s, i) => (
+                                                            <button
+                                                                key={`${s.source}-${i}`}
+                                                                type="button"
+                                                                onClick={() => handleSuggestionClick(s.label, s.source)}
+                                                                className={`w-full text-left px-3 py-2.5 text-sm text-white flex items-center gap-2.5 transition-all border-b border-white/5 last:border-b-0 ${theme === 'love' ? 'hover:bg-pink-500/20' : 'hover:bg-red-500/20'}`}
+                                                            >
+                                                                {s.source === 'library' ? (
+                                                                    <Music className={`w-3.5 h-3.5 flex-shrink-0 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
+                                                                ) : (
+                                                                    <Search className="w-3.5 h-3.5 opacity-50 flex-shrink-0" />
+                                                                )}
+                                                                <span className="truncate flex-1">{s.label}</span>
+                                                                {s.source === 'cached' && (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex-shrink-0 uppercase tracking-wider font-semibold">cached</span>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </form>
                                         </div>
 
@@ -1395,8 +1449,8 @@ export default function RoomPage() {
                                             </div>
                                         )}
 
-                                        <div className="max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar">
-                                            {searchResults.length === 0 && !searchLoading && !search.trim() && (
+                                        <div className={`${suggestions.length > 0 ? 'min-h-[280px]' : ''} max-h-60 sm:max-h-96 overflow-y-auto custom-scrollbar`}>
+                                            {searchResults.length === 0 && !searchLoading && !search.trim() && suggestions.length === 0 && (
                                                 <div className="text-center py-8 sm:py-12">
                                                     <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                                         <Music className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
@@ -1405,7 +1459,7 @@ export default function RoomPage() {
                                                     <p className={`text-xs sm:text-sm ${currentTheme.text} mt-1`}>Search for any song, artist, or album</p>
                                                 </div>
                                             )}
-                                            {searchResults.length === 0 && !searchLoading && search.trim() && search.trim() !== submittedQuery && (
+                                            {searchResults.length === 0 && !searchLoading && search.trim() && search.trim() !== submittedQuery && suggestions.length === 0 && (
                                                 <div className="text-center py-8 sm:py-12">
                                                     <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                                         <Search className={`w-6 h-6 sm:w-8 sm:h-8 ${theme === 'love' ? 'text-pink-300' : 'text-red-300'}`} />
