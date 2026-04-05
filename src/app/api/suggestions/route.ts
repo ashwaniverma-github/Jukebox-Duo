@@ -3,11 +3,12 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth/[...nextauth]/options'
-import cacheService, { canonicalizeQuery } from '@/lib/cache'
+import cacheService from '@/lib/cache'
 import { songsDatabase } from '@/lib/songs-data'
 
 type Suggestion = { label: string; source: 'library' | 'cached' }
 const MAX_SUGGESTIONS = 8
+const MAX_CACHED = 4  // reserve slots for cached canonicals so they aren't crowded out by library hits
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
@@ -21,30 +22,43 @@ export async function GET(req: Request) {
   const suggestions: Suggestion[] = []
   const seen = new Set<string>()
 
-  // 1) Local library: substring match on title OR artist, ranked by views
-  const libHits = songsDatabase
-    .filter(s => s.title.toLowerCase().includes(qRaw) || s.artist.toLowerCase().includes(qRaw))
-    .sort((a, b) => b.views - a.views)
-    .slice(0, MAX_SUGGESTIONS)
-  for (const s of libHits) {
-    const label = `${s.title} - ${s.artist}`
-    const key = label.toLowerCase()
-    if (!seen.has(key)) {
-      seen.add(key)
-      suggestions.push({ label, source: 'library' })
+  // Kick off Redis cached lookup in parallel with library match. Race it against a short
+  // timeout so Upstash cold-starts or transient latency don't block the suggestions response.
+  // We prefix-match on the user's last typed token (the word they're actively completing)
+  // because canonicals are alphabetized internally - prefix-matching the full raw input
+  // would miss entries whose first alphabetic token doesn't start with what the user typed.
+  const lastToken = qRaw.split(/\s+/).filter(Boolean).pop() || ''
+  const CACHED_TIMEOUT_MS = 600
+  const cachedPromise: Promise<string[]> = lastToken.length >= 2
+    ? Promise.race([
+        cacheService.getSuggestions(lastToken, MAX_CACHED),
+        new Promise<string[]>(resolve => setTimeout(() => resolve([]), CACHED_TIMEOUT_MS))
+      ])
+    : Promise.resolve([])
+
+  // 1) Cached canonicals (up to MAX_CACHED slots) - awaited with timeout guard
+  const cached = await cachedPromise
+  for (const c of cached) {
+    const cKey = c.toLowerCase()
+    if (!seen.has(cKey)) {
+      seen.add(cKey)
+      suggestions.push({ label: c, source: 'cached' })
     }
   }
 
-  // 2) Cached canonical queries - prefix match on canonicalized input
-  const canonical = canonicalizeQuery(qRaw)
-  if (canonical && suggestions.length < MAX_SUGGESTIONS) {
-    const cached = await cacheService.getSuggestions(canonical, MAX_SUGGESTIONS)
-    for (const c of cached) {
-      if (suggestions.length >= MAX_SUGGESTIONS) break
-      const cKey = c.toLowerCase()
-      if (!seen.has(cKey)) {
-        seen.add(cKey)
-        suggestions.push({ label: c, source: 'cached' })
+  // 2) Local library: substring match on title OR artist, ranked by views - fills remaining slots
+  const remaining = MAX_SUGGESTIONS - suggestions.length
+  if (remaining > 0) {
+    const libHits = songsDatabase
+      .filter(s => s.title.toLowerCase().includes(qRaw) || s.artist.toLowerCase().includes(qRaw))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, remaining)
+    for (const s of libHits) {
+      const label = `${s.title} - ${s.artist}`
+      const key = label.toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        suggestions.push({ label, source: 'library' })
       }
     }
   }

@@ -149,11 +149,25 @@ class CacheService {
   async addToSuggestionIndex(canonical: string): Promise<void> {
     if (!this.redis || !canonical) return;
     try {
-      // Insert/refresh into both structures.
+      // Index by each token so a prefix match on ANY word in the canonical surfaces it.
+      // Without this, "selena gomez rare" canonicalizes to "gomez rare selena" and typing
+      // "sel" would never find it (only "gom" or "rar" would). Members use the format
+      // `<token>\x00<canonical>` so we can dedupe by canonical on read.
+      const tokens = canonical.split(' ').filter(Boolean);
+      if (tokens.length === 0) return;
+      const members = tokens.map(t => `${t}\x00${canonical}`);
+
+      const now = Date.now();
+      const lexArgs: (string | number)[] = [];
+      const lruArgs: (string | number)[] = [];
+      for (const m of members) {
+        lexArgs.push(0, m);
+        lruArgs.push(now, m);
+      }
       // LEX set uses uniform score=0 so ZRANGEBYLEX returns reliable prefix ranges.
       // LRU set uses timestamp score so we can evict the oldest entries when over cap.
-      await this.redis.zadd(this.SUGGESTION_LEX_KEY, 0, canonical);
-      await this.redis.zadd(this.SUGGESTION_LRU_KEY, Date.now(), canonical);
+      await this.redis.zadd(this.SUGGESTION_LEX_KEY, ...lexArgs);
+      await this.redis.zadd(this.SUGGESTION_LRU_KEY, ...lruArgs);
 
       // If LRU set exceeds the cap, evict the oldest entries from both structures.
       const size = await this.redis.zcard(this.SUGGESTION_LRU_KEY);
@@ -174,13 +188,27 @@ class CacheService {
     if (!this.redis || !prefix) return [];
     try {
       // ZRANGEBYLEX returns reliable results because all LEX entries have score=0.
+      // Fetch extra since multiple tokens may map back to the same canonical.
       const raw = await this.redis.zrangebylex(
         this.SUGGESTION_LEX_KEY,
         `[${prefix}`,
         `[${prefix}\xff`,
-        'LIMIT', 0, limit
+        'LIMIT', 0, limit * 4
       );
-      return raw;
+      // Extract canonical (after \x00 separator), dedupe, cap at limit.
+      const seen = new Set<string>();
+      const result: string[] = [];
+      for (const member of raw) {
+        const sep = member.indexOf('\x00');
+        if (sep < 0) continue;
+        const canonical = member.slice(sep + 1);
+        if (!seen.has(canonical)) {
+          seen.add(canonical);
+          result.push(canonical);
+          if (result.length >= limit) break;
+        }
+      }
+      return result;
     } catch (error) {
       console.error('suggestion_index query failed:', error);
       return [];
@@ -202,6 +230,10 @@ class CacheService {
         const parsed: CachedSearchResult = JSON.parse(cachedData)
         if (Date.now() < parsed.expiresAt) {
           console.log(`🎯 Cache hit (with meta): "${query}"`)
+          // Refresh suggestion index on hits so LRU tracks real usage and any entries
+          // still in the old pre-token-index format get re-written with the current format.
+          // Fire-and-forget - don't block the cache response.
+          this.addToSuggestionIndex(this.normalizeQuery(query)).catch(() => {})
           return { results: parsed.results, timestamp: parsed.timestamp, expiresAt: parsed.expiresAt }
         }
         await this.redis.del(cacheKey)
