@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   const CACHED_TIMEOUT_MS = 600
   const cachedPromise: Promise<string[]> = lastToken.length >= 2
     ? Promise.race([
-        cacheService.getSuggestions(lastToken, MAX_CACHED),
+        cacheService.getSuggestions(lastToken, MAX_CACHED).catch(() => []),
         new Promise<string[]>(resolve => setTimeout(() => resolve([]), CACHED_TIMEOUT_MS))
       ])
     : Promise.resolve([])
