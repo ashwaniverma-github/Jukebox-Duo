@@ -570,7 +570,7 @@ export default function RoomPage() {
                     setPremiumTrigger('search_limit');
                     setShowPremiumModal(true);
                     const hrs = errData.resetInHours ?? 24;
-                    setSearchError(`Daily limit reached. Resets in ${hrs}h — or upgrade for unlimited search + playlist import.`);
+                    setSearchError(`Daily limit reached. Resets in ${hrs}h - or upgrade for unlimited search + playlist import.`);
                     setSearchResults([]);
                     return;
                 }
