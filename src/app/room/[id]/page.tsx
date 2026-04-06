@@ -441,15 +441,15 @@ export default function RoomPage() {
         socket.on('video-changed', onVideoChanged);
 
         // --- Queue updated listener ---
-        const onQueueUpdated = async () => {
-            // refreshQueue already has pendingChangeRef + localIndexChangeRef guards,
-            // but skip the call entirely if a local change is in-flight to avoid any fetch race
-            if (pendingChangeRef.current) {
-                console.log('[Socket] queue-updated ignored (pending local change)');
-                return;
-            }
-            console.log('[Socket] received queue-updated; refreshing queue');
-            await refreshQueueRef.current();
+        // Receives the full item from the sender and appends directly (no GET re-fetch needed).
+        // The socket server broadcasts the item object directly (see socketService.ts:358).
+        const onQueueUpdated = (item: { id: string; videoId: string; title: string; thumbnail?: string; order: number }) => {
+            if (!item?.id) return;
+            console.log('[Socket] received queue-updated; appending item directly:', item.title);
+            setQueue(prev => {
+                if (prev.some(q => q.id === item.id)) return prev; // dedup guard
+                return [...prev, item];
+            });
         };
         socket.on('queue-updated', onQueueUpdated);
 
@@ -642,9 +642,29 @@ export default function RoomPage() {
         executeSearch(label);
     };
 
-    // Add to queue handler (server-first; then sync via socket if enabled)
+    // Add to queue handler (optimistic update; then reconcile with server response)
     const handleAddToQueue = async (item: { videoId: string; title: string; thumbnail?: string }) => {
         setModalOpen(false);
+
+        // Capture state before optimistic add
+        const wasEmpty = queueRef.current.length === 0;
+        const atFreeLimit = !isPremium && queueRef.current.length >= 5;
+
+        // Optimistic update: add temp item immediately (skip if free user at queue limit
+        // to avoid a brief flash of 6 items before the 403 removes it)
+        const tempId = `temp-${Date.now()}`;
+        const tempItem = {
+            id: tempId, videoId: item.videoId, title: item.title,
+            thumbnail: item.thumbnail ?? '', order: (queueRef.current.at(-1)?.order ?? -1) + 1
+        };
+        if (!atFreeLimit) {
+            setQueue(prev => [...prev, tempItem]);
+            if (wasEmpty) {
+                setCurrentQueueIndex(0);
+                setVideoId(item.videoId);
+                setCurrentSong(tempItem);
+            }
+        }
 
         try {
             const res = await fetch(`/api/rooms/${roomId}/queue`, {
@@ -661,6 +681,9 @@ export default function RoomPage() {
             if (res.status === 403) {
                 const errorData = await res.json();
                 if (errorData.isPremiumRequired) {
+                    // Revert optimistic add (no-op if atFreeLimit since we skipped it)
+                    setQueue(prev => prev.filter(q => q.id !== tempId));
+                    if (wasEmpty) { setCurrentQueueIndex(-1); setCurrentSong(null); setVideoId(''); }
                     setPremiumTrigger('queue_limit');
                     setShowPremiumModal(true);
                     return;
@@ -668,32 +691,34 @@ export default function RoomPage() {
             }
 
             if (!res.ok) throw new Error('Add failed');
-            // Use the POST response directly instead of re-fetching
+
+            // Reconcile: replace temp item with real server item
             const newItem = await res.json();
-            setQueue(prev => [...prev, newItem]);
-            // If this is the first song, auto-select it
-            if (queueRef.current.length === 0) {
-                setCurrentQueueIndex(0);
-                setVideoId(newItem.videoId);
-                setCurrentSong(newItem);
+            if (!atFreeLimit) {
+                setQueue(prev => prev.map(q => q.id === tempId ? newItem : q));
+                if (wasEmpty) setCurrentSong(newItem);
+            } else {
+                // Was server-first (skipped optimistic), add now
+                setQueue(prev => [...prev, newItem]);
+                if (wasEmpty) {
+                    setCurrentQueueIndex(0);
+                    setVideoId(newItem.videoId);
+                    setCurrentSong(newItem);
+                }
             }
 
-            // Only emit socket events if sync is enabled
+            // Emit full item via socket so other clients can append directly (no GET needed)
             if (isSyncEnabled) {
                 const socket = getSocket();
                 if (socket) {
-                    console.log('[Socket] emitting queue-updated', { roomId, item });
-                    socket.emit('queue-updated', {
-                        roomId,
-                        item: {
-                            videoId: item.videoId,
-                            title: item.title,
-                            thumbnail: item.thumbnail
-                        }
-                    });
+                    console.log('[Socket] emitting queue-updated', { roomId, item: newItem });
+                    socket.emit('queue-updated', { roomId, item: newItem });
                 }
             }
         } catch {
+            // Revert optimistic add on network/server error
+            setQueue(prev => prev.filter(q => q.id !== tempId));
+            if (wasEmpty) { setCurrentQueueIndex(-1); setCurrentSong(null); setVideoId(''); }
             console.error('Failed to add to queue');
         }
     };
