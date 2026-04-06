@@ -273,6 +273,134 @@ export const songsDatabase: SongData[] = [
     { title: "Born This Way", artist: "Lady Gaga", videoId: "wV1FrqwZyKw", views: 500000000, year: 2011 },
     { title: "Bad Romance", artist: "Lady Gaga", videoId: "qrO4YZeyl0I", views: 1600000000, year: 2009 },
     { title: "Poker Face", artist: "Lady Gaga", videoId: "bESGLojNYSo", views: 900000000, year: 2008 },
+
+    // === TAYLOR SWIFT ===
+    { title: "Shake It Off", artist: "Taylor Swift", videoId: "nfWlot6h_JM", views: 3200000000, year: 2014 },
+    { title: "Blank Space", artist: "Taylor Swift", videoId: "e-ORhEE9VVg", views: 3200000000, year: 2014 },
+    { title: "Look What You Made Me Do", artist: "Taylor Swift", videoId: "3tmd-ClpJxA", views: 1400000000, year: 2017 },
+    { title: "You Belong With Me", artist: "Taylor Swift", videoId: "VuNIsY6JdUw", views: 1100000000, year: 2009 },
+    { title: "I Knew You Were Trouble", artist: "Taylor Swift", videoId: "vNoKguSdy4Y", views: 1200000000, year: 2012 },
+    { title: "Bad Blood", artist: "Taylor Swift ft. Kendrick Lamar", videoId: "QcIy9NiNbmo", views: 1400000000, year: 2015 },
+    { title: "We Are Never Ever Getting Back Together", artist: "Taylor Swift", videoId: "WA4iX5D9Z64", views: 500000000, year: 2012 },
+    { title: "Style", artist: "Taylor Swift", videoId: "nfO3-FYzjcY", views: 400000000, year: 2015 },
+    { title: "Cardigan", artist: "Taylor Swift", videoId: "K-a8s8OLBSE", views: 400000000, year: 2020 },
+    { title: "Willow", artist: "Taylor Swift", videoId: "RsEZmictANA", views: 400000000, year: 2020 },
+    { title: "ME!", artist: "Taylor Swift ft. Brendon Urie", videoId: "FuXNumBwDOM", views: 400000000, year: 2019 },
+
+    // === MORE ED SHEERAN ===
+    { title: "Perfect", artist: "Ed Sheeran", videoId: "2Vv-BfVoq4g", views: 3000000000, year: 2017 },
+    { title: "Thinking Out Loud", artist: "Ed Sheeran", videoId: "lp-EO5I60KA", views: 3500000000, year: 2014 },
+    { title: "Photograph", artist: "Ed Sheeran", videoId: "nSDgHBa_-kI", views: 600000000, year: 2015 },
+    { title: "Bad Habits", artist: "Ed Sheeran", videoId: "orJSJGHjBLI", views: 600000000, year: 2021 },
+    { title: "Lego House", artist: "Ed Sheeran", videoId: "c4BLVznuWnU", views: 500000000, year: 2011 },
+    { title: "A-Team", artist: "Ed Sheeran", videoId: "RIM5uslvP7U", views: 400000000, year: 2011 },
+    { title: "Castle on the Hill", artist: "Ed Sheeran", videoId: "u9B7AT5SL-I", views: 700000000, year: 2017 },
+    { title: "Shivers", artist: "Ed Sheeran", videoId: "Il0S8BoucSA", views: 400000000, year: 2021 },
+
+    // === MORE BOLLYWOOD / INDIAN ===
+    { title: "Channa Mereya", artist: "Arijit Singh", videoId: "fjv7_-QjXyA", views: 400000000, year: 2016 },
+    { title: "Khairiyat", artist: "Arijit Singh", videoId: "eSyKHpxTqtc", views: 500000000, year: 2019 },
+    { title: "Teri Mitti", artist: "B Praak", videoId: "3Mgu_b3xFRw", views: 400000000, year: 2019 },
+    { title: "Galliyan", artist: "Ankit Tiwari", videoId: "VCmWAlyJBBo", views: 600000000, year: 2014 },
+    { title: "Enna Sona", artist: "Arijit Singh", videoId: "6c2Z0K-B-Po", views: 400000000, year: 2016 },
+    { title: "Kala Chashma", artist: "Badshah ft. Neha Kakkar", videoId: "3M2RNOnGjM8", views: 700000000, year: 2016 },
+    { title: "Paani Paani", artist: "Badshah ft. Jacqueline Fernandez", videoId: "Mzjm3k3Z-gI", views: 500000000, year: 2021 },
+    { title: "Brown Munde", artist: "AP Dhillon ft. Gurinder Gill", videoId: "z4tNBczRDa4", views: 500000000, year: 2020 },
+
+    // === PUNJABI / BHANGRA ===
+    { title: "High Rated Gabru", artist: "Guru Randhawa", videoId: "PEGccV-NOm8", views: 600000000, year: 2017 },
+    { title: "Suit Suit", artist: "Guru Randhawa ft. Arjun", videoId: "7DzLZhGzheU", views: 700000000, year: 2017 },
+    { title: "Lahore", artist: "Guru Randhawa", videoId: "YxuKOK_OHPU", views: 700000000, year: 2017 },
+    { title: "Amplifier", artist: "Imran Khan", videoId: "8U8RaVAjKmE", views: 800000000, year: 2009 },
+    { title: "Satisfya", artist: "Imran Khan", videoId: "OtqXZcBG_vU", views: 300000000, year: 2018 },
+
+    // === MICHAEL JACKSON ===
+    { title: "Thriller", artist: "Michael Jackson", videoId: "sOnqjkJTMaA", views: 900000000, year: 1983 },
+    { title: "Billie Jean", artist: "Michael Jackson", videoId: "Zi_XLOBDo_Y", views: 1500000000, year: 1982 },
+    { title: "Beat It", artist: "Michael Jackson", videoId: "oRdxUFDoQe0", views: 800000000, year: 1983 },
+    { title: "Black or White", artist: "Michael Jackson", videoId: "F2AitTPI5U0", views: 600000000, year: 1991 },
+    { title: "Smooth Criminal", artist: "Michael Jackson", videoId: "h_D3VFfhvs4", views: 600000000, year: 1988 },
+
+    // === MORE CLASSIC / ROCK ===
+    { title: "I Will Always Love You", artist: "Whitney Houston", videoId: "3JWTaaS7LdU", views: 900000000, year: 1992 },
+    { title: "I Wanna Dance with Somebody", artist: "Whitney Houston", videoId: "eH7ul7I6n2o", views: 800000000, year: 1987 },
+    { title: "Careless Whisper", artist: "George Michael", videoId: "izGwDsrQ1eQ", views: 600000000, year: 1984 },
+    { title: "Dancing Queen", artist: "ABBA", videoId: "xFrGuyw1V8s", views: 700000000, year: 1976 },
+    { title: "Boulevard of Broken Dreams", artist: "Green Day", videoId: "Yk15mMFMr_4", views: 800000000, year: 2004 },
+    { title: "Wake Me Up When September Ends", artist: "Green Day", videoId: "NU9nuF4FX0k", views: 700000000, year: 2005 },
+    { title: "Californication", artist: "Red Hot Chili Peppers", videoId: "YlUKcNNmywk", views: 400000000, year: 1999 },
+    { title: "Thunderstruck", artist: "AC/DC", videoId: "v2AC41dglnM", views: 900000000, year: 1990 },
+    { title: "Nothing Else Matters", artist: "Metallica", videoId: "tAGnKpE4NCI", views: 600000000, year: 1991 },
+    { title: "Don't Stop Me Now", artist: "Queen", videoId: "HgzGwKwLmgM", views: 700000000, year: 1978 },
+    { title: "We Are the Champions", artist: "Queen", videoId: "04854XqcfCY", views: 400000000, year: 1977 },
+    { title: "Don't Stop Believin'", artist: "Journey", videoId: "VcjzHMhBtf0", views: 600000000, year: 1981 },
+    { title: "Come As You Are", artist: "Nirvana", videoId: "vabnZ9-ex7o", views: 600000000, year: 1991 },
+
+    // === 90s / 2000s POP ===
+    { title: "...Baby One More Time", artist: "Britney Spears", videoId: "C-u5WLJ9Tjg", views: 600000000, year: 1998 },
+    { title: "Toxic", artist: "Britney Spears", videoId: "LOZuxwVk7TU", views: 700000000, year: 2003 },
+    { title: "Oops!...I Did It Again", artist: "Britney Spears", videoId: "CJn_jC4FNDo", views: 800000000, year: 2000 },
+    { title: "I Want It That Way", artist: "Backstreet Boys", videoId: "4fndeDfaWCg", views: 800000000, year: 1999 },
+    { title: "Bye Bye Bye", artist: "NSYNC", videoId: "Eo-KmOd2i9Q", views: 700000000, year: 2000 },
+    { title: "Wannabe", artist: "Spice Girls", videoId: "gJLIiF15wGQ", views: 700000000, year: 1996 },
+    { title: "Beautiful", artist: "Christina Aguilera", videoId: "eAfyFTzZDMM", views: 400000000, year: 2002 },
+    { title: "Can't Stop the Feeling!", artist: "Justin Timberlake", videoId: "ru0K8uLcF7w", views: 1500000000, year: 2016 },
+    { title: "Livin' La Vida Loca", artist: "Ricky Martin", videoId: "p47fEXGabaY", views: 500000000, year: 1999 },
+    { title: "All of Me", artist: "John Legend", videoId: "450p7goxZqg", views: 2500000000, year: 2013 },
+    { title: "Wrecking Ball", artist: "Miley Cyrus", videoId: "MySnIjLkR-U", views: 1300000000, year: 2013 },
+
+    // === MORE HIP-HOP / RAP ===
+    { title: "Hotline Bling", artist: "Drake", videoId: "uxpDa-c-4Mc", views: 1900000000, year: 2015 },
+    { title: "One Dance", artist: "Drake ft. WizKid & Kyla", videoId: "kp8mzFGwBrI", views: 1500000000, year: 2016 },
+    { title: "In My Feelings", artist: "Drake", videoId: "DRS_PpOrUZ4", views: 1100000000, year: 2018 },
+    { title: "Without Me", artist: "Eminem", videoId: "YVkUvmDQ3HY", views: 2200000000, year: 2002 },
+    { title: "Sunflower", artist: "Post Malone & Swae Lee", videoId: "ApXoWvfEYVU", views: 3700000000, year: 2018 },
+    { title: "Better Now", artist: "Post Malone", videoId: "UYwF-jdcVjY", views: 1000000000, year: 2018 },
+    { title: "I Like It", artist: "Cardi B ft. Bad Bunny & J Balvin", videoId: "E3oMQe14eTQ", views: 1300000000, year: 2018 },
+    { title: "Goosebumps", artist: "Travis Scott ft. Kendrick Lamar", videoId: "Chm5UNFyoXY", views: 800000000, year: 2016 },
+    { title: "Young Dumb & Broke", artist: "Khalid", videoId: "MrSPn0DFXpM", views: 1100000000, year: 2017 },
+    { title: "Stay", artist: "The Kid LAROI & Justin Bieber", videoId: "kTJczUoc26U", views: 1400000000, year: 2021 },
+
+    // === MORE LATIN ===
+    { title: "Mi Gente", artist: "J Balvin & Willy William", videoId: "wnJ6LuUFpMo", views: 1700000000, year: 2017 },
+    { title: "Dakiti", artist: "Bad Bunny & Jhay Cortez", videoId: "joO7KBY1oq4", views: 1600000000, year: 2020 },
+    { title: "Me Porto Bonito", artist: "Bad Bunny ft. Chencho Corleone", videoId: "fAHJpz6l8kQ", views: 700000000, year: 2022 },
+    { title: "Con Calma", artist: "Daddy Yankee & Snow", videoId: "8Q_FpAaMQms", views: 800000000, year: 2019 },
+    { title: "TUSA", artist: "KAROL G & Nicki Minaj", videoId: "BioerZEZU-Q", views: 1300000000, year: 2019 },
+    { title: "Taki Taki", artist: "DJ Snake ft. Selena Gomez & Ozuna", videoId: "ixkoVwKQaJg", views: 1500000000, year: 2018 },
+
+    // === MORE EDM / ELECTRONIC ===
+    { title: "Faded", artist: "Alan Walker", videoId: "60ItHLz5WEA", views: 3600000000, year: 2015 },
+    { title: "Alone", artist: "Alan Walker", videoId: "1-xGerv5FOk", views: 900000000, year: 2016 },
+    { title: "Lean On", artist: "Major Lazer & DJ Snake ft. MØ", videoId: "YqeW9_5kURI", views: 1400000000, year: 2015 },
+    { title: "Cold Water", artist: "Major Lazer ft. Justin Bieber & MØ", videoId: "rgnhJBkIxs8", views: 700000000, year: 2016 },
+    { title: "Human", artist: "Rag'n'Bone Man", videoId: "L3wKzyIN1yk", views: 800000000, year: 2016 },
+
+    // === COUNTRY ===
+    { title: "7 Summers", artist: "Morgan Wallen", videoId: "H7_Kn00Ygqw", views: 500000000, year: 2020 },
+    { title: "Beautiful Crazy", artist: "Luke Combs", videoId: "VzN3M5b-D1U", views: 400000000, year: 2017 },
+    { title: "What Ifs", artist: "Kane Brown ft. Lauren Alaina", videoId: "nL9rGoUBBD0", views: 500000000, year: 2017 },
+    { title: "Cruise", artist: "Florida Georgia Line", videoId: "CfONK3qpQ_o", views: 600000000, year: 2012 },
+    { title: "Meant to Be", artist: "Bebe Rexha ft. Florida Georgia Line", videoId: "PNd7sFB0yxE", views: 700000000, year: 2017 },
+
+    // === MORE POP / R&B ===
+    { title: "Hello", artist: "Adele", videoId: "YQHsXMglC9A", views: 2800000000, year: 2015 },
+    { title: "Rolling in the Deep", artist: "Adele", videoId: "rYEDA3JcQqw", views: 2200000000, year: 2010 },
+    { title: "Someone Like You", artist: "Adele", videoId: "hLQl3WQQoQ0", views: 2500000000, year: 2011 },
+    { title: "Skyfall", artist: "Adele", videoId: "DeumyOVTZmc", views: 1200000000, year: 2012 },
+    { title: "Easy On Me", artist: "Adele", videoId: "4N1iwQxiHrs", views: 500000000, year: 2021 },
+    { title: "Stay With Me", artist: "Sam Smith", videoId: "pB-5XG-DbAA", views: 600000000, year: 2014 },
+    { title: "Adore You", artist: "Harry Styles", videoId: "VF-r5TtlT9w", views: 500000000, year: 2019 },
+    { title: "Say So", artist: "Doja Cat", videoId: "pok8H_KF9jo", views: 700000000, year: 2019 },
+    { title: "Kiss Me More", artist: "Doja Cat ft. SZA", videoId: "0EVVKs6NQak", views: 500000000, year: 2021 },
+    { title: "Truth Hurts", artist: "Lizzo", videoId: "CmKlHnmYgZ0", views: 700000000, year: 2019 },
+    { title: "Leave the Door Open", artist: "Silk Sonic", videoId: "xa9oVs4tpFg", views: 600000000, year: 2021 },
+    { title: "Fake Love", artist: "BTS", videoId: "7C2z4GqqS5E", views: 1500000000, year: 2018 },
+    { title: "Permission to Dance", artist: "BTS", videoId: "CuklIb9d3fI", views: 500000000, year: 2021 },
+    { title: "WHAT IS LOVE?", artist: "TWICE", videoId: "HGK4nugObd4", views: 500000000, year: 2018 },
+    { title: "TT", artist: "TWICE", videoId: "iqH8d9GuFJ4", views: 800000000, year: 2016 },
+    { title: "Next Level", artist: "aespa", videoId: "4TWR90KJl84", views: 600000000, year: 2021 },
+    { title: "Monster", artist: "EXO", videoId: "KSH-FVhH5qw", views: 400000000, year: 2016 },
 ];
 
 // Remove duplicates by videoId (keep first occurrence)
