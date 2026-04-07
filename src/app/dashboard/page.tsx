@@ -250,10 +250,10 @@ export default function Dashboard() {
                   <Zap className="w-5 h-5 text-red-500" />
                   <span className="text-sm">Low Latency</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-400">
+                {/* <div className="flex items-center gap-2 text-gray-400">
                   <Heart className="w-5 h-5 text-red-400" />
                   <span className="text-sm">Best for Duo</span>
-                </div>
+                </div> */}
               </div>
 
               {/* Create Room Form */}
