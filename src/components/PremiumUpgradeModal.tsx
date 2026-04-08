@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { Loader2, Crown, Check, Sparkles, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
+import { Loader2, Crown, Check, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { trackPremiumModalOpen, trackPremiumPurchaseClick } from './PostHogProvider'
 
@@ -115,7 +115,6 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
         { icon: Users, label: "Real-time Sync", desc: "Listen together with friends (They join free)" },
         { icon: Music, label: "Import playlist", desc: "Bulk add songs from youtube playlist" },
         { icon: Music, label: "Unlimited Queue", desc: "Add as many songs as you want" },
-        { icon: Sparkles, label: "Pro Badge", desc: "Stand out in every room" },
         { icon: Heart, label: "Love Theme", desc: "Perfect for couples 💕" },
     ]
 
