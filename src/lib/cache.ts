@@ -139,23 +139,22 @@ class CacheService {
       await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(cachedData));
       // Register canonical in the suggestion index (LRU by timestamp score)
       const canonical = this.normalizeQuery(query);
-      await this.addToSuggestionIndex(canonical);
+      await this.addToSuggestionIndex(canonical, query.toLowerCase());
       console.log(`💾 Cached: "${query}"`);
     } catch (error) {
       console.error('Cache failed:', error);
     }
   }
 
-  async addToSuggestionIndex(canonical: string): Promise<void> {
+  async addToSuggestionIndex(canonical: string, original: string): Promise<void> {
     if (!this.redis || !canonical) return;
     try {
       // Index by each token so a prefix match on ANY word in the canonical surfaces it.
-      // Without this, "selena gomez rare" canonicalizes to "gomez rare selena" and typing
-      // "sel" would never find it (only "gom" or "rar" would). Members use the format
-      // `<token>\x00<canonical>` so we can dedupe by canonical on read.
+      // Members use the format `<token>\x00<canonical>\x00<original>` so we can dedupe
+      // by canonical on read while returning the human-readable original for display.
       const tokens = canonical.split(' ').filter(Boolean);
       if (tokens.length === 0) return;
-      const members = tokens.map(t => `${t}\x00${canonical}`);
+      const members = tokens.map(t => `${t}\x00${canonical}\x00${original}`);
 
       const now = Date.now();
       const lexArgs: (string | number)[] = [];
@@ -195,16 +194,20 @@ class CacheService {
         `[${prefix}\xff`,
         'LIMIT', 0, limit * 4
       );
-      // Extract canonical (after \x00 separator), dedupe, cap at limit.
+      // Extract canonical (for dedup) and original (for display) from `token\x00canonical\x00original`.
+      // Falls back to canonical if no second separator (old-format entries).
       const seen = new Set<string>();
       const result: string[] = [];
       for (const member of raw) {
         const sep = member.indexOf('\x00');
         if (sep < 0) continue;
-        const canonical = member.slice(sep + 1);
+        const rest = member.slice(sep + 1);
+        const sep2 = rest.indexOf('\x00');
+        const canonical = sep2 >= 0 ? rest.slice(0, sep2) : rest;
+        const original = sep2 >= 0 ? rest.slice(sep2 + 1) : rest;
         if (!seen.has(canonical)) {
           seen.add(canonical);
-          result.push(canonical);
+          result.push(original);
           if (result.length >= limit) break;
         }
       }
@@ -233,7 +236,7 @@ class CacheService {
           // Refresh suggestion index on hits so LRU tracks real usage and any entries
           // still in the old pre-token-index format get re-written with the current format.
           // Fire-and-forget - don't block the cache response.
-          this.addToSuggestionIndex(this.normalizeQuery(query)).catch(() => {})
+          this.addToSuggestionIndex(this.normalizeQuery(query), query.toLowerCase()).catch(() => {})
           return { results: parsed.results, timestamp: parsed.timestamp, expiresAt: parsed.expiresAt }
         }
         await this.redis.del(cacheKey)
