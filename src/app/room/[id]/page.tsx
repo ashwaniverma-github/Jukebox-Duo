@@ -250,21 +250,11 @@ export default function RoomPage() {
         }
     }, [boughtThemes]);
 
-    // Auto-enable sync if URL has ?sync=true (for shared links)
-    useEffect(() => {
-        if (status !== "authenticated") return;
-        const syncParam = searchParams.get('sync');
-        if (syncParam === 'true' && !isSyncEnabled) {
-            console.log('[Sync] Auto-enabling sync from URL parameter');
-            setIsSyncEnabled(true);
-        }
-    }, [searchParams, status, isSyncEnabled]);
-
     // Handle WebSocket connection when sync is enabled
     const handleEnableSync = useCallback(() => {
         if (isSyncEnabled || isSyncConnecting) return; // Already enabled or connecting
 
-        if (!isPremium) {
+        if (!isPremium && !isHostPremium) {
             setPremiumTrigger('sync_limit');
             setShowPremiumModal(true);
             return;
@@ -291,7 +281,18 @@ export default function RoomPage() {
 
         setIsSyncEnabled(true);
         console.log('[Sync] Room sync enabled!');
-    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium]);
+    }, [roomId, session, isSyncEnabled, isSyncConnecting, isPremium, isHostPremium]);
+
+    // Auto-enable sync if URL has ?sync=true (for shared links)
+    // Only enables when host (or user) is premium - no paywall for URL-based joins
+    // Re-runs automatically when isHostPremium loads from the API
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        const syncParam = searchParams.get('sync');
+        if (syncParam === 'true' && !isSyncEnabled && (isPremium || isHostPremium)) {
+            handleEnableSync();
+        }
+    }, [searchParams, status, isSyncEnabled, isPremium, isHostPremium, handleEnableSync]);
 
     // Refs for values needed inside the consolidated socket effect (avoids stale closures
     // and prevents the effect from re-running when these change)
