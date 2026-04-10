@@ -368,7 +368,8 @@ export default function Dashboard() {
                         {joiningRoomId === room.id ? (
                           <Button
                             disabled
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                            style={{ WebkitTapHighlightColor: "transparent" }}
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed select-none"
                           >
                             <Loader2 className="size-4 animate-spin" />
                             <span>Joining...</span>
@@ -376,7 +377,8 @@ export default function Dashboard() {
                         ) : (
                           <Button
                             onClick={() => joinRoom(room.id)}
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
+                            style={{ WebkitTapHighlightColor: "transparent" }}
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] select-none"
                           >
                             <Play className="size-4" />
                             <span>Join</span>
