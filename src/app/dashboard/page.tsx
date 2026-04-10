@@ -37,9 +37,11 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [newRoomId, setNewRoomId] = useState<string>("");
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null)
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
+  const [premiumLoaded, setPremiumLoaded] = useState(false)
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const router = useRouter();
 
@@ -55,7 +57,7 @@ export default function Dashboard() {
       // Fetch premium status
       fetch('/api/user/premium-status')
         .then(res => res.ok ? res.json() : null)
-        .then(data => { if (data) { setIsPremium(data.isPremium); } })
+        .then(data => { if (data) { setIsPremium(data.isPremium); } setPremiumLoaded(true); })
         .catch(() => { });
     }
   }, [status]);
@@ -118,6 +120,7 @@ export default function Dashboard() {
   };
 
   const joinRoom = (roomId: string) => {
+    setJoiningRoomId(roomId);
     router.push(`/room/${roomId}`);
   };
 
@@ -212,7 +215,7 @@ export default function Dashboard() {
                   <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
 
                   <ManageBillingButton isPremium={isPremium} />
-                  {!isPremium && (
+                  {premiumLoaded && !isPremium && (
                     <DropdownMenu.Item
                       onSelect={() => setShowPremiumModal(true)}
                       className="w-full px-4 py-2 rounded-lg text-left hover:bg-amber-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
@@ -360,10 +363,20 @@ export default function Dashboard() {
                       <div className="flex gap-2 mt-2">
                         <Button
                           onClick={() => joinRoom(room.id)}
-                          className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
+                          disabled={joiningRoomId === room.id}
+                          className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                         >
-                          <Play className="w-4 h-4 mr-2" />
-                          <span>Join</span>
+                          {joiningRoomId === room.id ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                              <span>Joining...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              <span>Join</span>
+                            </>
+                          )}
                         </Button>
                         {/* Delete button for host */}
                         <Button
