@@ -119,9 +119,13 @@ export default function Dashboard() {
     }
   };
 
-  const joinRoom = (roomId: string) => {
+  const joinRoom = async (roomId: string) => {
     setJoiningRoomId(roomId);
-    router.push(`/room/${roomId}`);
+    try {
+      await router.push(`/room/${roomId}`);
+    } catch {
+      setJoiningRoomId(null);
+    }
   };
 
   // Add this handler inside the Dashboard component
