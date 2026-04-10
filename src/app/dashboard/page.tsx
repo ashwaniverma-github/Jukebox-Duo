@@ -372,7 +372,7 @@ export default function Dashboard() {
                         >
                           {joiningRoomId === room.id ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 flex-shrink-0" />
                               <span>Joining...</span>
                             </>
                           ) : (
