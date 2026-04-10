@@ -369,7 +369,7 @@ export default function Dashboard() {
                           <button
                             key={`joining-${room.id}`}
                             disabled
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus:outline-none"
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
                           >
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             Joining...
@@ -378,7 +378,7 @@ export default function Dashboard() {
                           <button
                             key={`join-${room.id}`}
                             onClick={() => joinRoom(room.id)}
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus:outline-none"
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
                           >
                             <Play className="w-4 h-4" />
                             Join
