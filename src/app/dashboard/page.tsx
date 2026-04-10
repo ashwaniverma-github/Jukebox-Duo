@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 // import { Heart } from "lucide-react";
-import { Music, Plus, Users, Play, Radio, Zap, LogOut, Crown } from "lucide-react";
+import { Music, Plus, Users, Play, Radio, Zap, LogOut, Crown, Loader2 } from "lucide-react";
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import Link from "next/link";
 import { ManageBillingButton } from '../../components/ManageBillingButton';
@@ -365,23 +365,23 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex gap-2 mt-2">
-                        <Button
-                          onClick={() => joinRoom(room.id)}
-                          disabled={joiningRoomId === room.id}
-                          className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                        >
-                          {joiningRoomId === room.id ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 flex-shrink-0" />
-                              <span>Joining...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4 mr-2" />
-                              <span>Join</span>
-                            </>
-                          )}
-                        </Button>
+                        {joiningRoomId === room.id ? (
+                          <Button
+                            disabled
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                          >
+                            <Loader2 className="size-4 animate-spin" />
+                            <span>Joining...</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => joinRoom(room.id)}
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
+                          >
+                            <Play className="size-4" />
+                            <span>Join</span>
+                          </Button>
+                        )}
                         {/* Delete button for host */}
                         <Button
                           onClick={() => setRoomToDelete(room)}
