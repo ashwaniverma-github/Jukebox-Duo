@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 // import { Heart } from "lucide-react";
-import { Music, Plus, Users, Play, Radio, Zap, LogOut } from "lucide-react";
+import { Music, Plus, Users, Play, Radio, Zap, LogOut, Crown } from "lucide-react";
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import Link from "next/link";
 import { ManageBillingButton } from '../../components/ManageBillingButton';
+import { PremiumUpgradeModal } from '../../components/PremiumUpgradeModal';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -39,6 +40,7 @@ export default function Dashboard() {
   const [isSigningout, setIsSigningOut] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
+  const [showPremiumModal, setShowPremiumModal] = useState(false)
   const router = useRouter();
 
   useEffect(() => {
@@ -210,6 +212,15 @@ export default function Dashboard() {
                   <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
 
                   <ManageBillingButton isPremium={isPremium} />
+                  {!isPremium && (
+                    <DropdownMenu.Item
+                      onSelect={() => setShowPremiumModal(true)}
+                      className="w-full px-4 py-2 rounded-lg text-left hover:bg-amber-700/30 transition-colors cursor-pointer font-medium flex items-center gap-2"
+                    >
+                      <Crown className="w-4 h-4 text-amber-400" />
+                      Upgrade to Premium
+                    </DropdownMenu.Item>
+                  )}
                   <DropdownMenu.Item
                     onSelect={handleSignout}
                     className="w-full px-4 py-2 rounded-lg text-left hover:bg-white/20 transition-colors cursor-pointer font-medium flex items-center gap-2"
@@ -297,6 +308,7 @@ export default function Dashboard() {
                   </Button>
                 </form>
               </div>
+
 
             </div>
           </div>
@@ -434,6 +446,11 @@ export default function Dashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PremiumUpgradeModal
+        open={showPremiumModal}
+        onOpenChange={setShowPremiumModal}
+      />
     </div>
   );
 }
