@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { Webhooks } from '@dodopayments/nextjs';
 import prisma from '@/lib/prisma';
+import { trackServerEvent } from '@/lib/posthog-server';
 
 // Validate webhook key at startup
 const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
@@ -196,6 +197,13 @@ export const POST = Webhooks({
                 });
 
                 console.log('Successfully activated lifetime premium for user', { userId, customerId });
+
+                // Track revenue event in PostHog (non-blocking, never throws)
+                await trackServerEvent(userId, 'payment_succeeded', {
+                    plan: 'lifetime',
+                    amount: 19,
+                    currency: 'USD',
+                });
             }
         } catch (err) {
             console.error('Error handling onPaymentSucceeded:', err);
@@ -223,6 +231,17 @@ export const POST = Webhooks({
                 console.log('Skipping subscription.active for lifetime product', { userId, productId });
                 return;
             }
+
+            // Check existing subscription BEFORE upsert so we can detect fresh activations
+            // (used for PostHog idempotency - only track on first activation)
+            const existingSub = await prisma.subscription.findUnique({
+                where: { userId },
+                select: { subscriptionId: true, status: true },
+            });
+            const isFreshActivation =
+                !existingSub ||
+                existingSub.subscriptionId !== subscriptionId ||
+                existingSub.status !== 'active';
 
             await prisma.subscription.upsert({
                 where: { userId },
@@ -266,6 +285,15 @@ export const POST = Webhooks({
             });
 
             console.log('Handled subscription.active', { userId, subscriptionId, tier });
+
+            // Track revenue event in PostHog only on FIRST activation (skip webhook retries)
+            if (isFreshActivation) {
+                await trackServerEvent(userId, 'subscription_activated', {
+                    plan: 'monthly',
+                    amount: 2.99,
+                    currency: 'USD',
+                });
+            }
         } catch (err) {
             console.error('Error handling onSubscriptionActive:', err);
         }
