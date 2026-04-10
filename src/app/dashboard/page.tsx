@@ -58,7 +58,7 @@ export default function Dashboard() {
       fetch('/api/user/premium-status')
         .then(res => res.ok ? res.json() : null)
         .then(data => { if (data) { setIsPremium(data.isPremium); } setPremiumLoaded(true); })
-        .catch(() => { });
+        .catch(() => { setPremiumLoaded(true); });
     }
   }, [status]);
 

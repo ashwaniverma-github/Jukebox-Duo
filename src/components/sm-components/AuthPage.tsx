@@ -27,9 +27,13 @@ export default function AuthPage() {
         <h1 className="text-3xl font-bold mb-4 text-center">Sign in to Jukebox Duo</h1>
         <p className="text-gray-300 mb-8 text-center">Sign in to access your dashboard and rooms.</p>
         <button
-          onClick={() => {
+          onClick={async () => {
             setIsSigningIn(true);
-            signIn("google", { callbackUrl });
+            try {
+              await signIn("google", { callbackUrl });
+            } catch {
+              setIsSigningIn(false);
+            }
           }}
           disabled={isSigningIn}
           className="cursor-pointer w-full h-14 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
