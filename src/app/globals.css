@@ -42,6 +42,11 @@ body {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Higher or Lower game — wrong answer shake */

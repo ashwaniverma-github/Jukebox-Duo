@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 // import { Heart } from "lucide-react";
-import { Music, Plus, Users, Play, Radio, Zap, LogOut, Crown, Loader2 } from "lucide-react";
+import { Music, Plus, Users, Play, Radio, Zap, LogOut, Crown } from "lucide-react";
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import Link from "next/link";
 import { ManageBillingButton } from '../../components/ManageBillingButton';
@@ -366,23 +366,23 @@ export default function Dashboard() {
                       </div>
                       <div className="flex gap-2 mt-2">
                         {joiningRoomId === room.id ? (
-                          <Button
+                          <button
+                            key={`joining-${room.id}`}
                             disabled
-                            style={{ WebkitTapHighlightColor: "transparent" }}
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed select-none"
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 text-white font-semibold rounded-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus:outline-none"
                           >
-                            <Loader2 className="size-4 animate-spin" />
-                            <span>Joining...</span>
-                          </Button>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Joining...
+                          </button>
                         ) : (
-                          <Button
+                          <button
+                            key={`join-${room.id}`}
                             onClick={() => joinRoom(room.id)}
-                            style={{ WebkitTapHighlightColor: "transparent" }}
-                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] select-none"
+                            className="flex-1 h-10 bg-gradient-to-r from-red-700 to-red-500 hover:from-red-800 hover:to-red-600 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 select-none touch-manipulation outline-none focus:outline-none"
                           >
-                            <Play className="size-4" />
-                            <span>Join</span>
-                          </Button>
+                            <Play className="w-4 h-4" />
+                            Join
+                          </button>
                         )}
                         {/* Delete button for host */}
                         <Button
