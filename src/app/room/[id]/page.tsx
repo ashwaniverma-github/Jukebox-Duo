@@ -40,7 +40,8 @@ export default function RoomPage() {
     const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
     const currentQueueIndexRef = useRef(currentQueueIndex);
     const queueRef = useRef(queue);
-    const localIndexChangeRef = useRef(0); // Timestamp of last index change (local or remote video-changed) — guards refreshQueue from overwriting
+    const localIndexChangeRef = useRef(0); // Timestamp of last LOCAL index change — guards refreshQueue from overwriting
+    const remoteVideoChangedAtRef = useRef(0); // Timestamp of last remote video-changed apply — guards refreshQueue only (not onVideoChanged itself)
     const pendingChangeRef = useRef(false); // True while a song change PATCH is in-flight — blocks refreshQueue from overwriting
     const refreshInFlightRef = useRef(false); // Mutex to prevent concurrent refreshQueue calls
     const pendingEmitVideoRef = useRef<string | null>(null); // Pending change-video emit for when socket reconnects
@@ -429,6 +430,10 @@ export default function RoomPage() {
                 if (idx !== -1) {
                     // Do NOT set localIndexChangeRef here — it guards LOCAL actions only.
                     // Setting it here would block all subsequent remote events for 8s.
+                    // remoteVideoChangedAtRef only gates refreshQueue (not onVideoChanged),
+                    // so it stops stale fetches from overwriting the new song without blocking
+                    // further remote changes. Protects against replica lag / in-flight host PATCH.
+                    remoteVideoChangedAtRef.current = Date.now();
                     setCurrentQueueIndex(idx);
                     setVideoId(activeQueue[idx].videoId);
                     setCurrentSong(activeQueue[idx]);
@@ -526,8 +531,12 @@ export default function RoomPage() {
             const newIds = (data.queue as { videoId: string }[]).map(q => q.videoId).join(',');
             const queueItemsChanged = oldIds !== newIds;
 
-            const isLocalActionRecent = Date.now() - localIndexChangeRef.current < 8000;
-            if (!isLocalActionRecent) {
+            // Block overwriting current index/video if EITHER a local action OR a recent remote
+            // video-changed happened in the last 8s. This protects against stale fetches racing
+            // against in-flight host PATCHes (replica lag, slow writes, retries).
+            const lastChangeAt = Math.max(localIndexChangeRef.current, remoteVideoChangedAtRef.current);
+            const isIndexChangeRecent = Date.now() - lastChangeAt < 8000;
+            if (!isIndexChangeRecent) {
                 // Safe to apply full server state
                 if (queueItemsChanged) setQueue(data.queue);
                 setCurrentQueueIndex(data.currentQueueIndex);
@@ -539,7 +548,7 @@ export default function RoomPage() {
                     setCurrentSong(null);
                 }
             } else if (queueItemsChanged) {
-                // Local action recent — only update queue items (adds/removes), NOT the current index/video
+                // Index change recent — only update queue items (adds/removes), NOT the current index/video
                 setQueue(data.queue);
             }
             return data;
