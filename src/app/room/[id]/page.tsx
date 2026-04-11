@@ -405,13 +405,10 @@ export default function RoomPage() {
         const onVideoChanged = async (newVideoId: string) => {
             try {
                 // If a local song change PATCH is in-flight, ignore server events entirely
+                // (this is the only guard needed — server uses socket.to(roomId) which excludes
+                // the sender, so remote events always represent genuine other-user intent)
                 if (pendingChangeRef.current) {
                     console.log(`[video-changed] Ignored (pending local change in-flight)`);
-                    return;
-                }
-                // If a local action was very recent, ignore — our PATCH may not have reached server yet
-                if (Date.now() - localIndexChangeRef.current < 8000) {
-                    console.log(`[video-changed] Ignored (local action recent, ${Date.now() - localIndexChangeRef.current}ms ago)`);
                     return;
                 }
 
