@@ -50,7 +50,7 @@ export async function POST() {
         // Create a customer portal session
         const portalSession = await client.customers.customerPortal.create(
             user.dodoCustomerId,
-            { send_email: false, return_url: `${returnBase}/dashboard` }
+            { send_email: false, return_url: returnBase }
         );
 
         if (!portalSession?.link) {
