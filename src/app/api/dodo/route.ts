@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import DodoPayments from 'dodopayments';
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -65,6 +66,11 @@ export async function POST(req: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const name = (session.user as any).name || undefined;
 
+        const existingUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { dodoCustomerId: true },
+        });
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const params: any = {
             product_cart: [{ product_id: productId, quantity: 1 }],
@@ -76,7 +82,9 @@ export async function POST(req: Request) {
             },
         };
 
-        if (email) {
+        if (existingUser?.dodoCustomerId) {
+            params.customer = { customer_id: existingUser.dodoCustomerId };
+        } else if (email) {
             params.customer = name ? { email, name } : { email };
         }
 

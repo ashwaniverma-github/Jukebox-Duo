@@ -80,6 +80,7 @@ export async function POST(req: Request) {
                 product_id: productId,
                 proration_billing_mode: 'prorated_immediately',
                 quantity: 1,
+                on_payment_failure: 'prevent_change',
             });
 
             // Optimistic local DB update — webhook will confirm shortly
@@ -102,6 +103,11 @@ export async function POST(req: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const name = (session.user as any).name || undefined;
 
+        const existingUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { dodoCustomerId: true },
+        });
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const params: any = {
             product_cart: [{ product_id: productId, quantity: 1 }],
@@ -117,7 +123,9 @@ export async function POST(req: Request) {
             },
         };
 
-        if (email) {
+        if (existingUser?.dodoCustomerId) {
+            params.customer = { customer_id: existingUser.dodoCustomerId };
+        } else if (email) {
             params.customer = name ? { email, name } : { email };
         }
 

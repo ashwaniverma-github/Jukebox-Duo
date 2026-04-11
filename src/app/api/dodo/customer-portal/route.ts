@@ -40,12 +40,17 @@ export async function POST() {
         const environment =
             process.env.DODO_PAYMENTS_ENVIRONMENT === 'live_mode' ? 'live_mode' : 'test_mode';
 
+        const returnBase =
+            process.env.DODO_RETURN_URL_BASE ||
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            'http://localhost:3000';
+
         const client = new DodoPayments({ bearerToken, environment });
 
         // Create a customer portal session
         const portalSession = await client.customers.customerPortal.create(
             user.dodoCustomerId,
-            { send_email: false }
+            { send_email: false, return_url: `${returnBase}/dashboard` }
         );
 
         if (!portalSession?.link) {

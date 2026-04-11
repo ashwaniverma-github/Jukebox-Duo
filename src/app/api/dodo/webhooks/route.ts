@@ -1,13 +1,10 @@
 export const runtime = 'nodejs';
 
+import { NextResponse } from 'next/server';
 import { Webhooks } from '@dodopayments/nextjs';
 import prisma from '@/lib/prisma';
 
-// Validate webhook key at startup
 const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
-if (!webhookKey) {
-    throw new Error('CRITICAL: DODO_PAYMENTS_WEBHOOK_KEY is not set!');
-}
 // Helper utilities for subscription events
 
 
@@ -145,8 +142,9 @@ function getEventType(payload: unknown): string | undefined {
 }
 
 
-export const POST = Webhooks({
-    webhookKey: webhookKey!, // Safe - startup validation throws if missing
+const webhooksHandler = webhookKey
+    ? Webhooks({
+    webhookKey,
     onPaymentSucceeded: async (payload) => {
         try {
             const data = getPayloadData(payload);
@@ -576,4 +574,10 @@ export const POST = Webhooks({
             console.error('Error handling onPayload:', err);
         }
     },
-});
+    })
+    : async () => {
+        console.error('DODO_PAYMENTS_WEBHOOK_KEY is not set - webhook disabled');
+        return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+    };
+
+export const POST = webhooksHandler;
