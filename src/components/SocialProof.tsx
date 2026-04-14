@@ -11,9 +11,9 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-    { icon: Radio, value: 1328, suffix: "+", label: "Rooms Created" },
-    { icon: Music, value: 5000, suffix: "+", label: "Songs Played" },
-    { icon: Users, value: 2000, suffix: "+", label: "Happy Listeners" },
+    { icon: Radio, value: 2168, suffix: "+", label: "Rooms Created" },
+    { icon: Music, value: 10000, suffix: "+", label: "Songs Played" },
+    { icon: Users, value: 3007, suffix: "+", label: "Happy Listeners" },
 ]
 
 function AnimatedCounter({ value, suffix, inView }: { value: number; suffix: string; inView: boolean }) {
