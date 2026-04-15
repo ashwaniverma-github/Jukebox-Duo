@@ -170,7 +170,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 {plan === 'lifetime' ? (
                                     <>
                                         <span className="text-sm line-through text-zinc-500 font-medium">$99</span>
-                                        <span className="text-2xl font-bold text-white">$19</span>
+                                        <span className="text-2xl font-bold text-white">$29</span>
                                         <span className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-500 tracking-wider">
                                             Limited Time Deal
                                         </span>
@@ -187,9 +187,9 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             </div>
                             {plan === 'lifetime' && (
                                 <div className="flex flex-col items-center gap-1">
-                                    {/* <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400 animate-pulse">
-                                        <span>🔥 Only 10 spots remaining at this price</span>
-                                    </div> */}
+                                    <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400">
+                                        <span>Last few spots remaining</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
