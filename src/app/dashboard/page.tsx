@@ -219,9 +219,10 @@ export default function Dashboard() {
                   <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
 
                   {!premiumLoaded ? (
-                    <div className="w-full px-4 py-2 flex justify-start">
+                    <div className="w-full px-4 py-2 flex items-center justify-start">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className=" pl-2 text-white font-medium">Loading...</span>                    </div>
+                      <span className="pl-2 text-white font-medium">Loading...</span>
+                    </div>
                   ) : isPremium ? (
                     <ManageBillingButton isPremium={isPremium} />
                   ) : (
