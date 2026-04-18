@@ -107,7 +107,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
             case 'search_limit':
                 return "You've used your 20 free daily searches. Upgrade for unlimited search + bulk playlist import."
             default:
-                return "Join 3,000+ listeners worldwide"
+                return "Join thousands of listeners worldwide"
         }
     }
 
@@ -181,7 +181,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                             <span className="text-2xl font-bold text-white">$2.99</span>
                                             <span className="text-xs font-medium text-zinc-400">/month</span>
                                         </div>
-                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Less than a coffee - Cancel anytime</span>
+                                        <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Less than a coffee</span>
                                     </div>
                                 )}
                             </div>
@@ -230,7 +230,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 plan === 'lifetime' ? (
                                     "Get Lifetime Access"
                                 ) : (
-                                    "Get Monthly Access"
+                                    "Join Premium"
                                 )
                             )}
                         </Button>
