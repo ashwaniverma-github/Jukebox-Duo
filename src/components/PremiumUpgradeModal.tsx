@@ -112,7 +112,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     }
 
     const features = [
-        { icon: Users, label: "Listen together in realtime", desc: "Invite friends to your room , they join free" },
+        { icon: Users, label: "Listen together in realtime", desc: "Invite friends to your room - they join free" },
         { icon: Music, label: "Import playlist", desc: "Bulk add songs from youtube playlists" },
         { icon: Infinity, label: "Unlimited Queue", desc: "Add as many songs as you want" },
         { icon: Heart, label: "Love Theme", desc: "Perfect for couples 💕" },
