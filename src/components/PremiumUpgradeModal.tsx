@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { Loader2, Crown, Infinity, Check, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
+import { Loader2, Flame, Crown, Infinity, Check, Music, Users, Heart, ShieldCheck, Lock } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { trackPremiumModalOpen, trackPremiumPurchaseClick } from './PostHogProvider'
 
@@ -17,7 +17,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
     const [loading, setLoading] = useState(false)
     const [subLoading, setSubLoading] = useState(false)
     const [error, setError] = useState('')
-    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('monthly')
+    const [plan, setPlan] = useState<'monthly' | 'lifetime'>('lifetime')
 
     // Track when modal opens
     useEffect(() => {
@@ -178,7 +178,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 ) : (
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-bold text-white">$2.99</span>
+                                            <span className="text-2xl font-bold text-white">$4.99</span>
                                             <span className="text-xs font-medium text-zinc-400">/month</span>
                                         </div>
                                         <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Less than a coffee</span>
@@ -188,7 +188,8 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                             {plan === 'lifetime' && (
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400">
-                                        <span>Last few spots remaining</span>
+                                        <Flame className="w-4 h-4" />
+                                        <span>Closing permanently - Only 40 spots left</span>
                                     </div>
                                 </div>
                             )}
