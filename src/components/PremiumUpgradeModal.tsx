@@ -189,7 +189,7 @@ export function PremiumUpgradeModal({ open, onOpenChange, trigger = 'general' }:
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-rose-400">
                                         <Flame className="w-4 h-4" />
-                                        <span>Closing permanently - Only 40 spots left</span>
+                                        <span>Closing permanently - Only 39 spots left</span>
                                     </div>
                                 </div>
                             )}
